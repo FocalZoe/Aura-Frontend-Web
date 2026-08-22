@@ -204,15 +204,30 @@
   user-select: none;
 }
 
-.msgMeta {
+.msgMetaOutsideLeft {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 4px;
-  font-size: 0.7rem;
-  margin-top: 3px;
-  opacity: 0.75;
+  font-size: 0.72rem;
+  color: var(--text-muted, #94a3b8);
   white-space: nowrap;
+  opacity: 0.85;
+  margin-bottom: 3px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.msgMetaOutsideRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  opacity: 0.85;
+  margin-bottom: 3px;
+  flex-shrink: 0;
+  user-select: none;
 }
 
 .msgEditedBadge {
@@ -225,7 +240,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  max-width: 72%;
+  max-width: 78%;
 }
 
 .msgRowSelf .msgBubbleContainer {
@@ -234,6 +249,14 @@
 
 .msgRowOther .msgBubbleContainer {
   align-items: flex-start;
+}
+
+/* 氣泡與外部時間核心水平行 */
+.msgBubbleRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 100%;
 }
 
 .reactionsWrapper {
@@ -249,12 +272,13 @@
 
 .reactionsWrapperOther {
   justify-content: flex-start;
+  margin-left: 40px; /* 32px avatar + 8px gap 對齊氣泡左邊緣 */
 }
 
 .reactionPill {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   padding: 2px 7px;
   border-radius: 12px;
   background: var(--bg-modal, rgba(30, 41, 59, 0.8));
@@ -279,10 +303,31 @@
   font-weight: 700;
 }
 
+.reactionAvatars {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+}
+
+.reactionAvatarItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px var(--bg-modal, #1e293b);
+}
+
+.reactionAvatarItem:not(:first-child) {
+  margin-left: -5px;
+}
+
 .msgAvatarWrapper {
-  margin-right: 8px;
+  margin-right: 0;
   align-self: flex-end;
+  flex-shrink: 0;
   cursor: pointer;
+  display: flex;
+  align-items: flex-end;
 }
 
 /* 系統公告訊息樣式 (水平置中、無氣泡、小字、膠囊微光) */
@@ -317,7 +362,8 @@
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--text-secondary, #94a3b8);
-  margin-bottom: 3px;
+  margin-bottom: 4px;
+  margin-left: 40px; /* 32px avatar + 8px gap 對齊氣泡左邊緣 */
   padding-left: 2px;
   cursor: pointer;
   transition: color 0.15s ease;
@@ -325,6 +371,57 @@
 
 .msgSenderName:hover {
   color: var(--accent-color, #6366f1);
+}
+
+/* 聊天室微光骨架屏樣式 */
+.chatSkeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  width: 100%;
+  flex: 1;
+  overflow-y: hidden;
+}
+
+.chatSkeletonRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.chatSkeletonRowSelf {
+  justify-content: flex-end;
+}
+
+.chatSkeletonRowOther {
+  justify-content: flex-start;
+}
+
+.chatSkeletonAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--border-color, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+  animation: skeletonShimmer 1.5s infinite ease-in-out;
+}
+
+.chatSkeletonBubble {
+  height: 42px;
+  border-radius: 18px;
+  background: var(--border-color, rgba(255, 255, 255, 0.08));
+  animation: skeletonShimmer 1.5s infinite ease-in-out;
+}
+
+@keyframes skeletonShimmer {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.75;
+  }
 }
 
 /* Chat Input Area */

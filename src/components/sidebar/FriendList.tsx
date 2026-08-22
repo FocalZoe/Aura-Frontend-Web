@@ -12,6 +12,7 @@ interface FriendListProps {
   friends: User[];
   activeChatUser: User | null;
   activeGroup: Group | null;
+  loading?: boolean;
   onSelectChat: (user: User) => void;
   onSelectGroup: (group: Group) => void;
   onContextMenuUser: (e: React.MouseEvent, user: User) => void;
@@ -28,6 +29,7 @@ export const FriendList: React.FC<FriendListProps> = ({
   friends,
   activeChatUser,
   activeGroup,
+  loading = false,
   onSelectChat,
   onSelectGroup,
   onContextMenuUser,
@@ -38,6 +40,22 @@ export const FriendList: React.FC<FriendListProps> = ({
 }) => {
   const friendIds = new Set(friends.map((f) => f.id));
   const { getUserDisplayName } = useChatStore();
+
+  if (loading) {
+    return (
+      <div className={styles.sidebarSkeletonList}>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className={styles.sidebarSkeletonItem}>
+            <div className={styles.sidebarSkeletonAvatar} />
+            <div className={styles.sidebarSkeletonTexts}>
+              <div className={styles.sidebarSkeletonName} />
+              <div className={styles.sidebarSkeletonStatus} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (currentTab === 'groups') {
     if (groups.length === 0) {

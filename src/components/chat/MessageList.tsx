@@ -9,10 +9,12 @@ interface MessageListProps {
   partnerUser?: User;
   isGroup?: boolean;
   groupMembersMap?: Record<number, { user?: User; nickname?: string }>;
+  loading?: boolean;
   renderIPFSFileCard?: (msg: Message) => React.ReactNode;
   onReaction?: (messageId: number, emoji: string) => void;
   onViewProfile?: (user: User) => void;
   onContextMenu?: (e: React.MouseEvent, msg: Message) => void;
+  onViewReactions?: (message: Message) => void;
   isScreenshotMode?: boolean;
   selectedRange?: { start: number; end: number } | null;
   onToggleSelectScreenshot?: (msg: Message, index: number) => void;
@@ -24,10 +26,12 @@ export const MessageList: React.FC<MessageListProps> = ({
   partnerUser,
   isGroup = false,
   groupMembersMap,
+  loading = false,
   renderIPFSFileCard,
   onReaction,
   onViewProfile,
   onContextMenu,
+  onViewReactions,
   isScreenshotMode = false,
   selectedRange = null,
   onToggleSelectScreenshot,
@@ -35,10 +39,31 @@ export const MessageList: React.FC<MessageListProps> = ({
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isScreenshotMode) {
+    if (!isScreenshotMode && !loading) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isScreenshotMode]);
+  }, [messages, isScreenshotMode, loading]);
+
+  if (loading && messages.length === 0) {
+    return (
+      <div className={styles.chatSkeletonList}>
+        <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowOther}`}>
+          <div className={styles.chatSkeletonAvatar} />
+          <div className={styles.chatSkeletonBubble} style={{ width: '180px' }} />
+        </div>
+        <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowSelf}`}>
+          <div className={styles.chatSkeletonBubble} style={{ width: '240px' }} />
+        </div>
+        <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowOther}`}>
+          <div className={styles.chatSkeletonAvatar} />
+          <div className={styles.chatSkeletonBubble} style={{ width: '140px' }} />
+        </div>
+        <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowSelf}`}>
+          <div className={styles.chatSkeletonBubble} style={{ width: '200px' }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.chatMessages}>
@@ -62,10 +87,12 @@ export const MessageList: React.FC<MessageListProps> = ({
             senderUser={senderUser}
             isGroup={isGroup}
             groupNickname={groupNickname}
+            groupMembersMap={groupMembersMap}
             renderIPFSFileCard={renderIPFSFileCard}
             onReaction={onReaction}
             onViewProfile={onViewProfile}
             onContextMenu={onContextMenu}
+            onViewReactions={onViewReactions}
             isScreenshotMode={isScreenshotMode}
             isSelectedForScreenshot={isSelected}
             onToggleSelectScreenshot={() => onToggleSelectScreenshot && onToggleSelectScreenshot(msg, idx)}

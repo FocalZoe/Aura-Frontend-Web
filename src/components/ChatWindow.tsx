@@ -18,6 +18,7 @@ import { IPFSFileCard } from './chat/IPFSFileCard';
 import { MessageContextMenu } from './chat/MessageContextMenu';
 import { ScreenshotToolbar } from './chat/ScreenshotToolbar';
 import { ChatScreenshotModal } from './chat/ChatScreenshotModal';
+import { MessageReactionsModal } from './chat/MessageReactionsModal';
 import styles from './ChatWindow.module.css';
 import { useCallStore } from '../stores/useCallStore';
 
@@ -66,6 +67,10 @@ export const ChatWindow: React.FC = () => {
 
   // Context: [訊息編輯狀態]
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+
+  // Context: [訊息載入與表情反應詳情狀態]
+  const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
+  const [selectedReactionMessage, setSelectedReactionMessage] = useState<Message | null>(null);
 
   // Context: 統一在頂部計算當前對話訊息列表與群成員對應表，嚴格遵守 React Rules of Hooks
   const currentMessages: Message[] = React.useMemo(() => {
@@ -290,12 +295,15 @@ export const ChatWindow: React.FC = () => {
   useEffect(() => {
     const fetchGroupMessages = async () => {
       if (activeGroup && token) {
+        setLoadingMessages(true);
         try {
           const rawMsgs = await apiClient.get<any[]>(`/groups/${activeGroup.id}/messages`, token);
           const decryptedList = await e2eeService.decryptGroupMessages(rawMsgs, activeGroup.id);
           setGroupMessages(decryptedList);
         } catch (err) {
           console.error('獲取群組歷史訊息失敗:', err);
+        } finally {
+          setLoadingMessages(false);
         }
       }
     };
@@ -307,6 +315,7 @@ export const ChatWindow: React.FC = () => {
   useEffect(() => {
     const fetchDirectMessages = async () => {
       if (activeChatUser && token && user) {
+        setLoadingMessages(true);
         try {
           const rawMsgs = await apiClient.get<Message[]>(`/messages/${activeChatUser.id}`, token);
           if (Array.isArray(rawMsgs)) {
@@ -315,6 +324,8 @@ export const ChatWindow: React.FC = () => {
           }
         } catch (err) {
           console.error('獲取私聊歷史訊息失敗:', err);
+        } finally {
+          setLoadingMessages(false);
         }
       }
     };
@@ -653,9 +664,11 @@ export const ChatWindow: React.FC = () => {
         partnerUser={activeChatUser || undefined}
         isGroup={Boolean(activeGroup)}
         groupMembersMap={groupMembersMap}
+        loading={loadingMessages}
         onReaction={handleReaction}
         onViewProfile={(u) => setSelectedProfileUser(u)}
         onContextMenu={handleMessageContextMenu}
+        onViewReactions={(m) => setSelectedReactionMessage(m)}
         isScreenshotMode={isScreenshotMode}
         selectedRange={screenshotRange}
         onToggleSelectScreenshot={handleToggleSelectScreenshot}
@@ -793,8 +806,20 @@ export const ChatWindow: React.FC = () => {
           onEdit={handleStartEditMessage}
           onRecall={handleRecallMessage}
           onDelete={handleDeleteMessage}
+          onViewReactions={(msg) => setSelectedReactionMessage(msg)}
         />
       )}
+
+      {/* 訊息表情反應名單彈窗 */}
+      <MessageReactionsModal
+        isOpen={Boolean(selectedReactionMessage)}
+        onClose={() => setSelectedReactionMessage(null)}
+        message={selectedReactionMessage}
+        groupMembersMap={groupMembersMap}
+        currentUser={user}
+        partnerUser={activeChatUser}
+        onViewProfile={(u) => setSelectedProfileUser(u)}
+      />
 
       {/* 對話截圖預覽與下載彈窗 */}
       <ChatScreenshotModal

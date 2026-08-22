@@ -72,8 +72,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     return [...friends, ...uniqueSentStrangers];
   }, [friends, sentStrangerUsers]);
 
+  const [loadingList, setLoadingList] = useState(false);
+
   const fetchFriendsAndPendingAndGroups = async () => {
     if (!token) return;
+    setLoadingList(true);
 
     try {
       const friendsData = await apiClient.get<User[]>('/friends', token);
@@ -109,6 +112,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
       }
     } catch (e) {
       console.error('獲取雲端備註清單失敗:', e);
+    } finally {
+      setLoadingList(false);
     }
   };
 
@@ -340,6 +345,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
             friends={friends}
             activeChatUser={activeChatUser}
             activeGroup={activeGroup}
+            loading={loadingList}
             onSelectChat={setActiveChatUser}
             onSelectGroup={setActiveGroup}
             onContextMenuUser={handleContextMenuUser}

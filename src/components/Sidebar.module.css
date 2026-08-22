@@ -279,6 +279,64 @@
   background: var(--status-offline);
 }
 
+/* 側邊欄列表微光骨架屏 */
+.sidebarSkeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.sidebarSkeletonItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+}
+
+.sidebarSkeletonAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--border-color, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+  animation: sidebarShimmer 1.5s infinite ease-in-out;
+}
+
+.sidebarSkeletonTexts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.sidebarSkeletonName {
+  height: 14px;
+  width: 50%;
+  border-radius: 6px;
+  background: var(--border-color, rgba(255, 255, 255, 0.08));
+  animation: sidebarShimmer 1.5s infinite ease-in-out;
+}
+
+.sidebarSkeletonStatus {
+  height: 11px;
+  width: 75%;
+  border-radius: 5px;
+  background: var(--border-color, rgba(255, 255, 255, 0.05));
+  animation: sidebarShimmer 1.5s infinite ease-in-out;
+}
+
+@keyframes sidebarShimmer {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
 /* Context Menu */
 .contextMenu {
   position: fixed;

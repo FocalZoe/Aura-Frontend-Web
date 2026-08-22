@@ -14,10 +14,12 @@ interface MessageBubbleProps {
   senderUser?: User;
   isGroup?: boolean;
   groupNickname?: string;
+  groupMembersMap?: Record<number, { user?: User; nickname?: string }>;
   renderIPFSFileCard?: (msg: Message) => React.ReactNode;
   onReaction?: (messageId: number, emoji: string) => void;
   onViewProfile?: (user: User) => void;
   onContextMenu?: (e: React.MouseEvent, msg: Message) => void;
+  onViewReactions?: (message: Message) => void;
   isScreenshotMode?: boolean;
   isSelectedForScreenshot?: boolean;
   onToggleSelectScreenshot?: (msg: Message) => void;
@@ -30,10 +32,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   senderUser,
   isGroup = false,
   groupNickname,
+  groupMembersMap,
   renderIPFSFileCard,
   onReaction,
   onViewProfile,
   onContextMenu,
+  onViewReactions,
   isScreenshotMode = false,
   isSelectedForScreenshot = false,
   onToggleSelectScreenshot,
@@ -172,20 +176,51 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     .filter(Boolean)
     .join(' ');
 
-  const reactionMap = (msg.reactions || []).reduce<Record<string, { count: number; users: number[]; reactedByMe: boolean }>>(
-    (acc, r) => {
-      if (!acc[r.emoji]) {
-        acc[r.emoji] = { count: 0, users: [], reactedByMe: false };
+  interface ReactionUserDetail {
+    id: number;
+    avatar?: string;
+    displayName: string;
+    fallbackSeed: string;
+  }
+
+  const reactionMap = (msg.reactions || []).reduce<
+    Record<string, { count: number; users: ReactionUserDetail[]; reactedByMe: boolean }>
+  >((acc, r) => {
+    if (!acc[r.emoji]) {
+      acc[r.emoji] = { count: 0, users: [], reactedByMe: false };
+    }
+    acc[r.emoji].count += 1;
+    if (Number(r.user_id) === Number(currentUserId)) {
+      acc[r.emoji].reactedByMe = true;
+    }
+
+    let avatar = r.user?.avatar;
+    let displayName = r.user?.display_name || r.user?.account_id || `User_${r.user_id}`;
+    let fallbackSeed = r.user?.display_name || r.user?.account_id || `User_${r.user_id}`;
+
+    if (groupMembersMap && groupMembersMap[r.user_id]) {
+      const gm = groupMembersMap[r.user_id];
+      if (gm.user?.avatar) avatar = gm.user.avatar;
+      if (gm.nickname) displayName = gm.nickname;
+      else if (gm.user?.display_name) displayName = gm.user.display_name;
+      if (gm.user?.display_name || gm.user?.account_id) {
+        fallbackSeed = gm.user.display_name || gm.user.account_id;
       }
-      acc[r.emoji].count += 1;
-      acc[r.emoji].users.push(r.user_id);
-      if (Number(r.user_id) === Number(currentUserId)) {
-        acc[r.emoji].reactedByMe = true;
-      }
-      return acc;
-    },
-    {}
-  );
+    } else if (partnerUser && Number(r.user_id) === Number(partnerUser.id)) {
+      avatar = partnerUser.avatar;
+      displayName = getUserDisplayName(partnerUser);
+      fallbackSeed = partnerUser.display_name || partnerUser.account_id;
+    }
+
+    acc[r.emoji].users.push({
+      id: r.user_id,
+      avatar,
+      displayName,
+      fallbackSeed,
+    });
+
+    return acc;
+  }, {});
 
   const displayUser = senderUser || partnerUser || msg.sender;
   const finalDisplayName = groupNickname || (displayUser ? getUserDisplayName(displayUser) : `用戶 #${msg.sender_id}`);
@@ -228,28 +263,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </div>
       )}
 
-      {/* 他人發送之訊息展示頭像 */}
-      {!isSelf && (
-        <div
-          className={styles.msgAvatarWrapper}
-          onClick={(e) => {
-            if (isScreenshotMode) return;
-            if (displayUser && onViewProfile) {
-              e.stopPropagation();
-              onViewProfile(displayUser);
-            }
-          }}
-          title={`點擊查看 ${finalDisplayName} 的個人名片`}
-        >
-          <Avatar
-            src={displayUser?.avatar}
-            name={finalDisplayName}
-            fallbackSeed={displayUser?.display_name || displayUser?.account_id || `User_${msg.sender_id}`}
-            size={32}
-          />
-        </div>
-      )}
-
       <div className={styles.msgBubbleContainer}>
         {/* 群組內他人發送訊息顯示發送者名字/群內暱稱 */}
         {!isSelf && isGroup && (
@@ -266,21 +279,57 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         )}
 
-        <div className={bubbleClasses} onContextMenu={handleBubbleContextMenu}>
-          {isError && <AlertCircle size={16} style={{ flexShrink: 0 }} />}
-          {isRecalled ? (
-            <span>{isSelf ? '您已收回一則訊息' : `${finalDisplayName || '對方'} 已收回一則訊息`}</span>
-          ) : (
-            <div>
-              {msg.filePayload && renderIPFSFileCard ? (
+        {/* 核心氣泡行 (包含頭像底部切齊、氣泡、外部時間靠底對齊) */}
+        <div className={styles.msgBubbleRow}>
+          {/* 他人訊息展示頭像 (底部對齊氣泡) */}
+          {!isSelf && (
+            <div
+              className={styles.msgAvatarWrapper}
+              onClick={(e) => {
+                if (isScreenshotMode) return;
+                if (displayUser && onViewProfile) {
+                  e.stopPropagation();
+                  onViewProfile(displayUser);
+                }
+              }}
+              title={`點擊查看 ${finalDisplayName} 的個人名片`}
+            >
+              <Avatar
+                src={displayUser?.avatar}
+                name={finalDisplayName}
+                fallbackSeed={displayUser?.display_name || displayUser?.account_id || `User_${msg.sender_id}`}
+                size={32}
+              />
+            </div>
+          )}
+
+          {/* 自己發送之訊息：時間在氣泡左邊外面 (靠底對齊) */}
+          {isSelf && !isRecalled && (
+            <div className={styles.msgMetaOutsideLeft}>
+              {formatTime(msg.timestamp)}
+              {msg.is_edited && <span className={styles.msgEditedBadge}>(已編輯)</span>}
+            </div>
+          )}
+
+          {/* 氣泡本體 */}
+          <div className={bubbleClasses} onContextMenu={handleBubbleContextMenu}>
+            {isError && <AlertCircle size={16} style={{ flexShrink: 0 }} />}
+            {isRecalled ? (
+              <span>{isSelf ? '您已收回一則訊息' : `${finalDisplayName || '對方'} 已收回一則訊息`}</span>
+            ) : (
+              msg.filePayload && renderIPFSFileCard ? (
                 renderIPFSFileCard(msg)
               ) : (
                 renderMessageContent(msg.content)
-              )}
-              <span className={styles.msgMeta}>
-                {formatTime(msg.timestamp)}
-                {msg.is_edited && <span className={styles.msgEditedBadge}>(已編輯)</span>}
-              </span>
+              )
+            )}
+          </div>
+
+          {/* 他人發送之訊息：時間在氣泡右邊外面 (靠底對齊) */}
+          {!isSelf && !isRecalled && (
+            <div className={styles.msgMetaOutsideRight}>
+              {formatTime(msg.timestamp)}
+              {msg.is_edited && <span className={styles.msgEditedBadge}>(已編輯)</span>}
             </div>
           )}
         </div>
@@ -288,22 +337,45 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {/* 訊息下方已獲得的表情反應膠囊 */}
         {!isRecalled && Object.keys(reactionMap).length > 0 && (
           <div className={`${styles.reactionsWrapper} ${isSelf ? styles.reactionsWrapperSelf : styles.reactionsWrapperOther}`}>
-            {Object.entries(reactionMap).map(([emoji, data]) => (
-              <button
-                key={emoji}
-                type="button"
-                className={`${styles.reactionPill} ${data.reactedByMe ? styles.reactionPillActive : ''}`}
-                onClick={(e) => {
-                  if (isScreenshotMode) return;
-                  e.stopPropagation();
-                  msg.id && onReaction && onReaction(msg.id, emoji);
-                }}
-                title={data.reactedByMe ? '點擊取消反應' : '點擊新增此反應'}
-              >
-                <span>{emoji}</span>
-                <span>{data.count}</span>
-              </button>
-            ))}
+            {Object.entries(reactionMap).map(([emoji, data]) => {
+              const showAvatars = !isGroup || data.count <= 2;
+              return (
+                <button
+                  key={emoji}
+                  type="button"
+                  className={`${styles.reactionPill} ${data.reactedByMe ? styles.reactionPillActive : ''}`}
+                  onClick={(e) => {
+                    if (isScreenshotMode) return;
+                    e.stopPropagation();
+                    if (onViewReactions) {
+                      onViewReactions(msg);
+                    } else if (msg.id && onReaction) {
+                      onReaction(msg.id, emoji);
+                    }
+                  }}
+                  title={data.reactedByMe ? '點擊檢視反應名單 / 取消反應' : '點擊檢視反應名單'}
+                >
+                  <span>{emoji}</span>
+
+                  {showAvatars ? (
+                    <div className={styles.reactionAvatars}>
+                      {data.users.map((u) => (
+                        <div key={u.id} className={styles.reactionAvatarItem}>
+                          <Avatar
+                            src={u.avatar}
+                            name={u.displayName}
+                            fallbackSeed={u.fallbackSeed}
+                            size={16}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span>{data.count}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
