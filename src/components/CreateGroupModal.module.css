@@ -1,0 +1,47 @@
+/* TEAM_012: CreateGroupModal Module CSS */
+.memberSelectionList {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--bg-input);
+}
+
+.memberItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.memberItem:hover {
+  background: var(--border-color);
+}
+
+.memberItem.selected {
+  background: var(--accent-light);
+}
+
+.checkCircle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: all 0.2s ease;
+}
+
+.memberItem.selected .checkCircle {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}

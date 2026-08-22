@@ -1,0 +1,49 @@
+/* TEAM_005: 全域 CSS Color Tokens (CSS Module) */
+:root {
+  --token-danger: #EF4444;
+  --token-danger-bg: rgba(239, 68, 68, 0.16);
+  --token-danger-border: rgba(239, 68, 68, 0.35);
+
+  --token-warning: #F59E0B;
+  --token-warning-bg: rgba(245, 158, 11, 0.16);
+  --token-warning-border: rgba(245, 158, 11, 0.35);
+
+  --token-info: #3B82F6;
+  --token-info-bg: rgba(59, 130, 246, 0.16);
+  --token-info-border: rgba(59, 130, 246, 0.35);
+
+  --token-success: #10B981;
+  --token-success-bg: rgba(16, 185, 129, 0.16);
+  --token-success-border: rgba(16, 185, 129, 0.35);
+
+  --token-accent: #6366F1;
+  --token-accent-glow: rgba(99, 102, 241, 0.35);
+}
+
+.dangerToken {
+  color: var(--token-danger);
+  background: var(--token-danger-bg);
+  border-color: var(--token-danger-border);
+}
+
+.warningToken {
+  color: var(--token-warning);
+  background: var(--token-warning-bg);
+  border-color: var(--token-warning-border);
+}
+
+.infoToken {
+  color: var(--token-info);
+  background: var(--token-info-bg);
+  border-color: var(--token-info-border);
+}
+
+.successToken {
+  color: var(--token-success);
+  background: var(--token-success-bg);
+  border-color: var(--token-success-border);
+}
+
+.accentToken {
+  color: var(--token-accent);
+}

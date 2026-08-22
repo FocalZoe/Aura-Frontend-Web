@@ -1,0 +1,93 @@
+/* TEAM_012: UserProfileModal Module CSS */
+.avatarLarge {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.infoBox {
+  background: var(--bg-input);
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 16px 0;
+  border: 1px solid var(--border-color);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.statusBadge.isFriend {
+  background: var(--accent-light);
+  color: var(--accent-color);
+}
+
+.statusBadge.online {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.profileWrapper {
+  text-align: center;
+  padding-top: 8px;
+}
+
+.profileName {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 12px;
+  color: var(--text-primary);
+}
+
+.profileTag {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.badgeGroup {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.shieldIcon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.actionGroup {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.flexBtn {
+  flex: 1;
+}

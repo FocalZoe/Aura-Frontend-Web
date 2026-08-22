@@ -1,0 +1,140 @@
+/* TEAM_012: UserSearchModal Module CSS */
+.searchFormRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.searchInputBox {
+  position: relative;
+  flex: 1;
+}
+
+.searchInputIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.searchField {
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.searchField:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.emptyResult {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.emptyResult h4 {
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.userCardItem {
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px;
+  background: var(--bg-input);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.userCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.userAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: #fff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.userMeta h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.statusBadge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--border-color);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.statusBadge.isFriend {
+  background: var(--accent-light);
+  color: var(--accent-color);
+}
+
+.resultsContainer {
+  margin-top: 16px;
+}
+
+.resultsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.emptySubtitle {
+  font-size: 0.82rem;
+}
+
+.userSubMeta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.cardActionRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.actionBtn {
+  flex: 1;
+  height: 36px;
+  font-size: 0.85rem;
+}
+
+.nowrapBtn {
+  white-space: nowrap;
+}

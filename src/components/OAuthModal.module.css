@@ -1,0 +1,22 @@
+/* TEAM_012: OAuthModal Module CSS */
+.providerBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.errorAlert {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--token-danger);
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}

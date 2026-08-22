@@ -1,0 +1,65 @@
+# 依賴與套件管理 (Dependencies)
+node_modules/
+.pnp
+.pnp.js
+
+# 編譯與建置產物 (Production Outputs & Caches)
+dist/
+dist-ssr/
+.vite/
+*.tsbuildinfo
+
+# 測試與代碼分析 (Testing & Linting)
+coverage/
+*.lcov
+.eslintcache
+.oxlintcache
+
+# 日誌與除錯 (Logs)
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 環境變數與機密配置 (Environment Variables)
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+!.env.example
+
+# IDE 與編輯器設定 (Editor Directories)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.sublime-workspace
+*.sublime-project
+
+# 作業系統暫存檔 (OS Metadata)
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# 臨時與備份檔案 (Temporary & Backup Files)
+*.tmp
+*.bak
+*.orig
+*.rej
