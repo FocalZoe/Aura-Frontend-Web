@@ -66,7 +66,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               className={styles.chatMicBtn}
               onClick={() => setIsRecording(true)}
               disabled={disabled || isUploadingIPFS}
-              title="錄製語音訊息 (僅限電腦版)"
+              title="錄製語音訊息"
             >
               <Mic size={20} />
             </button>

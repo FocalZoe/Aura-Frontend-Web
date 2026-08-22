@@ -115,30 +115,32 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
 
-        {/* Context: [手機限制] 通話按鈕容器，於手機版 @media (max-width: 768px) 自動隱藏 */}
-        <div className={styles.callButtonsGroup} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {onStartAudioCall && (
-            <button
-              className={sidebarStyles.themeToggleBtn}
-              onClick={onStartAudioCall}
-              title="發起語音通話"
-              style={{ width: '36px', height: '36px', borderRadius: '50%' }}
-            >
-              <Phone size={18} color="#10b981" />
-            </button>
-          )}
+        {/* Context: [通話限制] 陌生訊息對話隱藏通話按鈕（手機版寬度亦由 CSS 隱藏） */}
+        {!isStranger && (
+          <div className={styles.callButtonsGroup} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {onStartAudioCall && (
+              <button
+                className={sidebarStyles.themeToggleBtn}
+                onClick={onStartAudioCall}
+                title="發起語音通話"
+                style={{ width: '36px', height: '36px', borderRadius: '50%' }}
+              >
+                <Phone size={18} color="#10b981" />
+              </button>
+            )}
 
-          {onStartVideoCall && (
-            <button
-              className={sidebarStyles.themeToggleBtn}
-              onClick={onStartVideoCall}
-              title="發起視訊通話"
-              style={{ width: '36px', height: '36px', borderRadius: '50%' }}
-            >
-              <Video size={18} color="#6366f1" />
-            </button>
-          )}
-        </div>
+            {onStartVideoCall && (
+              <button
+                className={sidebarStyles.themeToggleBtn}
+                onClick={onStartVideoCall}
+                title="發起視訊通話"
+                style={{ width: '36px', height: '36px', borderRadius: '50%' }}
+              >
+                <Video size={18} color="#6366f1" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {isStranger && (

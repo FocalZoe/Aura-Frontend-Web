@@ -171,6 +171,14 @@ export const useCallStore = create<CallStore>((set, get) => ({
       return;
     }
 
+    // Context: [通話限制] 陌生訊息/非好友禁止撥打電話
+    const { friends } = useChatStore.getState();
+    const isFriend = friends.some((f) => Number(f.id) === Number(targetUser.id));
+    if (!isFriend) {
+      set({ busyNotification: '僅能與好友名單中的聯絡人進行語音/視訊通話' });
+      return;
+    }
+
     const { callEngine } = get();
     if (callEngine) {
       callEngine.close();
@@ -248,6 +256,18 @@ export const useCallStore = create<CallStore>((set, get) => ({
         content: 'busy',
       });
       set({ busyNotification: `來自 ${caller.name} 的通話已阻斷（手機網頁版僅支援文字訊息）` });
+      return;
+    }
+
+    // Context: [通話限制] 陌生訊息/非好友來電自動拒絕
+    const { friends } = useChatStore.getState();
+    const isFriend = friends.some((f) => Number(f.id) === Number(caller.id));
+    if (!isFriend) {
+      websocketService.send({
+        type: 'call_response',
+        to: caller.id,
+        content: 'busy',
+      });
       return;
     }
 

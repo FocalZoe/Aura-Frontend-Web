@@ -334,7 +334,7 @@ export const ChatWindow: React.FC = () => {
           useChatStore.getState().setActiveGroup(null);
         }}
         onStartAudioCall={
-          activeChatUser
+          activeChatUser && isFriend
             ? () =>
                 startCall(
                   {
@@ -347,7 +347,7 @@ export const ChatWindow: React.FC = () => {
             : undefined
         }
         onStartVideoCall={
-          activeChatUser
+          activeChatUser && isFriend
             ? () =>
                 startCall(
                   {
