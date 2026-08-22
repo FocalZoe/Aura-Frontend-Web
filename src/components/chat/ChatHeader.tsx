@@ -1,8 +1,9 @@
-// Context: [手機RWD] 支援手機端返回列表導航與個人名片 Avatar 整合
+// Context: [手機RWD] 支援手機端返回列表導航、個人名片 Avatar、自訂備註暱稱與對話截圖按鈕
 import React from 'react';
 import { User, Group } from '../../types';
-import { UserPlus, Users, Info, Phone, Video, ArrowLeft } from 'lucide-react';
+import { UserPlus, Users, Info, Phone, Video, ArrowLeft, Camera } from 'lucide-react';
 import { Avatar } from '../common/Avatar';
+import { useChatStore } from '../../stores/useChatStore';
 import styles from '../ChatWindow.module.css';
 import sidebarStyles from '../Sidebar.module.css';
 
@@ -16,6 +17,7 @@ interface ChatHeaderProps {
   onOpenGroupModal?: () => void;
   onStartAudioCall?: () => void; // 語音通話觸發器
   onStartVideoCall?: () => void; // 視訊通話觸發器
+  onStartScreenshot?: () => void; // 對話截圖觸發器
   onBack?: () => void;          // 手機端返回列表回呼
 }
 
@@ -29,8 +31,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onOpenGroupModal,
   onStartAudioCall,
   onStartVideoCall,
+  onStartScreenshot,
   onBack,
 }) => {
+  const { getUserDisplayName } = useChatStore();
+
   if (activeGroup) {
     const memberCount = activeGroup.members?.length || 0;
     return (
@@ -66,21 +71,34 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
 
-        <button
-          className={sidebarStyles.themeToggleBtn}
-          onClick={onOpenGroupModal}
-          title="檢視群組詳情"
-          style={{ width: '34px', height: '34px' }}
-        >
-          <Info size={18} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onStartScreenshot && (
+            <button
+              className={sidebarStyles.themeToggleBtn}
+              onClick={onStartScreenshot}
+              title="對話連續截圖 (可匿名)"
+              style={{ width: '34px', height: '34px' }}
+            >
+              <Camera size={18} />
+            </button>
+          )}
+
+          <button
+            className={sidebarStyles.themeToggleBtn}
+            onClick={onOpenGroupModal}
+            title="檢視群組詳情"
+            style={{ width: '34px', height: '34px' }}
+          >
+            <Info size={18} />
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!activeChatUser) return null;
 
-  const displayName = activeChatUser.display_name || activeChatUser.account_id;
+  const displayName = getUserDisplayName(activeChatUser);
 
   return (
     <>
@@ -120,32 +138,45 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
 
-        {/* Context: [通話限制] 陌生訊息對話隱藏通話按鈕（手機版寬度亦由 CSS 隱藏） */}
-        {!isStranger && (
-          <div className={styles.callButtonsGroup} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {onStartAudioCall && (
-              <button
-                className={sidebarStyles.themeToggleBtn}
-                onClick={onStartAudioCall}
-                title="發起語音通話"
-                style={{ width: '36px', height: '36px', borderRadius: '50%' }}
-              >
-                <Phone size={18} color="#10b981" />
-              </button>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onStartScreenshot && (
+            <button
+              className={sidebarStyles.themeToggleBtn}
+              onClick={onStartScreenshot}
+              title="對話連續截圖 (可匿名)"
+              style={{ width: '34px', height: '34px' }}
+            >
+              <Camera size={18} />
+            </button>
+          )}
 
-            {onStartVideoCall && (
-              <button
-                className={sidebarStyles.themeToggleBtn}
-                onClick={onStartVideoCall}
-                title="發起視訊通話"
-                style={{ width: '36px', height: '36px', borderRadius: '50%' }}
-              >
-                <Video size={18} color="#6366f1" />
-              </button>
-            )}
-          </div>
-        )}
+          {/* Context: [通話限制] 陌生訊息對話隱藏通話按鈕（手機版寬度亦由 CSS 隱藏） */}
+          {!isStranger && (
+            <div className={styles.callButtonsGroup} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {onStartAudioCall && (
+                <button
+                  className={sidebarStyles.themeToggleBtn}
+                  onClick={onStartAudioCall}
+                  title="發起語音通話"
+                  style={{ width: '36px', height: '36px', borderRadius: '50%' }}
+                >
+                  <Phone size={18} color="#10b981" />
+                </button>
+              )}
+
+              {onStartVideoCall && (
+                <button
+                  className={sidebarStyles.themeToggleBtn}
+                  onClick={onStartVideoCall}
+                  title="發起視訊通話"
+                  style={{ width: '36px', height: '36px', borderRadius: '50%' }}
+                >
+                  <Video size={18} color="#6366f1" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {isStranger && (

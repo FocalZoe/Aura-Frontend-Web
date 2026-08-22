@@ -16,7 +16,11 @@ interface ChatState {
   incomingStrangerUsers: User[];
   sentStrangerUsers: User[];
   friendsMap: Record<number, string>;
+  userAliases: Record<number, string>;
 
+  setUserAlias: (targetId: number, alias: string) => void;
+  setUserAliases: (aliases: Record<number, string>) => void;
+  getUserDisplayName: (user?: User | null) => string;
   setActiveChatUser: (user: User | null) => void;
   setActiveGroup: (group: Group | null) => void;
   setGroups: (groups: Group[]) => void;
@@ -42,11 +46,14 @@ interface ChatState {
   removeConversation: (id: number, isGroup?: boolean) => void;
   updateUserInStore: (userId: number, fields: Partial<User>) => void;
   updateMessageReactions: (messageId: number, isGroup: boolean, reactions: any[]) => void;
+  editMessageInStore: (messageId: number, isGroup: boolean, content: string, iv: string, editedAt?: string) => void;
+  recallMessageInStore: (messageId: number, isGroup: boolean) => void;
+  deleteMessageFromStore: (messageId: number, isGroup: boolean) => void;
 }
 
 export const isOptimisticId = (id: any): boolean => !id || typeof id !== 'number' || id > 1000000000000;
 
-export const useChatStore = create<ChatState>((set) => ({
+export const useChatStore = create<ChatState>((set, get) => ({
   activeChatUser: null,
   activeGroup: null,
   messages: [],
@@ -61,6 +68,7 @@ export const useChatStore = create<ChatState>((set) => ({
   incomingStrangerUsers: [],
   sentStrangerUsers: [],
   friendsMap: {},
+  userAliases: {},
 
   setActiveChatUser: (user) =>
     set((state) => {
@@ -353,6 +361,28 @@ export const useChatStore = create<ChatState>((set) => ({
       ),
     })),
 
+  setUserAlias: (targetId, alias) =>
+    set((state) => ({
+      userAliases: {
+        ...state.userAliases,
+        [targetId]: alias,
+      },
+    })),
+
+  setUserAliases: (aliases) =>
+    set({
+      userAliases: aliases || {},
+    }),
+
+  getUserDisplayName: (user?: User | null): string => {
+    if (!user) return '';
+    const customAlias = get().userAliases[user.id];
+    if (customAlias && customAlias.trim() !== '') {
+      return customAlias.trim();
+    }
+    return user.display_name || user.account_id || '';
+  },
+
   updateMessageReactions: (messageId, isGroup, reactions) =>
     set((state) => {
       if (isGroup) {
@@ -365,6 +395,65 @@ export const useChatStore = create<ChatState>((set) => ({
         return {
           messages: state.messages.map((m) =>
             m.id && Number(m.id) === Number(messageId) ? { ...m, reactions } : m
+          ),
+        };
+      }
+    }),
+
+  editMessageInStore: (messageId, isGroup, content, iv, editedAt) =>
+    set((state) => {
+      if (isGroup) {
+        return {
+          groupMessages: state.groupMessages.map((m) =>
+            m.id && Number(m.id) === Number(messageId)
+              ? { ...m, content, iv, is_edited: true, edited_at: editedAt || new Date().toISOString() }
+              : m
+          ),
+        };
+      } else {
+        return {
+          messages: state.messages.map((m) =>
+            m.id && Number(m.id) === Number(messageId)
+              ? { ...m, content, iv, is_edited: true, edited_at: editedAt || new Date().toISOString() }
+              : m
+          ),
+        };
+      }
+    }),
+
+  recallMessageInStore: (messageId, isGroup) =>
+    set((state) => {
+      if (isGroup) {
+        return {
+          groupMessages: state.groupMessages.map((m) =>
+            m.id && Number(m.id) === Number(messageId)
+              ? { ...m, is_recalled: true, content: '[RECALLED]' }
+              : m
+          ),
+        };
+      } else {
+        return {
+          messages: state.messages.map((m) =>
+            m.id && Number(m.id) === Number(messageId)
+              ? { ...m, is_recalled: true, content: '[RECALLED]' }
+              : m
+          ),
+        };
+      }
+    }),
+
+  deleteMessageFromStore: (messageId, isGroup) =>
+    set((state) => {
+      if (isGroup) {
+        return {
+          groupMessages: state.groupMessages.filter(
+            (m) => !(m.id && Number(m.id) === Number(messageId))
+          ),
+        };
+      } else {
+        return {
+          messages: state.messages.filter(
+            (m) => !(m.id && Number(m.id) === Number(messageId))
           ),
         };
       }

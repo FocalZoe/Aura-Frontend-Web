@@ -37,6 +37,7 @@ export const FriendList: React.FC<FriendListProps> = ({
   onViewProfile,
 }) => {
   const friendIds = new Set(friends.map((f) => f.id));
+  const { getUserDisplayName } = useChatStore();
 
   if (currentTab === 'groups') {
     if (groups.length === 0) {
@@ -105,7 +106,7 @@ export const FriendList: React.FC<FriendListProps> = ({
         const isFriend = friendIds.has(item.id);
         const online = isUserOnline(item.id);
         const unread = unreadCounts[item.id] || 0;
-        const displayName = item.display_name || item.account_id;
+        const displayName = getUserDisplayName(item);
 
         return (
           <div

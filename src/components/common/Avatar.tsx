@@ -1,5 +1,5 @@
 // Context: [通用頭像系統] 全站統一 Avatar 組件，支援自訂圖片、IPFS CID、縮寫漸層與在線狀態
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getApiBase } from '../../services/apiClient';
 
 export interface AvatarProps {
@@ -34,6 +34,10 @@ export const Avatar: React.FC<AvatarProps> = ({
   style = {},
 }) => {
   const [imageError, setImageError] = useState<boolean>(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [src]);
 
   let pixelSize = 40;
   if (typeof size === 'number') {
@@ -71,7 +75,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   // 判斷是否為 IPFS CID
   let finalSrc = src;
   if (src && (src.startsWith('Qm') || src.startsWith('bafy'))) {
-    finalSrc = `${getApiBase()}/ipfs/gateway/${src}`;
+    const base = getApiBase();
+    finalSrc = `${base}/ipfs/gateway/${src}`;
   }
 
   const containerStyle: React.CSSProperties = {

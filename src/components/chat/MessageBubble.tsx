@@ -1,9 +1,10 @@
-// Context: 訊息氣泡組件 (包含 Emoji 表情反應、Lucide 通話紀錄卡片、Link Embed 與發送者 Avatar 名片)
-import React, { useState } from 'react';
-import { Message, User, ReactionItem } from '../../types';
-import { AlertCircle, Phone, PhoneOff } from 'lucide-react';
+// Context: 訊息氣泡組件 (包含右鍵選單觸發、連續截圖勾選、收回提示、Emoji 膠囊、通話卡片與 Avatar 名片)
+import React from 'react';
+import { Message, User } from '../../types';
+import { AlertCircle, Phone, PhoneOff, CheckCircle2, Circle } from 'lucide-react';
 import { LinkEmbed } from './LinkEmbed';
 import { Avatar } from '../common/Avatar';
+import { useChatStore } from '../../stores/useChatStore';
 import styles from '../ChatWindow.module.css';
 
 interface MessageBubbleProps {
@@ -14,9 +15,11 @@ interface MessageBubbleProps {
   renderIPFSFileCard?: (msg: Message) => React.ReactNode;
   onReaction?: (messageId: number, emoji: string) => void;
   onViewProfile?: (user: User) => void;
+  onContextMenu?: (e: React.MouseEvent, msg: Message) => void;
+  isScreenshotMode?: boolean;
+  isSelectedForScreenshot?: boolean;
+  onToggleSelectScreenshot?: (msg: Message) => void;
 }
-
-const COMMON_EMOJIS = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
   msg,
@@ -26,11 +29,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   renderIPFSFileCard,
   onReaction,
   onViewProfile,
+  onContextMenu,
+  isScreenshotMode = false,
+  isSelectedForScreenshot = false,
+  onToggleSelectScreenshot,
 }) => {
-  const [showPicker, setShowPicker] = useState<boolean>(false);
   const isSelf = Number(msg.sender_id) === Number(currentUserId);
   const isError = msg.error === true;
   const isIPFSPayload = !!msg.filePayload;
+  const isRecalled = msg.is_recalled || msg.content === '[RECALLED]';
+  const { getUserDisplayName } = useChatStore();
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return '';
@@ -128,8 +136,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     return (
       <div className={styles.msgContentWrapper}>
         <div className={styles.msgTextBody}>{renderTextWithLinks(content)}</div>
-        {detectedUrls.length > 0 && (
-          <div className={styles.msgLinkEmbedsContainer}>
+        {detectedUrls.length > 0 && !isSelf && (
+          <div className={styles.msgEmbedsContainer}>
             {detectedUrls.map((url, i) => (
               <LinkEmbed key={i} url={url} />
             ))}
@@ -142,11 +150,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const bubbleClasses = [
     styles.msgBubble,
     isSelf ? styles.msgBubbleSelf : styles.msgBubbleOther,
-    isError ? styles.msgBubbleError : '',
     isIPFSPayload ? styles.msgBubbleImage : '',
-  ].filter(Boolean).join(' ');
+    isError ? styles.msgBubbleError : '',
+    isRecalled ? styles.recalledBubble : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-  // 聚合 Emoji 反應統計
   const reactionMap = (msg.reactions || []).reduce<Record<string, { count: number; users: number[]; reactedByMe: boolean }>>(
     (acc, r) => {
       if (!acc[r.emoji]) {
@@ -163,70 +173,100 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   );
 
   const displayUser = senderUser || partnerUser;
+  const userDisplayName = displayUser ? getUserDisplayName(displayUser) : '';
+
+  const handleBubbleClick = (e: React.MouseEvent) => {
+    if (isScreenshotMode && onToggleSelectScreenshot) {
+      e.stopPropagation();
+      onToggleSelectScreenshot(msg);
+    }
+  };
+
+  const handleBubbleContextMenu = (e: React.MouseEvent) => {
+    if (isScreenshotMode) return;
+    if (onContextMenu) {
+      e.preventDefault();
+      e.stopPropagation();
+      onContextMenu(e, msg);
+    }
+  };
 
   return (
     <div
       className={`${styles.msgRow} ${isSelf ? styles.msgRowSelf : styles.msgRowOther}`}
-      onMouseEnter={() => setShowPicker(true)}
-      onMouseLeave={() => setShowPicker(false)}
+      style={{
+        background: isScreenshotMode && isSelectedForScreenshot ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+        borderRadius: '8px',
+        transition: 'background 0.15s ease',
+        cursor: isScreenshotMode ? 'pointer' : 'default',
+      }}
+      onClick={handleBubbleClick}
     >
+      {/* 截圖模式 Checkbox */}
+      {isScreenshotMode && (
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 8px' }}>
+          {isSelectedForScreenshot ? (
+            <CheckCircle2 size={20} color="var(--accent-color)" />
+          ) : (
+            <Circle size={20} color="var(--text-secondary)" style={{ opacity: 0.5 }} />
+          )}
+        </div>
+      )}
+
       {/* 他人發送之訊息展示頭像 */}
       {!isSelf && displayUser && (
         <div
           className={styles.msgAvatarWrapper}
-          onClick={() => onViewProfile && onViewProfile(displayUser)}
-          title={`點擊查看 ${displayUser.display_name || displayUser.account_id} 的個人名片`}
+          onClick={(e) => {
+            if (isScreenshotMode) return;
+            if (onViewProfile) {
+              e.stopPropagation();
+              onViewProfile(displayUser);
+            }
+          }}
+          title={`點擊查看 ${userDisplayName} 的個人名片`}
         >
           <Avatar
             src={displayUser.avatar}
-            name={displayUser.display_name || displayUser.account_id}
+            name={userDisplayName}
             size={32}
           />
         </div>
       )}
 
       <div className={styles.msgBubbleContainer}>
-        {/* 表情反應懸停快捷列 */}
-        {showPicker && msg.id && onReaction && (
-          <div className={`${styles.reactionPickerBar} ${isSelf ? styles.reactionPickerBarSelf : styles.reactionPickerBarOther}`}>
-            {COMMON_EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className={styles.reactionPickerEmoji}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onReaction(msg.id!, emoji);
-                  setShowPicker(false);
-                }}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className={bubbleClasses}>
+        <div className={bubbleClasses} onContextMenu={handleBubbleContextMenu}>
           {isError && <AlertCircle size={16} style={{ flexShrink: 0 }} />}
-          <div>
-            {msg.filePayload && renderIPFSFileCard ? (
-              renderIPFSFileCard(msg)
-            ) : (
-              renderMessageContent(msg.content)
-            )}
-            <span className={styles.msgMeta}>{formatTime(msg.timestamp)}</span>
-          </div>
+          {isRecalled ? (
+            <span>{isSelf ? '您已收回一則訊息' : `${userDisplayName || '對方'} 已收回一則訊息`}</span>
+          ) : (
+            <div>
+              {msg.filePayload && renderIPFSFileCard ? (
+                renderIPFSFileCard(msg)
+              ) : (
+                renderMessageContent(msg.content)
+              )}
+              <span className={styles.msgMeta}>
+                {formatTime(msg.timestamp)}
+                {msg.is_edited && <span className={styles.msgEditedBadge}>(已編輯)</span>}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 訊息下方已獲得的表情反應膠囊 */}
-        {Object.keys(reactionMap).length > 0 && (
+        {!isRecalled && Object.keys(reactionMap).length > 0 && (
           <div className={`${styles.reactionsWrapper} ${isSelf ? styles.reactionsWrapperSelf : styles.reactionsWrapperOther}`}>
             {Object.entries(reactionMap).map(([emoji, data]) => (
               <button
                 key={emoji}
                 type="button"
                 className={`${styles.reactionPill} ${data.reactedByMe ? styles.reactionPillActive : ''}`}
-                onClick={() => msg.id && onReaction && onReaction(msg.id, emoji)}
+                onClick={(e) => {
+                  if (isScreenshotMode) return;
+                  e.stopPropagation();
+                  msg.id && onReaction && onReaction(msg.id, emoji);
+                }}
                 title={data.reactedByMe ? '點擊取消反應' : '點擊新增此反應'}
               >
                 <span>{emoji}</span>

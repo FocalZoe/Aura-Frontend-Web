@@ -102,6 +102,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     } catch (e) {
       console.error('獲取群組清單失敗:', e);
     }
+
+    try {
+      const aliasRes = await apiClient.get<{ aliases: Record<number, string> }>('/users/aliases', token);
+      if (aliasRes && aliasRes.aliases) {
+        useChatStore.getState().setUserAliases(aliasRes.aliases);
+      }
+    } catch (e) {
+      console.error('獲取雲端備註清單失敗:', e);
+    }
   };
 
   useEffect(() => {

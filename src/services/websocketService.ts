@@ -334,6 +334,36 @@ class WebSocketService {
           }
         }
       }
+    } else if (data.type === 'message_edited') {
+      const editMsg = data as any;
+      if (editMsg.is_group) {
+        try {
+          const groupKey = await e2eeService.getGroupKey(editMsg.group_id);
+          const decryptedContent = await e2eeService.decryptAESGCM(editMsg.content, editMsg.iv, groupKey);
+          chatStore.editMessageInStore(editMsg.message_id, true, decryptedContent, editMsg.iv, editMsg.edited_at);
+        } catch (e) {
+          console.error('[WebSocketService] 群組編輯訊息解密失敗:', e);
+          chatStore.editMessageInStore(editMsg.message_id, true, editMsg.content, editMsg.iv, editMsg.edited_at);
+        }
+      } else {
+        const senderId = editMsg.sender_id;
+        const toId = editMsg.to;
+        const partnerId = Number(senderId) === Number(this.userId) ? toId : senderId;
+        try {
+          const sharedKey = await e2eeService.getSharedKey(partnerId, this.userId!, this.token!);
+          let decryptedContent = editMsg.content;
+          if (sharedKey) {
+            decryptedContent = await e2eeService.decryptAESGCM(editMsg.content, editMsg.iv, sharedKey);
+          }
+          chatStore.editMessageInStore(editMsg.message_id, false, decryptedContent, editMsg.iv, editMsg.edited_at);
+        } catch (e) {
+          console.error('[WebSocketService] 私聊編輯訊息解密失敗:', e);
+          chatStore.editMessageInStore(editMsg.message_id, false, editMsg.content, editMsg.iv, editMsg.edited_at);
+        }
+      }
+    } else if (data.type === 'message_recalled') {
+      const recallMsg = data as any;
+      chatStore.recallMessageInStore(recallMsg.message_id, !!recallMsg.is_group);
     } else if (
       data.type === 'call_request' ||
       data.type === 'call_response' ||

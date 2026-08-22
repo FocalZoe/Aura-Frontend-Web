@@ -32,6 +32,34 @@ class E2EEService {
     this.groupKeysCache = {};
   }
 
+  async encryptAESGCM(plaintext: string, key: CryptoKey): Promise<{ ciphertext: string; iv: string }> {
+    const res = await encryptMessage(key, plaintext);
+    return { ciphertext: res.ciphertext, iv: res.iv || '' };
+  }
+
+  async decryptAESGCM(ciphertext: string, iv: string, key: CryptoKey): Promise<string> {
+    return await decryptMessage(key, ciphertext, iv);
+  }
+
+  async getSharedKey(partnerId: number, currentUserId: number, token: string): Promise<CryptoKey | null> {
+    if (this.sharedKeysCache[partnerId]) return this.sharedKeysCache[partnerId];
+    try {
+      const privateKey = await getLocalPrivateKey(currentUserId);
+      if (!privateKey) return null;
+      let partnerPublicKeyBase64: string | undefined = useChatStore.getState().friendsMap[partnerId];
+      if (!partnerPublicKeyBase64) {
+        partnerPublicKeyBase64 = await this.fetchUserPublicKey(partnerId, token);
+      }
+      if (!partnerPublicKeyBase64) return null;
+      const partnerPublicKey = await importPublicKey(partnerPublicKeyBase64);
+      const sharedKey = await deriveSharedKey(privateKey, partnerPublicKey);
+      this.sharedKeysCache[partnerId] = sharedKey;
+      return sharedKey;
+    } catch {
+      return null;
+    }
+  }
+
   // Context: [E2EE群組加密] 結合動態群組 Salt 與 Epoch 版本推導群組對稱密鑰
   async getGroupKey(groupId: number, epoch: number = 1): Promise<CryptoKey> {
     const cacheKey = `${groupId}_ep${epoch}`;
@@ -47,7 +75,8 @@ class E2EEService {
 
   async encryptGroupMessage(groupId: number, plaintext: string, epoch: number = 1): Promise<{ ciphertext: string; iv: string }> {
     const groupKey = await this.getGroupKey(groupId, epoch);
-    return await encryptMessage(groupKey, plaintext);
+    const res = await encryptMessage(groupKey, plaintext);
+    return { ciphertext: res.ciphertext, iv: res.iv || '' };
   }
 
   async decryptSingleGroupMessage(msg: GroupMessage, groupId: number, epoch: number = 1): Promise<GroupMessage> {

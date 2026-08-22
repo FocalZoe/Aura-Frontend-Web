@@ -99,7 +99,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
     setLoading(true);
     try {
-      const updatedUser = await apiClient.put<User>(
+      const res = await apiClient.put<any>(
         '/users/profile',
         {
           account_id: currentUser.account_id,
@@ -110,6 +110,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         token
       );
 
+      const updatedUser = res?.user || res;
       updateUser(updatedUser);
       notify({ message: '個人資料已成功更新！', type: 'success' });
       onFriendChange();
@@ -118,6 +119,37 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       notify({ message: err.message || '更新個人資料失敗', type: 'danger' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 儲存對好友的專屬備註 (雲端同步且僅自己可見)
+  const [customAlias, setCustomAlias] = useState<string>('');
+  const [savingAlias, setSavingAlias] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (userProfile && !isSelf) {
+      const existing = useChatStore.getState().userAliases[userProfile.id] || '';
+      setCustomAlias(existing);
+    }
+  }, [userProfile, isSelf]);
+
+  const handleSaveAlias = async () => {
+    if (!token || !userProfile) return;
+    setSavingAlias(true);
+    try {
+      if (customAlias.trim() === '') {
+        await apiClient.delete(`/users/aliases/${userProfile.id}`, token);
+        useChatStore.getState().setUserAlias(userProfile.id, '');
+        notify({ message: '已清除自訂備註', type: 'info' });
+      } else {
+        await apiClient.put(`/users/aliases/${userProfile.id}`, { alias: customAlias.trim() }, token);
+        useChatStore.getState().setUserAlias(userProfile.id, customAlias.trim());
+        notify({ message: '自訂備註暱稱已成功儲存（僅您自己可見）！', type: 'success' });
+      }
+    } catch (err: any) {
+      notify({ message: err.message || '更新備註失敗', type: 'danger' });
+    } finally {
+      setSavingAlias(false);
     }
   };
 
@@ -299,6 +331,34 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               ) : (
                 <span className={styles.bioCardEmpty}>這個人很神秘，還沒有填寫個性簽名。</span>
               )}
+            </div>
+
+            {/* 自訂備註暱稱 (僅自己可見) */}
+            <div className={styles.inputGroup} style={{ marginTop: '12px' }}>
+              <label className={styles.inputLabel} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>好友備註暱稱</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>僅自己可見 (跨裝置同步)</span>
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  className="uiInput"
+                  placeholder="為對方設定專屬備註..."
+                  value={customAlias}
+                  onChange={(e) => setCustomAlias(e.target.value)}
+                  maxLength={30}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="uiBtnSecondary"
+                  onClick={handleSaveAlias}
+                  disabled={savingAlias}
+                  style={{ padding: '0 14px', height: '40px', fontSize: '0.85rem' }}
+                >
+                  {savingAlias ? '儲存中...' : '設定'}
+                </button>
+              </div>
             </div>
 
             <div className={styles.infoBox}>

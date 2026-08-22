@@ -75,6 +75,9 @@ export interface Message {
   error?: boolean;
   filePayload?: IPFSFilePayload;
   reactions?: ReactionItem[];
+  is_edited?: boolean;
+  is_recalled?: boolean;
+  edited_at?: string;
 }
 
 export interface WSMessage {
@@ -95,6 +98,7 @@ export interface WSMessage {
   reactions?: ReactionItem[];
   content?: string;
   iv?: string;
+  edited_at?: string;
   timestamp?: string;
 }
 
@@ -153,7 +157,11 @@ export interface GroupMessage {
   sender?: User;
   decrypted?: boolean;
   error?: boolean;
+  filePayload?: IPFSFilePayload;
   reactions?: ReactionItem[];
+  is_edited?: boolean;
+  is_recalled?: boolean;
+  edited_at?: string;
 }
 
 export interface BlockedUser {

@@ -6,7 +6,7 @@ import { useUIStore } from '../stores/useUIStore';
 import { websocketService } from '../services/websocketService';
 import { e2eeService } from '../services/e2eeService';
 import { apiClient, getApiBase } from '../services/apiClient';
-import { MessageSquare, File, Download, Loader2, X, AlertCircle } from 'lucide-react';
+import { MessageSquare, File, Download, Loader2, X, AlertCircle, Edit2 } from 'lucide-react';
 import { IPFSFilePayload, Message } from '../types';
 import { getLocalPrivateKey, importPublicKey, deriveSharedKey, encryptMessage, encryptFileBuffer, decryptFileBuffer } from '../utils/crypto';
 import { uploadToIPFS, fetchFromIPFS } from '../utils/ipfs';
@@ -15,38 +15,57 @@ import { ChatHeader } from './chat/ChatHeader';
 import { MessageList } from './chat/MessageList';
 import { ChatInput } from './chat/ChatInput';
 import { IPFSFileCard } from './chat/IPFSFileCard';
+import { MessageContextMenu } from './chat/MessageContextMenu';
+import { ScreenshotToolbar } from './chat/ScreenshotToolbar';
+import { ChatScreenshotModal } from './chat/ChatScreenshotModal';
 import styles from './ChatWindow.module.css';
 import { useCallStore } from '../stores/useCallStore';
 
 export const ChatWindow: React.FC = () => {
-  const startCall = useCallStore((s) => s.startCall);
+  const startCall = useCallStore((s: any) => s.startCall);
   const { user, token, API_BASE } = useContext(AuthContext);
 
   const {
     activeChatUser,
     setActiveChatUser,
-    onlineUsers,
-    addStrangerUser,
-    friendsMap,
     activeGroup,
-    groupMessages,
-    setGroupMessages,
-    addGroupMessage,
     messages,
-    setMessages,
-    addMessage,
+    groupMessages,
     blockedUsers,
+    onlineUsers,
+    friendsMap,
+    addStrangerUser,
     updateGroupInStore,
+    setMessages,
+    setGroupMessages,
+    addMessage,
+    addGroupMessage,
+    removeConversation,
     removeGroup,
+    editMessageInStore,
+    recallMessageInStore,
+    deleteMessageFromStore,
   } = useChatStore();
 
   const isUserOnline = (id: number) => onlineUsers.includes(Number(id));
 
-  const { setShowGroupMembersModal, setActiveGroupForModal, setSelectedProfileUser } = useUIStore();
+  const { setShowGroupMembersModal, setActiveGroupForModal, setSelectedProfileUser, showConfirmModal } = useUIStore();
   const { notify } = useNotification();
   const [inputText, setInputText] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
   const [isFriend, setIsFriend] = useState<boolean>(true);
+
+  // Context: [訊息右鍵選單狀態]
+  const [contextMenuState, setContextMenuState] = useState<{ x: number; y: number; message: Message } | null>(null);
+
+  // Context: [對話連續截圖狀態]
+  const [isScreenshotMode, setIsScreenshotMode] = useState<boolean>(false);
+  const [screenshotRange, setScreenshotRange] = useState<{ start: number; end: number } | null>(null);
+  const [isAnonymousScreenshot, setIsAnonymousScreenshot] = useState<boolean>(false);
+  const [showScreenshotModal, setShowScreenshotModal] = useState<boolean>(false);
+
+  // Context: [訊息編輯狀態]
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
 
   // Context: [訊息表情反應] 處理單聊與群組訊息 Emoji Reaction 送出
   const handleReaction = (messageId: number, emoji: string) => {
@@ -68,6 +87,149 @@ export const ChatWindow: React.FC = () => {
         emoji,
       });
     }
+  };
+
+  // 處理訊息右鍵點擊
+  const handleMessageContextMenu = (e: React.MouseEvent, msg: Message) => {
+    setContextMenuState({
+      x: e.clientX,
+      y: e.clientY,
+      message: msg,
+    });
+  };
+
+  // 啟動對話截圖模式
+  const handleStartScreenshot = (startMsg?: Message) => {
+    setIsScreenshotMode(true);
+    if (startMsg) {
+      const idx = currentMessages.findIndex((m) => m.id === startMsg.id);
+      if (idx !== -1) {
+        setScreenshotRange({ start: idx, end: idx });
+      } else {
+        setScreenshotRange(null);
+      }
+    } else {
+      setScreenshotRange(null);
+    }
+  };
+
+  // 切換/選取截圖訊息 (嚴格連續區間，不可跳行)
+  const handleToggleSelectScreenshot = (msg: Message, index: number) => {
+    if (!screenshotRange) {
+      setScreenshotRange({ start: index, end: index });
+    } else {
+      setScreenshotRange({
+        start: Math.min(screenshotRange.start, index),
+        end: Math.max(screenshotRange.end, index),
+      });
+    }
+  };
+
+  // 複製訊息內容
+  const handleCopyMessage = (content: string) => {
+    navigator.clipboard.writeText(content);
+    notify({ message: '訊息內容已複製至剪貼簿', type: 'success' });
+  };
+
+  // 開始編輯訊息
+  const handleStartEditMessage = (msg: Message) => {
+    setEditingMessage(msg);
+    setInputText(msg.content);
+  };
+
+  // 取消編輯訊息
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+    setInputText('');
+  };
+
+  // 發送/儲存編輯訊息
+  const handleSendEditedMessage = async (newText: string) => {
+    if (!editingMessage || !user || !editingMessage.id) return;
+    const trimmed = newText.trim();
+    if (!trimmed) return;
+
+    try {
+      if (activeGroup) {
+        const groupKey = await e2eeService.getGroupKey(activeGroup.id);
+        const { ciphertext, iv } = await e2eeService.encryptAESGCM(trimmed, groupKey);
+        websocketService.send({
+          type: 'edit_message',
+          message_id: editingMessage.id,
+          is_group: true,
+          group_id: activeGroup.id,
+          content: ciphertext,
+          iv,
+        });
+        editMessageInStore(editingMessage.id, true, trimmed, iv, new Date().toISOString());
+      } else if (activeChatUser) {
+        const sharedKey = await e2eeService.getSharedKey(activeChatUser.id, user.id, token!);
+        if (!sharedKey) throw new Error('無法取得加密金鑰');
+        const { ciphertext, iv } = await e2eeService.encryptAESGCM(trimmed, sharedKey);
+        websocketService.send({
+          type: 'edit_message',
+          message_id: editingMessage.id,
+          is_group: false,
+          to: activeChatUser.id,
+          content: ciphertext,
+          iv,
+        });
+        editMessageInStore(editingMessage.id, false, trimmed, iv, new Date().toISOString());
+      }
+
+      setEditingMessage(null);
+      setInputText('');
+      notify({ message: '訊息已成功編輯並同步！', type: 'success' });
+    } catch (err: any) {
+      console.error('編輯訊息失敗:', err);
+      notify({ message: err.message || '編輯訊息失敗', type: 'danger' });
+    }
+  };
+
+  // 收回訊息 (二次確認保護)
+  const handleRecallMessage = (msg: Message) => {
+    if (!msg.id) return;
+    showConfirmModal({
+      title: '確認收回訊息',
+      message: '您確定要收回此則訊息嗎？收回後所有成員將無法再查看該訊息內容。',
+      danger: true,
+      confirmText: '確定收回',
+      onConfirm: () => {
+        if (activeGroup) {
+          websocketService.send({
+            type: 'recall_message',
+            message_id: msg.id,
+            is_group: true,
+            group_id: activeGroup.id,
+          });
+          recallMessageInStore(msg.id!, true);
+        } else if (activeChatUser) {
+          websocketService.send({
+            type: 'recall_message',
+            message_id: msg.id,
+            is_group: false,
+            to: activeChatUser.id,
+          });
+          recallMessageInStore(msg.id!, false);
+        }
+        notify({ message: '訊息已成功收回', type: 'info' });
+      },
+    });
+  };
+
+  // 刪除訊息 (單方本地刪除，二次確認保護)
+  const handleDeleteMessage = (msg: Message) => {
+    if (!msg.id) return;
+    showConfirmModal({
+      title: '確認刪除訊息',
+      message: '您確定要在您的裝置上刪除此訊息嗎？（此動作僅影響您的視角）',
+      danger: true,
+      confirmText: '確定刪除',
+      onConfirm: () => {
+        deleteMessageFromStore(msg.id!, !!activeGroup);
+        notify({ message: '訊息已從您的裝置刪除', type: 'info' });
+      },
+    });
   };
 
   // Context: 判斷當前一對一對象是否已被自己封鎖
@@ -393,6 +555,10 @@ export const ChatWindow: React.FC = () => {
         timestamp: gm.timestamp,
         decrypted: gm.decrypted,
         error: gm.error,
+        reactions: gm.reactions,
+        is_edited: gm.is_edited,
+        is_recalled: gm.is_recalled,
+        edited_at: gm.edited_at,
       }))
     : messages;
 
@@ -406,6 +572,7 @@ export const ChatWindow: React.FC = () => {
         onViewProfile={() => {
           if (activeChatUser) setSelectedProfileUser(activeChatUser);
         }}
+        onStartScreenshot={() => handleStartScreenshot()}
         onOpenGroupModal={() => {
           if (activeGroup) {
             setActiveGroupForModal(activeGroup);
@@ -468,6 +635,10 @@ export const ChatWindow: React.FC = () => {
         partnerUser={activeChatUser || undefined}
         onReaction={handleReaction}
         onViewProfile={(u) => setSelectedProfileUser(u)}
+        onContextMenu={handleMessageContextMenu}
+        isScreenshotMode={isScreenshotMode}
+        selectedRange={screenshotRange}
+        onToggleSelectScreenshot={handleToggleSelectScreenshot}
         renderIPFSFileCard={(msg) => (
           <IPFSFileCard
             payload={msg.filePayload!}
@@ -484,6 +655,43 @@ export const ChatWindow: React.FC = () => {
         <div className={styles.ipfsUploadingBanner}>
           <Loader2 size={16} className="spin" />
           <span>安全傳送檔案中...</span>
+        </div>
+      )}
+
+      {/* 截圖控制工具列 */}
+      {isScreenshotMode && (
+        <ScreenshotToolbar
+          selectedCount={screenshotRange ? screenshotRange.end - screenshotRange.start + 1 : 0}
+          startIndex={screenshotRange ? screenshotRange.start : 0}
+          endIndex={screenshotRange ? screenshotRange.end : 0}
+          isAnonymous={isAnonymousScreenshot}
+          onToggleAnonymous={() => setIsAnonymousScreenshot(!isAnonymousScreenshot)}
+          onGenerate={() => setShowScreenshotModal(true)}
+          onCancel={() => {
+            setIsScreenshotMode(false);
+            setScreenshotRange(null);
+          }}
+        />
+      )}
+
+      {/* 正在編輯訊息提示條 */}
+      {editingMessage && (
+        <div className={styles.editingBanner}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+            <Edit2 size={15} color="var(--accent-color)" />
+            <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--accent-color)' }}>正在編輯訊息:</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {editingMessage.content}
+            </span>
+          </div>
+          <button
+            type="button"
+            className={styles.cancelEditBtn}
+            onClick={handleCancelEdit}
+            title="取消編輯"
+          >
+            <X size={15} />
+          </button>
         </div>
       )}
 
@@ -534,13 +742,52 @@ export const ChatWindow: React.FC = () => {
         <ChatInput
           inputText={inputText}
           setInputText={setInputText}
-          onSendMessage={handleSend}
+          onSendMessage={(e) => {
+            if (editingMessage) {
+              e.preventDefault();
+              handleSendEditedMessage(inputText);
+            } else {
+              handleSend(e);
+            }
+          }}
           onFileUpload={handleFileUpload}
           onSendVoice={handleSendVoice}
           isUploadingIPFS={uploading}
           disabled={activeChatUser ? !activeChatUser.public_key : false}
         />
       )}
+
+      {/* 訊息氣泡右鍵選單 */}
+      {contextMenuState && (
+        <MessageContextMenu
+          x={contextMenuState.x}
+          y={contextMenuState.y}
+          message={contextMenuState.message}
+          currentUserId={user?.id || 0}
+          onClose={() => setContextMenuState(null)}
+          onReaction={handleReaction}
+          onStartScreenshot={(msg) => handleStartScreenshot(msg)}
+          onCopy={handleCopyMessage}
+          onEdit={handleStartEditMessage}
+          onRecall={handleRecallMessage}
+          onDelete={handleDeleteMessage}
+        />
+      )}
+
+      {/* 對話截圖預覽與下載彈窗 */}
+      <ChatScreenshotModal
+        isOpen={showScreenshotModal}
+        onClose={() => setShowScreenshotModal(false)}
+        messages={
+          screenshotRange
+            ? currentMessages.slice(screenshotRange.start, screenshotRange.end + 1)
+            : []
+        }
+        isAnonymous={isAnonymousScreenshot}
+        currentUserId={user?.id || 0}
+        partnerUser={activeChatUser}
+        groupName={activeGroup?.name}
+      />
     </div>
   );
 };
