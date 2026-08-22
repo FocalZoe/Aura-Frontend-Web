@@ -1,6 +1,7 @@
+// Context: [手機RWD] 支援手機端返回列表導航與手機版隱藏音視訊通話按鈕
 import React from 'react';
 import { User, Group } from '../../types';
-import { UserPlus, Users, Info, Phone, Video } from 'lucide-react';
+import { UserPlus, Users, Info, Phone, Video, ArrowLeft } from 'lucide-react';
 import styles from '../ChatWindow.module.css';
 import sidebarStyles from '../Sidebar.module.css';
 
@@ -12,8 +13,9 @@ interface ChatHeaderProps {
   onSendFriendRequest?: () => void;
   onViewProfile?: () => void;
   onOpenGroupModal?: () => void;
-  onStartAudioCall?: () => void; // TEAM_014: 語音通話觸發器
-  onStartVideoCall?: () => void; // TEAM_014: 視訊通話觸發器
+  onStartAudioCall?: () => void; // 語音通話觸發器
+  onStartVideoCall?: () => void; // 視訊通話觸發器
+  onBack?: () => void;          // 手機端返回列表回呼
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -26,27 +28,40 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onOpenGroupModal,
   onStartAudioCall,
   onStartVideoCall,
+  onBack,
 }) => {
   if (activeGroup) {
     const memberCount = activeGroup.members?.length || 0;
     return (
       <div className={styles.chatHeader} style={{ justifyContent: 'space-between' }}>
-        <div className={styles.chatUserDetail} onClick={onOpenGroupModal} style={{ cursor: 'pointer' }}>
-          <div className={sidebarStyles.avatar} style={{ background: 'var(--accent-color, #6366f1)', color: '#fff' }}>
-            <Users size={20} />
-          </div>
-          <div>
-            <h4 className={styles.userName} style={{ margin: 0 }}>{activeGroup.name}</h4>
-            <span
-              className={styles.userStatus}
-              style={{
-                fontSize: '0.78rem',
-                color: activeGroup.is_removed ? '#ef4444' : 'var(--text-muted)',
-                fontWeight: activeGroup.is_removed ? 600 : 400,
-              }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          {onBack && (
+            <button
+              className={styles.backBtn}
+              onClick={onBack}
+              title="返回列表"
+              aria-label="返回列表"
             >
-              {activeGroup.is_removed ? '已被移出群組' : `${memberCount} 位成員`}
-            </span>
+              <ArrowLeft size={20} />
+            </button>
+          )}
+          <div className={styles.chatUserDetail} onClick={onOpenGroupModal} style={{ cursor: 'pointer' }}>
+            <div className={sidebarStyles.avatar} style={{ background: 'var(--accent-color, #6366f1)', color: '#fff' }}>
+              <Users size={20} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h4 className={styles.userName} style={{ margin: 0 }}>{activeGroup.name}</h4>
+              <span
+                className={styles.userStatus}
+                style={{
+                  fontSize: '0.78rem',
+                  color: activeGroup.is_removed ? '#ef4444' : 'var(--text-muted)',
+                  fontWeight: activeGroup.is_removed ? 600 : 400,
+                }}
+              >
+                {activeGroup.is_removed ? '已被移出群組' : `${memberCount} 位成員`}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -70,26 +85,38 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   return (
     <>
       <div className={styles.chatHeader} style={{ justifyContent: 'space-between' }}>
-        <div className={styles.chatUserDetail} onClick={onViewProfile} style={{ cursor: 'pointer' }}>
-          <div className={sidebarStyles.avatar}>{initial}</div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h4 className={styles.userName} style={{ margin: 0 }}>{displayName}</h4>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                @{activeChatUser.account_id}
-              </span>
-              {isStranger && <span className={styles.strangerTagBadge}>陌生人</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          {onBack && (
+            <button
+              className={styles.backBtn}
+              onClick={onBack}
+              title="返回列表"
+              aria-label="返回列表"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
+          <div className={styles.chatUserDetail} onClick={onViewProfile} style={{ cursor: 'pointer' }}>
+            <div className={sidebarStyles.avatar}>{initial}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h4 className={styles.userName} style={{ margin: 0 }}>{displayName}</h4>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  @{activeChatUser.account_id}
+                </span>
+                {isStranger && <span className={styles.strangerTagBadge}>陌生人</span>}
+              </div>
+              {!isStranger && (
+                <span className={styles.userStatus} style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  {isUserOnline ? '在線上' : '離線'}
+                </span>
+              )}
             </div>
-            {!isStranger && (
-              <span className={styles.userStatus} style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                {isUserOnline ? '在線上' : '離線'}
-              </span>
-            )}
           </div>
         </div>
 
-        {/* TEAM_014: 一對一聊天室標頭語音與視訊通話按鈕 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Context: [手機限制] 通話按鈕容器，於手機版 @media (max-width: 768px) 自動隱藏 */}
+        <div className={styles.callButtonsGroup} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {onStartAudioCall && (
             <button
               className={sidebarStyles.themeToggleBtn}

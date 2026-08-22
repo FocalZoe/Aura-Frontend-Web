@@ -267,3 +267,46 @@
   background: var(--bg-input);
   border-color: var(--text-muted);
 }
+
+/* Context: [手機RWD] SettingsModal 雙欄轉上下結構與水平滑動頁籤 */
+@media (max-width: 768px) {
+  .settingsBody {
+    flex-direction: column;
+    margin: -16px;
+    height: auto;
+  }
+
+  .settingsSidebar {
+    width: 100%;
+    min-width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 12px;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .settingsNavItem {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .settingsContent {
+    padding: 16px;
+    max-height: 60dvh;
+  }
+
+  .settingOptionRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .optionBtn {
+    width: 100%;
+  }
+}

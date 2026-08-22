@@ -135,3 +135,21 @@
   margin-bottom: 16px;
   text-align: center;
 }
+
+/* Context: [手機RWD] 6 位數字 PIN 碼輸入框自適應防溢出 */
+@media (max-width: 768px) {
+  .digitBoxes {
+    gap: 6px;
+  }
+
+  .digitBox {
+    width: clamp(36px, 12vw, 46px);
+    height: clamp(46px, 14vw, 54px);
+    font-size: 1.25rem;
+    border-radius: 10px;
+  }
+
+  .header h3 {
+    font-size: 1.1rem;
+  }
+}

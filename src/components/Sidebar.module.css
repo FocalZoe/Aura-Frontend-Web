@@ -326,3 +326,21 @@
   background: rgba(239, 68, 68, 0.15);
   color: var(--token-danger);
 }
+
+/* Context: [手機RWD] 手機端 (<= 768px) 側邊欄滿版與觸控面積優化 */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    min-width: 100%;
+    border-right: none;
+  }
+
+  .sidebarHeader {
+    padding: 12px 16px;
+  }
+
+  .itemCard {
+    padding: 12px 14px;
+    min-height: 56px;
+  }
+}

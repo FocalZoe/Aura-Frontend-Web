@@ -91,3 +91,22 @@
 .flexBtn {
   flex: 1;
 }
+
+/* Context: [手機RWD] UserProfileModal 操作按鈕在超窄螢幕自動垂直堆疊 */
+@media (max-width: 768px) {
+  .avatarLarge {
+    width: 60px;
+    height: 60px;
+    font-size: 1.6rem;
+  }
+
+  .actionGroup {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .flexBtn {
+    width: 100%;
+    min-height: 42px;
+  }
+}

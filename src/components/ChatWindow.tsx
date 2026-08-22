@@ -28,6 +28,7 @@ export const ChatWindow: React.FC = () => {
 
   const {
     activeChatUser,
+    setActiveChatUser,
     sendChatMessage,
     isUserOnline,
     addStrangerUser,
@@ -245,6 +246,10 @@ export const ChatWindow: React.FC = () => {
             setActiveGroupForModal(activeGroup);
             setShowGroupMembersModal(true);
           }
+        }}
+        onBack={() => {
+          setActiveChatUser(null);
+          useChatStore.getState().setActiveGroup(null);
         }}
         onStartAudioCall={
           activeChatUser

@@ -324,3 +324,66 @@
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+
+/* Context: [手機RWD] 返回列表按鈕與手機端樣式適配 */
+.backBtn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.backBtn:hover {
+  background: var(--border-color);
+}
+
+.callButtonsGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Context: [手機RWD] 手機端 (<= 768px) 專屬佈局與限制 */
+@media (max-width: 768px) {
+  .backBtn {
+    display: flex;
+  }
+
+  /* Context: [手機限制] 手機網頁版僅能傳訊息，隱藏語音與視訊通話按鈕 */
+  .callButtonsGroup {
+    display: none !important;
+  }
+
+  .chatHeader {
+    height: 56px;
+    padding: 0 12px;
+  }
+
+  .chatMessages {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .chatInputArea {
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .chatInput {
+    font-size: 16px; /* 防止 iOS Safari 自動觸發放大頁面 */
+    padding: 10px 14px;
+  }
+
+  .chatAttachBtn,
+  .chatSendBtn {
+    width: 42px;
+    height: 42px;
+  }
+}

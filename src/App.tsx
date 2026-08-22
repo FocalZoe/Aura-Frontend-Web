@@ -2,6 +2,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from './context/AuthContext';
 import { SocketContext } from './context/SocketContext';
+import { useChatStore } from './stores/useChatStore';
 import { Login } from './components/Login';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/ChatWindow';
@@ -24,7 +25,9 @@ import styles from './styles/App.module.css';
 
 const ChatApp: React.FC = () => {
   const { token, user, loading, updateUser, API_BASE } = useContext(AuthContext);
-  const { fetchFriendsMap } = useContext(SocketContext);
+  const { fetchFriendsMap, activeChatUser } = useContext(SocketContext);
+  const activeGroup = useChatStore((s) => s.activeGroup);
+  const hasActiveChat = Boolean(activeChatUser || activeGroup);
   
   const [pinModalMode, setPinModalMode] = useState<'setup' | 'enter' | 'confirm-reset' | null>(null);
   const [pinError, setPinError] = useState<string>('');
@@ -148,7 +151,7 @@ const ChatApp: React.FC = () => {
       {!token ? (
         <Login />
       ) : (
-        <div className={`${styles.mainPanel} glass`}>
+        <div className={`${styles.mainPanel} ${hasActiveChat ? styles.hasActiveChat : ''} glass`}>
           <Sidebar onOpenSettings={() => setShowSettingsModal(true)} />
           <ChatWindow />
         </div>

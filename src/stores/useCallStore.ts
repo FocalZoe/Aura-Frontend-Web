@@ -143,6 +143,12 @@ const recordCallHistory = async (
   }
 };
 
+// Context: [手機限制] 判定是否處於手機網頁版客戶端環境
+const isMobileClient = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+};
+
 export const useCallStore = create<CallStore>((set, get) => ({
   callState: 'idle',
   callType: 'audio',
@@ -159,6 +165,12 @@ export const useCallStore = create<CallStore>((set, get) => ({
   callEngine: null,
 
   startCall: async (targetUser: PeerUser, type: CallType) => {
+    // Context: [手機限制] 手機網頁版僅能傳訊息，阻斷主動發起音視訊通話
+    if (isMobileClient()) {
+      set({ busyNotification: '手機網頁版僅支援文字訊息，音視訊通話請使用電腦版' });
+      return;
+    }
+
     const { callEngine } = get();
     if (callEngine) {
       callEngine.close();
@@ -228,6 +240,17 @@ export const useCallStore = create<CallStore>((set, get) => ({
   },
 
   handleIncomingCall: (caller: PeerUser, type: CallType) => {
+    // Context: [手機限制] 手機網頁版僅能傳訊息，自動阻斷來電並回覆忙線狀態
+    if (isMobileClient()) {
+      websocketService.send({
+        type: 'call_response',
+        to: caller.id,
+        content: 'busy',
+      });
+      set({ busyNotification: `來自 ${caller.name} 的通話已阻斷（手機網頁版僅支援文字訊息）` });
+      return;
+    }
+
     const { callState } = get();
     if (callState !== 'idle') return;
 

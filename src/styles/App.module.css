@@ -1,7 +1,8 @@
 .appContainer {
   display: flex;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   background-color: var(--bg-app);
   position: relative;
   overflow: hidden;
@@ -29,4 +30,31 @@
   border-left: none;
   border-right: none;
   min-height: 0;
+}
+
+/* Context: [手機RWD] 手機端 (<= 768px) 單欄切換：有對話時顯示聊天室，無對話時顯示側邊欄 */
+@media (max-width: 768px) {
+  .mainPanel {
+    flex-direction: column;
+    position: relative;
+  }
+
+  .mainPanel:not(.hasActiveChat) :global(.sidebar) {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  .mainPanel:not(.hasActiveChat) :global(.chatWindow) {
+    display: none !important;
+  }
+
+  .mainPanel.hasActiveChat :global(.sidebar) {
+    display: none !important;
+  }
+
+  .mainPanel.hasActiveChat :global(.chatWindow) {
+    display: flex !important;
+    width: 100% !important;
+  }
 }

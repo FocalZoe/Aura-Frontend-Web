@@ -45,3 +45,15 @@
   background: var(--accent-color);
   border-color: var(--accent-color);
 }
+
+/* Context: [手機RWD] CreateGroupModal 好友勾選清單手機端適配 */
+@media (max-width: 768px) {
+  .memberSelectionList {
+    max-height: 35dvh;
+  }
+
+  .memberItem {
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+}

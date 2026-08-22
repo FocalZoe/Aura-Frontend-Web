@@ -21,3 +21,18 @@
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-xl);
 }
+
+/* Context: [手機RWD] ConfirmModal 二次確認對話框手機端適配 */
+@media (max-width: 768px) {
+  .modalBackdrop {
+    padding: 16px;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .modalCard {
+    width: min(92vw, 360px);
+    padding: 18px;
+    border-radius: 18px;
+  }
+}

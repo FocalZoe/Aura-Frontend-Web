@@ -111,3 +111,31 @@
   background: var(--bg-input);
   flex-shrink: 0;
 }
+
+/* Context: [手機RWD] BaseModal 彈窗底層手機版自適應與 88dvh 最大高度保護 */
+@media (max-width: 768px) {
+  .backdrop {
+    padding: 10px;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .modalCard {
+    width: min(94vw, 100%) !important;
+    max-height: 88dvh !important;
+    border-radius: 18px;
+  }
+
+  .header {
+    padding: 14px 16px;
+  }
+
+  .modalBody {
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .footer {
+    padding: 12px 16px;
+  }
+}

@@ -136,3 +136,19 @@
     transform: translateX(0) scale(1);
   }
 }
+
+/* Context: [手機RWD] Toast 通知容器手機端頂部置中全寬防護 */
+@media (max-width: 768px) {
+  .notificationStack {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+
+  .notificationCard {
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+}

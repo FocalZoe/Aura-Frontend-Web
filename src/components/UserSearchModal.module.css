@@ -95,6 +95,11 @@
   font-weight: 500;
 }
 
+.statusBadge.pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--token-warning);
+}
+
 .statusBadge.isFriend {
   background: var(--accent-light);
   color: var(--accent-color);
@@ -137,4 +142,15 @@
 
 .nowrapBtn {
   white-space: nowrap;
+}
+
+/* Context: [手機RWD] UserSearchModal 搜尋欄與卡片手機端適配 */
+@media (max-width: 768px) {
+  .searchField {
+    font-size: 16px; /* 防止 iOS Safari 自動觸發放大 */
+  }
+
+  .userCardItem {
+    padding: 12px;
+  }
 }

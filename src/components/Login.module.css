@@ -104,3 +104,25 @@
   display: flex;
   gap: 12px;
 }
+
+/* Context: [手機RWD] 登入/註冊卡片手機端適配 */
+@media (max-width: 768px) {
+  .authWrapper {
+    width: min(92vw, 380px);
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+
+  .authHeader h2 {
+    font-size: 1.5rem;
+  }
+
+  .authHeader p {
+    margin-bottom: 20px;
+  }
+
+  .oauthGroup {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
