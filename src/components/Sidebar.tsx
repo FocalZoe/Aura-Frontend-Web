@@ -3,7 +3,6 @@ import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { useNotification } from '../context/NotificationContext';
 import { UserSearchModal } from './UserSearchModal';
-import { UserProfileModal } from './UserProfileModal';
 import { PendingRequestsModal } from './PendingRequestsModal';
 import { CreateGroupModal } from './CreateGroupModal';
 import { GroupMembersModal } from './GroupMembersModal';
@@ -330,7 +329,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         incomingStrangerCount={incomingStrangerUsers.length}
-        onOpenSearchModal={() => setShowSearchModal(true)}
       />
 
       <div className={styles.sidebarContent}>
@@ -367,6 +365,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
         toggleTheme={toggleTheme}
         onOpenSettings={onOpenSettings}
         onOpenPendingModal={() => setShowPendingModal(true)}
+        onOpenSearchModal={() => setShowSearchModal(true)}
         pendingCount={pendingRequests.length}
         logout={logout}
       />
@@ -414,13 +413,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
         token={token}
         notify={notify}
         onViewProfile={(u) => setSelectedProfileUser(u)}
-      />
-
-      <UserProfileModal
-        userProfile={selectedProfileUser}
-        onClose={() => setSelectedProfileUser(null)}
-        isFriend={!!selectedProfileUser && friends.some((f) => f.id === selectedProfileUser.id)}
-        onFriendChange={fetchFriendsAndPendingAndGroups}
       />
     </div>
   );

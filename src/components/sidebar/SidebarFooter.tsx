@@ -1,6 +1,6 @@
-// Context: [側邊欄底部工具列] 集中管理群組建立、好友邀請、主題切換、設定與危險登出按鈕
+// Context: [側邊欄底部工具列] 集中管理搜尋、群組建立、好友邀請、主題切換、設定與危險登出按鈕
 import React from 'react';
-import { Users, UserCheck, Sun, Moon, Settings, LogOut } from 'lucide-react';
+import { Search, Users, UserCheck, Sun, Moon, Settings, LogOut } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 import styles from '../Sidebar.module.css';
 
@@ -9,6 +9,7 @@ interface SidebarFooterProps {
   toggleTheme: () => void;
   onOpenSettings?: () => void;
   onOpenPendingModal: () => void;
+  onOpenSearchModal: () => void;
   pendingCount: number;
   logout: () => void;
 }
@@ -18,6 +19,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
   toggleTheme,
   onOpenSettings,
   onOpenPendingModal,
+  onOpenSearchModal,
   pendingCount,
   logout,
 }) => {
@@ -38,6 +40,15 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
   return (
     <div className={styles.sidebarFooter}>
       <div className={styles.footerActionGroup}>
+        <button
+          className={styles.footerBtn}
+          title="搜尋使用者或好友 ID"
+          onClick={onOpenSearchModal}
+        >
+          <Search size={18} />
+          <span>搜尋</span>
+        </button>
+
         <button
           className={styles.footerBtn}
           title="建立新群組"

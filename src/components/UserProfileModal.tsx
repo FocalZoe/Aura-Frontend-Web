@@ -42,32 +42,40 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const isUserOnline = (id: number) => onlineUsers.includes(Number(id));
   const isSelf = Boolean(currentUser && userProfile && currentUser.id === userProfile.id);
 
+  // 所有 State 統一在最頂層宣告 (遵守 React Rules of Hooks)
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadingAvatar, setUploadingAvatar] = useState<boolean>(false);
   const [isPendingSent, setIsPendingSent] = useState<boolean>(false);
 
-  // 編輯表單狀態
+  // 編輯表單狀態 (自己模式)
   const [editDisplayName, setEditDisplayName] = useState<string>('');
   const [editBio, setEditBio] = useState<string>('');
   const [avatarCid, setAvatarCid] = useState<string>('');
 
+  // 備註暱稱狀態 (他人模式)
+  const [customAlias, setCustomAlias] = useState<string>('');
+  const [savingAlias, setSavingAlias] = useState<boolean>(false);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // 監聽 userProfile 與 pendingRequests 同步表單初值
   useEffect(() => {
     if (userProfile) {
       setEditDisplayName(userProfile.display_name || '');
       setEditBio(userProfile.bio || '');
       setAvatarCid(userProfile.avatar || '');
 
-      // 檢查是否處於待處理好友狀態
       const hasPending = pendingRequests.some((p) => p.id === userProfile.id);
       setIsPendingSent(hasPending);
+
+      if (!isSelf) {
+        const existing = useChatStore.getState().userAliases[userProfile.id] || '';
+        setCustomAlias(existing);
+      }
     }
-  }, [userProfile, pendingRequests]);
+  }, [userProfile, pendingRequests, isSelf]);
 
-  if (!userProfile) return null;
-
-  // 上傳更換大頭貼
+  // 上傳更換大頭貼 (自己)
   const handleAvatarFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !token) return;
@@ -123,16 +131,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   };
 
   // 儲存對好友的專屬備註 (雲端同步且僅自己可見)
-  const [customAlias, setCustomAlias] = useState<string>('');
-  const [savingAlias, setSavingAlias] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (userProfile && !isSelf) {
-      const existing = useChatStore.getState().userAliases[userProfile.id] || '';
-      setCustomAlias(existing);
-    }
-  }, [userProfile, isSelf]);
-
   const handleSaveAlias = async () => {
     if (!token || !userProfile) return;
     setSavingAlias(true);
@@ -155,7 +153,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   // 新增好友
   const handleAddFriend = async () => {
-    if (!token) return;
+    if (!token || !userProfile) return;
     setLoading(true);
     try {
       await apiClient.post('/friends/request', { account_id: userProfile.account_id }, token);
@@ -171,7 +169,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   // 移除好友
   const handleRemoveFriend = async () => {
-    if (!token) return;
+    if (!token || !userProfile) return;
     setLoading(true);
     try {
       await apiClient.post(`/friends/reject/${userProfile.id}`, {}, token);
@@ -186,9 +184,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   };
 
   const handleStartChat = () => {
-    setActiveChatUser(userProfile);
-    onClose();
+    if (userProfile) {
+      setActiveChatUser(userProfile);
+      onClose();
+    }
   };
+
+  if (!userProfile) return null;
 
   const online = isFriend && isUserOnline(userProfile.id);
   const displayName = isSelf

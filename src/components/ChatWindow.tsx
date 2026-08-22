@@ -658,8 +658,8 @@ export const ChatWindow: React.FC = () => {
         </div>
       )}
 
-      {/* 截圖控制工具列 */}
-      {isScreenshotMode && (
+      {/* 底部操作區域：若在截圖模式則直接呈現截圖控制列，否則呈現正常聊天輸入列 */}
+      {isScreenshotMode ? (
         <ScreenshotToolbar
           selectedCount={screenshotRange ? screenshotRange.end - screenshotRange.start + 1 : 0}
           startIndex={screenshotRange ? screenshotRange.start : 0}
@@ -672,89 +672,91 @@ export const ChatWindow: React.FC = () => {
             setScreenshotRange(null);
           }}
         />
-      )}
-
-      {/* 正在編輯訊息提示條 */}
-      {editingMessage && (
-        <div className={styles.editingBanner}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-            <Edit2 size={15} color="var(--accent-color)" />
-            <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--accent-color)' }}>正在編輯訊息:</span>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {editingMessage.content}
-            </span>
-          </div>
-          <button
-            type="button"
-            className={styles.cancelEditBtn}
-            onClick={handleCancelEdit}
-            title="取消編輯"
-          >
-            <X size={15} />
-          </button>
-        </div>
-      )}
-
-      {/* Context: 聊天輸入區域狀態判定（已封鎖用戶 / 待同意邀請 / 被移出群組 / 正常輸入框） */}
-      {isBlockedByMe ? (
-        <div style={{
-          padding: '16px',
-          background: 'var(--bg-secondary)',
-          borderTop: '1px solid var(--border-color)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          color: 'var(--text-muted)',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-        }}>
-          <AlertCircle size={18} />
-          <span>你已封鎖此用戶</span>
-        </div>
-      ) : isPendingGroupInvite ? (
-        <div style={{
-          padding: '16px',
-          background: 'var(--bg-secondary)',
-          borderTop: '1px solid var(--border-color)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-          color: 'var(--text-primary)',
-        }}>
-          <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>您已被邀請加入此群組，同意邀請後方可進行聊天</span>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="uiBtnPrimary" onClick={handleAcceptInvite} style={{ padding: '6px 20px' }}>
-              同意邀請
-            </button>
-            <button className="uiBtnSecondary" onClick={handleRejectInvite} style={{ padding: '6px 20px' }}>
-              拒絕邀請
-            </button>
-          </div>
-        </div>
-      ) : isRemovedFromGroup ? (
-        <div className={styles.groupRemovedBanner}>
-          <AlertCircle size={18} />
-          <span>你已被移出群組，無法在此傳送訊息</span>
-        </div>
       ) : (
-        <ChatInput
-          inputText={inputText}
-          setInputText={setInputText}
-          onSendMessage={(e) => {
-            if (editingMessage) {
-              e.preventDefault();
-              handleSendEditedMessage(inputText);
-            } else {
-              handleSend(e);
-            }
-          }}
-          onFileUpload={handleFileUpload}
-          onSendVoice={handleSendVoice}
-          isUploadingIPFS={uploading}
-          disabled={activeChatUser ? !activeChatUser.public_key : false}
-        />
+        <>
+          {/* 正在編輯訊息提示條 */}
+          {editingMessage && (
+            <div className={styles.editingBanner}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                <Edit2 size={15} color="var(--accent-color)" />
+                <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--accent-color)' }}>正在編輯訊息:</span>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {editingMessage.content}
+                </span>
+              </div>
+              <button
+                type="button"
+                className={styles.cancelEditBtn}
+                onClick={handleCancelEdit}
+                title="取消編輯"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          )}
+
+          {/* Context: 聊天輸入區域狀態判定（已封鎖用戶 / 待同意邀請 / 被移出群組 / 正常輸入框） */}
+          {isBlockedByMe ? (
+            <div style={{
+              padding: '16px',
+              background: 'var(--bg-secondary)',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              color: 'var(--text-muted)',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+            }}>
+              <AlertCircle size={18} />
+              <span>你已封鎖此用戶</span>
+            </div>
+          ) : isPendingGroupInvite ? (
+            <div style={{
+              padding: '16px',
+              background: 'var(--bg-secondary)',
+              borderTop: '1px solid var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+              color: 'var(--text-primary)',
+            }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>您已被邀請加入此群組，同意邀請後方可進行聊天</span>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button className="uiBtnPrimary" onClick={handleAcceptInvite} style={{ padding: '6px 20px' }}>
+                  同意邀請
+                </button>
+                <button className="uiBtnSecondary" onClick={handleRejectInvite} style={{ padding: '6px 20px' }}>
+                  拒絕邀請
+                </button>
+              </div>
+            </div>
+          ) : isRemovedFromGroup ? (
+            <div className={styles.groupRemovedBanner}>
+              <AlertCircle size={18} />
+              <span>你已被移出群組，無法在此傳送訊息</span>
+            </div>
+          ) : (
+            <ChatInput
+              inputText={inputText}
+              setInputText={setInputText}
+              onSendMessage={(e) => {
+                if (editingMessage) {
+                  e.preventDefault();
+                  handleSendEditedMessage(inputText);
+                } else {
+                  handleSend(e);
+                }
+              }}
+              onFileUpload={handleFileUpload}
+              onSendVoice={handleSendVoice}
+              isUploadingIPFS={uploading}
+              disabled={activeChatUser ? !activeChatUser.public_key : false}
+            />
+          )}
+        </>
       )}
 
       {/* 訊息氣泡右鍵選單 */}

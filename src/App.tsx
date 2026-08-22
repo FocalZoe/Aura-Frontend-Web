@@ -12,6 +12,8 @@ import { PinModal } from './components/PinModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { CallModal } from './components/Call/CallModal';
+import { UserProfileModal } from './components/UserProfileModal';
+import { useUIStore } from './stores/useUIStore';
 import { 
   getLocalPrivateKey, 
   saveLocalPrivateKey, 
@@ -29,8 +31,11 @@ import styles from './styles/App.module.css';
 const ChatApp: React.FC = () => {
   const { token, user, loading, updateUser, API_BASE } = useContext(AuthContext);
   // Context: [單欄切換] 直接響應式訂閱 Zustand Store，確保好友、群組與陌生訊息均能無縫觸發單欄切換
-  const activeChatUser = useChatStore((s) => s.activeChatUser);
-  const activeGroup = useChatStore((s) => s.activeGroup);
+  const activeChatUser = useChatStore((s: any) => s.activeChatUser);
+  const activeGroup = useChatStore((s: any) => s.activeGroup);
+  const friends = useChatStore((s: any) => s.friends);
+  const selectedProfileUser = useUIStore((s: any) => s.selectedProfileUser);
+  const setSelectedProfileUser = useUIStore((s: any) => s.setSelectedProfileUser);
   const { setFriends, setFriendsMap, setIncomingStrangerUsers, setSentStrangerUsers } = useChatStore();
   const hasActiveChat = Boolean(activeChatUser || activeGroup);
   
@@ -218,6 +223,17 @@ const ChatApp: React.FC = () => {
       <ConfirmModal />
       {/* Context: 掛載即時語音與視訊通話 Modal */}
       <CallModal />
+
+      {/* Context: [全域名片] 掛載個人名片 Modal，確保全站所有頭像點擊均能在最頂層正常彈出 */}
+      <UserProfileModal
+        userProfile={selectedProfileUser}
+        onClose={() => setSelectedProfileUser(null)}
+        isFriend={
+          !!selectedProfileUser &&
+          friends.some((f: any) => f.id === selectedProfileUser.id)
+        }
+        onFriendChange={() => token && fetchInitialData(token)}
+      />
     </div>
   );
 };

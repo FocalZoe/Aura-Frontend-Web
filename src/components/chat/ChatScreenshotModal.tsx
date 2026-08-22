@@ -41,24 +41,29 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const width = 640;
-      const padding = 24;
-      const headerHeight = 76;
-      const footerHeight = 44;
+      const width = 620;
+      const padding = 20;
       const bubbleMaxWidth = 420;
 
-      // 建立匿名代稱對應字典
-      const userLabels: Record<number, string> = {};
+      // 建立匿名數字編號與色彩映射字典 (1, 2, 3...)
+      const userMeta: Record<number, { num: string; color: string }> = {};
+      const COLOR_PALETTE = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#3b82f6'];
       let anonCounter = 1;
 
       messages.forEach((m) => {
-        if (!userLabels[m.sender_id]) {
-          if (m.sender_id === currentUserId) {
-            userLabels[m.sender_id] = isAnonymous ? '使用者 A' : '我';
+        if (!userMeta[m.sender_id]) {
+          const color = COLOR_PALETTE[(anonCounter - 1) % COLOR_PALETTE.length];
+          if (isAnonymous) {
+            userMeta[m.sender_id] = {
+              num: `${anonCounter++}`,
+              color,
+            };
           } else {
-            userLabels[m.sender_id] = isAnonymous
-              ? `使用者 ${String.fromCharCode(65 + anonCounter++)}`
-              : (partnerUser ? getUserDisplayName(partnerUser) : `成員 #${m.sender_id}`);
+            const isSelf = m.sender_id === currentUserId;
+            userMeta[m.sender_id] = {
+              num: isSelf ? '我' : (partnerUser?.display_name?.charAt(0) || partnerUser?.account_id?.charAt(0) || '友'),
+              color: isSelf ? '#6366f1' : '#3b82f6',
+            };
           }
         }
       });
@@ -102,8 +107,8 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
         bubbleHeights.push({ lines, height: bubbleHeight });
       });
 
-      const totalMessagesHeight = bubbleHeights.reduce((acc, b) => acc + b.height + 16, 0);
-      const totalHeight = headerHeight + totalMessagesHeight + footerHeight + padding;
+      const totalMessagesHeight = bubbleHeights.reduce((acc, b) => acc + b.height + 14, 0);
+      const totalHeight = padding * 2 + totalMessagesHeight;
 
       // 設置 Retina 畫質縮放
       const scale = 2;
@@ -111,42 +116,20 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
       canvas.height = totalHeight * scale;
       ctx.scale(scale, scale);
 
-      // 繪製背景 (深色極致暗夜漸層)
+      // 繪製純淨背景 (深色極致暗夜漸層，純對話無裝飾)
       const bgGrad = ctx.createLinearGradient(0, 0, width, totalHeight);
       bgGrad.addColorStop(0, '#0f172a');
       bgGrad.addColorStop(1, '#090d16');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, totalHeight);
 
-      // 繪製頂部 Header
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, 0, width, headerHeight);
-
-      // Header 裝飾底線
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.fillRect(0, headerHeight - 1, width, 1);
-
-      // Header 標題文字
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      const chatTitle = groupName
-        ? (isAnonymous ? '群組對話記錄' : groupName)
-        : (isAnonymous ? '私密對話記錄' : `與 ${partnerUser ? getUserDisplayName(partnerUser) : '對方'} 的對話`);
-      ctx.fillText(chatTitle, padding, 34);
-
-      // Header 副標題 (日期與 E2EE 標記)
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      const dateStr = new Date().toLocaleDateString([], { year: 'numeric', month: '2-digit', day: '2-digit' });
-      ctx.fillText(`${dateStr} • 端對端加密保護 • Aura`, padding, 56);
-
-      // 繪製訊息列表
-      let currentY = headerHeight + 16;
+      // 逐筆繪製訊息列表 (純對話)
+      let currentY = padding;
 
       messages.forEach((m, idx) => {
         const isSelf = m.sender_id === currentUserId;
         const { lines, height: bubbleHeight } = bubbleHeights[idx];
-        const senderLabel = userLabels[m.sender_id] || (isSelf ? '我' : '對方');
+        const meta = userMeta[m.sender_id] || { num: '?', color: '#6366f1' };
 
         let maxLineWidth = 0;
         lines.forEach((l) => {
@@ -157,20 +140,23 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
         const bubbleWidth = Math.min(Math.max(maxLineWidth + 32, 80), bubbleMaxWidth);
         const bubbleX = isSelf ? width - padding - bubbleWidth : padding + 36;
 
-        // 繪製發送者頭像 (他人模式)
-        if (!isSelf) {
-          ctx.beginPath();
-          ctx.arc(padding + 14, currentY + 16, 14, 0, Math.PI * 2);
-          ctx.fillStyle = '#6366f1';
-          ctx.fill();
+        // 繪製發送者頭像 (他人模式或匿名編號)
+        if (!isSelf || isAnonymous) {
+          const avatarX = isSelf ? width - padding + 18 : padding + 14;
+          if (!isSelf) {
+            ctx.beginPath();
+            ctx.arc(padding + 14, currentY + 16, 14, 0, Math.PI * 2);
+            ctx.fillStyle = meta.color;
+            ctx.fill();
 
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 11px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(senderLabel.charAt(0), padding + 14, currentY + 16);
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(meta.num, padding + 14, currentY + 16);
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+          }
         }
 
         // 繪製氣泡圓角矩形
@@ -221,18 +207,8 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
         ctx.fillText(timeStr, bubbleX + bubbleWidth - 10, currentY + bubbleHeight - 6);
         ctx.textAlign = 'left';
 
-        currentY += bubbleHeight + 16;
+        currentY += bubbleHeight + 14;
       });
-
-      // 繪製底部 Footer (Aura 隱私水印)
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.fillRect(0, totalHeight - footerHeight, width, footerHeight);
-
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Aura • 隱私無界 • 分散式端對端加密通訊平台', width / 2, totalHeight - 16);
-      ctx.textAlign = 'left';
 
       setDataUrl(canvas.toDataURL('image/png'));
     };
@@ -295,7 +271,7 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
         <div className={styles.actionRow}>
           <div className={styles.modeBadge}>
             <ShieldCheck size={14} color="#10b981" />
-            <span>{isAnonymous ? '匿名隱私模式' : '標準模式'} ({messages.length} 則對話)</span>
+            <span>{isAnonymous ? '匿名編號模式 (1, 2, 3...)' : '標準模式'} ({messages.length} 則對話)</span>
           </div>
 
           <div style={{ display: 'flex', gap: '8px' }}>
