@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, Group } from '../../types';
 import { Users } from 'lucide-react';
+import { Avatar } from '../common/Avatar';
 import { useChatStore } from '../../stores/useChatStore';
 import styles from '../Sidebar.module.css';
 
@@ -17,6 +18,7 @@ interface FriendListProps {
   onContextMenuGroup: (e: React.MouseEvent, group: Group) => void;
   isUserOnline: (userId: number) => boolean;
   unreadCounts: Record<number, number>;
+  onViewProfile?: (user: User) => void;
 }
 
 export const FriendList: React.FC<FriendListProps> = ({
@@ -32,6 +34,7 @@ export const FriendList: React.FC<FriendListProps> = ({
   onContextMenuGroup,
   isUserOnline,
   unreadCounts,
+  onViewProfile,
 }) => {
   const friendIds = new Set(friends.map((f) => f.id));
 
@@ -39,7 +42,7 @@ export const FriendList: React.FC<FriendListProps> = ({
     if (groups.length === 0) {
       return (
         <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-          尚無加入的群組，點擊上方的群組圖示建立新群組！
+          尚無加入的群組，點擊底部的群組圖示建立新群組！
         </div>
       );
     }
@@ -90,7 +93,7 @@ export const FriendList: React.FC<FriendListProps> = ({
   if (chatUsers.length === 0) {
     return (
       <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-        尚無單聊對話，點擊上方的搜尋圖示開始聊天吧！
+        尚無單聊對話，點擊上方的搜尋按鈕開始聊天吧！
       </div>
     );
   }
@@ -103,7 +106,6 @@ export const FriendList: React.FC<FriendListProps> = ({
         const online = isUserOnline(item.id);
         const unread = unreadCounts[item.id] || 0;
         const displayName = item.display_name || item.account_id;
-        const initial = displayName.charAt(0).toUpperCase();
 
         return (
           <div
@@ -112,10 +114,18 @@ export const FriendList: React.FC<FriendListProps> = ({
             onClick={() => onSelectChat(item)}
             onContextMenu={(e) => onContextMenuUser(e, item)}
           >
-            <div className={`${styles.userAvatar} ${!isFriend ? styles.strangerAvatar : ''}`}>
-              {initial}
-              {isFriend && <span className={`${styles.statusDot} ${online ? styles.statusOnline : styles.statusOffline}`} />}
-            </div>
+            <Avatar
+              src={item.avatar}
+              name={displayName}
+              size={40}
+              isOnline={isFriend ? online : undefined}
+              onClick={(e) => {
+                if (onViewProfile) {
+                  e.stopPropagation();
+                  onViewProfile(item);
+                }
+              }}
+            />
 
             <div className={styles.userInfo}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

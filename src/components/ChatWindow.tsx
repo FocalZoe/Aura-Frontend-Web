@@ -42,11 +42,33 @@ export const ChatWindow: React.FC = () => {
 
   const isUserOnline = (id: number) => onlineUsers.includes(Number(id));
 
-  const { setShowGroupMembersModal, setActiveGroupForModal } = useUIStore();
+  const { setShowGroupMembersModal, setActiveGroupForModal, setSelectedProfileUser } = useUIStore();
   const { notify } = useNotification();
   const [inputText, setInputText] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
   const [isFriend, setIsFriend] = useState<boolean>(true);
+
+  // Context: [訊息表情反應] 處理單聊與群組訊息 Emoji Reaction 送出
+  const handleReaction = (messageId: number, emoji: string) => {
+    if (!user) return;
+    if (activeGroup) {
+      websocketService.send({
+        type: 'reaction',
+        message_id: messageId,
+        is_group: true,
+        group_id: activeGroup.id,
+        emoji,
+      });
+    } else if (activeChatUser) {
+      websocketService.send({
+        type: 'reaction',
+        message_id: messageId,
+        is_group: false,
+        to: activeChatUser.id,
+        emoji,
+      });
+    }
+  };
 
   // Context: 判斷當前一對一對象是否已被自己封鎖
   const isBlockedByMe = !!(
@@ -381,6 +403,9 @@ export const ChatWindow: React.FC = () => {
         activeGroup={activeGroup}
         isUserOnline={activeChatUser ? isUserOnline(activeChatUser.id) : false}
         isStranger={activeChatUser ? !isFriend : false}
+        onViewProfile={() => {
+          if (activeChatUser) setSelectedProfileUser(activeChatUser);
+        }}
         onOpenGroupModal={() => {
           if (activeGroup) {
             setActiveGroupForModal(activeGroup);
@@ -441,6 +466,8 @@ export const ChatWindow: React.FC = () => {
         messages={currentMessages}
         currentUserId={user?.id || 0}
         partnerUser={activeChatUser || undefined}
+        onReaction={handleReaction}
+        onViewProfile={(u) => setSelectedProfileUser(u)}
         renderIPFSFileCard={(msg) => (
           <IPFSFileCard
             payload={msg.filePayload!}

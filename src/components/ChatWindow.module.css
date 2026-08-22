@@ -1,4 +1,4 @@
-﻿/* Context: ChatWindow 專屬 CSS Module 樣式 */
+/* Context: ChatWindow 專屬 CSS Module 樣式 */
 .chatWindow {
   flex: 1;
   height: 100%;
@@ -195,6 +195,102 @@
   margin-top: 4px;
   opacity: 0.7;
   text-align: right;
+}
+
+/* 訊息表情反應樣式 */
+.msgBubbleContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-width: 72%;
+}
+
+.reactionPickerBar {
+  position: absolute;
+  top: -34px;
+  background: var(--bg-modal, #151c2c);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  z-index: 10;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.reactionPickerBarSelf {
+  right: 0;
+}
+
+.reactionPickerBarOther {
+  left: 0;
+}
+
+.reactionPickerEmoji {
+  background: transparent;
+  border: none;
+  font-size: 1.05rem;
+  padding: 3px 5px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+  line-height: 1;
+}
+
+.reactionPickerEmoji:hover {
+  transform: scale(1.3);
+  background: var(--accent-light);
+}
+
+.reactionsWrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.reactionsWrapperSelf {
+  justify-content: flex-end;
+}
+
+.reactionsWrapperOther {
+  justify-content: flex-start;
+}
+
+.reactionPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  background: var(--bg-modal, rgba(30, 41, 59, 0.8));
+  border: 1px solid var(--border-color);
+  font-size: 0.76rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  user-select: none;
+}
+
+.reactionPill:hover {
+  border-color: var(--accent-color);
+  transform: translateY(-1px);
+}
+
+.reactionPillActive {
+  background: var(--accent-light);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  font-weight: 700;
+}
+
+.msgAvatarWrapper {
+  margin-right: 8px;
+  align-self: flex-end;
+  cursor: pointer;
 }
 
 /* Chat Input Area */

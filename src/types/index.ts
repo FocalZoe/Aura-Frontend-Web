@@ -1,16 +1,27 @@
-﻿// Context: 使用者資料與認證介面重構
+// Context: 使用者資料與認證介面重構
 export interface User {
   id: number;
   email: string;
   account_id: string; // 帳號 ID (例如: alex_dev)
   display_name?: string; // 帳號顯示名稱 (例如: Alex Chen)
   avatar?: string; // Context: 個人大頭貼選填屬性
+  bio?: string; // Context: 個人個性簽名/個人狀態
   provider?: string;
   public_key?: string;
   has_backup_key?: boolean;
   key_salt?: string;
   encrypted_private_key?: string;
   created_at?: string;
+}
+
+// Context: [訊息表情反應] 單筆 Emoji 反應模型
+export interface ReactionItem {
+  id?: number;
+  message_id: number;
+  is_group?: boolean;
+  user_id: number;
+  emoji: string;
+  user?: User;
 }
 
 // Context: Notification Model 與 Options 介面定義 (完全取代舊 ToastContext)
@@ -63,6 +74,7 @@ export interface Message {
   decrypted?: boolean;
   error?: boolean;
   filePayload?: IPFSFilePayload;
+  reactions?: ReactionItem[];
 }
 
 export interface WSMessage {
@@ -75,6 +87,12 @@ export interface WSMessage {
   user_id?: number;
   account_id?: string;
   display_name?: string;
+  avatar?: string;
+  bio?: string;
+  message_id?: number;
+  is_group?: boolean;
+  emoji?: string;
+  reactions?: ReactionItem[];
   content?: string;
   iv?: string;
   timestamp?: string;
@@ -135,6 +153,7 @@ export interface GroupMessage {
   sender?: User;
   decrypted?: boolean;
   error?: boolean;
+  reactions?: ReactionItem[];
 }
 
 export interface BlockedUser {

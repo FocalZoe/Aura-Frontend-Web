@@ -54,15 +54,15 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
       </div>
 
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)' }}>
-        <div className={styles.searchInputWrapper} onClick={onOpenSearchModal} style={{ cursor: 'pointer' }}>
+        <button
+          type="button"
+          className={styles.searchNavButton}
+          onClick={onOpenSearchModal}
+          title="搜尋使用者或好友 ID"
+        >
           <Search size={16} className={styles.searchIcon} />
-          <input
-            className={styles.searchInput}
-            readOnly
-            placeholder="輸入好友 ID 即可搜尋"
-            style={{ cursor: 'pointer' }}
-          />
-        </div>
+          <span>搜尋使用者 / 好友 ID</span>
+        </button>
       </div>
     </>
   );

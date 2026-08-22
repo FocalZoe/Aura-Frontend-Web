@@ -10,6 +10,7 @@ import { GroupMembersModal } from './GroupMembersModal';
 import { User, Group } from '../types';
 
 import { SidebarHeader } from './sidebar/SidebarHeader';
+import { SidebarFooter } from './sidebar/SidebarFooter';
 import { SidebarTabs } from './sidebar/SidebarTabs';
 import { FriendList } from './sidebar/FriendList';
 import { StrangerList } from './sidebar/StrangerList';
@@ -313,12 +314,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     <div className={styles.sidebar}>
       <SidebarHeader
         user={user}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        onOpenSettings={onOpenSettings}
-        onOpenPendingModal={() => setShowPendingModal(true)}
-        pendingCount={pendingRequests.length}
-        logout={logout}
+        onOpenMyProfile={() => setSelectedProfileUser(user)}
       />
 
       <SidebarTabs
@@ -329,7 +325,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
       />
 
       <div className={styles.sidebarContent}>
-
         {currentTab === 'chats' || currentTab === 'groups' ? (
           <FriendList
             currentTab={currentTab}
@@ -344,6 +339,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
             onContextMenuGroup={handleContextMenuGroup}
             isUserOnline={isUserOnline}
             unreadCounts={unreadCounts}
+            onViewProfile={(u) => setSelectedProfileUser(u)}
           />
         ) : (
           <StrangerList
@@ -352,9 +348,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
             onSelectChat={setActiveChatUser}
             unreadCounts={unreadCounts}
             onContextMenu={handleContextMenuUser}
+            onViewProfile={(u) => setSelectedProfileUser(u)}
           />
         )}
       </div>
+
+      <SidebarFooter
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onOpenSettings={onOpenSettings}
+        onOpenPendingModal={() => setShowPendingModal(true)}
+        pendingCount={pendingRequests.length}
+        logout={logout}
+      />
 
       <UserContextMenu
         contextMenu={contextMenu}
@@ -381,7 +387,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
         isOpen={showSearchModal}
         onClose={() => setShowSearchModal(false)}
         friends={friends}
-        onFriendChange={fetchFriendsAndPendingAndGroups}
+        onViewProfile={(u) => setSelectedProfileUser(u)}
       />
 
       <PendingRequestsModal
@@ -394,7 +400,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
 
       <CreateGroupModal token={token} notify={notify} />
 
-      <GroupMembersModal currentUserId={user?.id || 0} token={token} notify={notify} />
+      <GroupMembersModal
+        currentUserId={user?.id || 0}
+        token={token}
+        notify={notify}
+        onViewProfile={(u) => setSelectedProfileUser(u)}
+      />
 
       <UserProfileModal
         userProfile={selectedProfileUser}

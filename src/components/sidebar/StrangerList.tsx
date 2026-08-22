@@ -1,5 +1,6 @@
 import React from 'react';
 import { User } from '../../types';
+import { Avatar } from '../common/Avatar';
 import { MessageSquareX } from 'lucide-react';
 import styles from '../Sidebar.module.css';
 
@@ -9,6 +10,7 @@ interface StrangerListProps {
   onSelectChat: (user: User) => void;
   unreadCounts: Record<number, number>;
   onContextMenu: (e: React.MouseEvent, user: User) => void;
+  onViewProfile?: (user: User) => void;
 }
 
 export const StrangerList: React.FC<StrangerListProps> = ({
@@ -17,6 +19,7 @@ export const StrangerList: React.FC<StrangerListProps> = ({
   onSelectChat,
   unreadCounts,
   onContextMenu,
+  onViewProfile,
 }) => {
   if (incomingStrangerUsers.length === 0) {
     return (
@@ -33,7 +36,6 @@ export const StrangerList: React.FC<StrangerListProps> = ({
         const isSelected = activeChatUser?.id === stranger.id;
         const unread = unreadCounts[stranger.id] || 0;
         const displayName = stranger.display_name || stranger.account_id;
-        const initial = displayName.charAt(0).toUpperCase();
 
         return (
           <div
@@ -42,9 +44,17 @@ export const StrangerList: React.FC<StrangerListProps> = ({
             onClick={() => onSelectChat(stranger)}
             onContextMenu={(e) => onContextMenu(e, stranger)}
           >
-            <div className={`${styles.userAvatar} ${styles.strangerAvatar}`}>
-              {initial}
-            </div>
+            <Avatar
+              src={stranger.avatar}
+              name={displayName}
+              size={40}
+              onClick={(e) => {
+                if (onViewProfile) {
+                  e.stopPropagation();
+                  onViewProfile(stranger);
+                }
+              }}
+            />
 
             <div className={styles.userInfo}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

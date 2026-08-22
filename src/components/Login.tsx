@@ -1,6 +1,7 @@
-﻿// Context: Login.tsx 重構 - 套用 Module CSS
+// Context: Login.tsx 重構 - 整合 Toast 提醒與註冊成功自動跳轉登入
 import React, { useState, useContext, FormEvent } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { MessageSquare, ArrowRight, AtSign, Mail, Lock, User as UserIcon } from 'lucide-react';
 import { OAuthModal } from './OAuthModal';
 import styles from './Login.module.css';
@@ -19,6 +20,7 @@ export const Login: React.FC = () => {
   const [oauthProvider, setOauthProvider] = useState<'google' | 'apple' | null>(null);
 
   const { login, register, oauthLogin } = useContext(AuthContext);
+  const { notify } = useNotification();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -26,12 +28,16 @@ export const Login: React.FC = () => {
 
     if (isRegister) {
       if (!email.trim() || !password.trim() || !accountId.trim()) {
-        setError('請完整填寫 Email、密碼與帳號 ID');
+        const msg = '請完整填寫 Email、密碼與帳號 ID';
+        setError(msg);
+        notify({ message: msg, type: 'warning' });
         return;
       }
     } else {
       if (!loginIdentifier.trim() || !password.trim()) {
-        setError('請輸入 Email 或帳號 ID 與密碼');
+        const msg = '請輸入 Email 或帳號 ID 與密碼';
+        setError(msg);
+        notify({ message: msg, type: 'warning' });
         return;
       }
     }
@@ -39,12 +45,20 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
       if (isRegister) {
-        await register(email, password, accountId, displayName);
+        await register(email.trim(), password, accountId.trim(), displayName.trim());
+        // 註冊成功：帶入登入帳號、清空密碼、切換回登入頁面並彈出 Toast
+        setLoginIdentifier(accountId.trim());
+        setPassword('');
+        setIsRegister(false);
+        notify({ message: '註冊成功！請使用您的帳號與密碼進行登入', type: 'success' });
       } else {
-        await login(loginIdentifier, password);
+        await login(loginIdentifier.trim(), password);
+        notify({ message: '登入成功，歡迎回到 Aura！', type: 'success' });
       }
     } catch (err: any) {
-      setError(err.message || (isRegister ? '註冊失敗，請重試' : '登入失敗，請檢查帳號密碼'));
+      const errMsg = err.message || (isRegister ? '註冊失敗，請確認資料格式或網路連線' : '登入失敗，請檢查帳號密碼');
+      setError(errMsg);
+      notify({ message: errMsg, type: 'danger' });
     } finally {
       setLoading(false);
     }

@@ -1,10 +1,10 @@
-// Context: [用戶搜尋] 使用者搜尋彈窗，支援好友關係操作與直接發起聊天
+// Context: [用戶搜尋] 使用者搜尋彈窗，支援快速查找並開啟個人資料名片
 import React, { useContext, useState, FormEvent } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { useChatStore } from '../stores/useChatStore';
 import { User } from '../types';
-import { Search, UserPlus, UserMinus, MessageSquare, Loader2, AlertCircle } from 'lucide-react';
+import { Avatar } from './common/Avatar';
+import { Search, UserCheck, Loader2, AlertCircle } from 'lucide-react';
 import { BaseModal } from './common/BaseModal';
 import styles from './UserSearchModal.module.css';
 
@@ -12,24 +12,22 @@ interface UserSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   friends: User[];
-  onFriendChange: () => void;
+  onViewProfile: (user: User) => void;
 }
 
 export const UserSearchModal: React.FC<UserSearchModalProps> = ({
   isOpen,
   onClose,
   friends,
-  onFriendChange
+  onViewProfile
 }) => {
   const { token, API_BASE } = useContext(AuthContext);
-  const { setActiveChatUser } = useChatStore();
   const { notify } = useNotification();
 
   const [query, setQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [searched, setSearched] = useState<boolean>(false);
   const [results, setResults] = useState<User[]>([]);
-  const [actionLoading, setActionLoading] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -38,7 +36,6 @@ export const UserSearchModal: React.FC<UserSearchModalProps> = ({
     if (!query.trim() || !token) return;
 
     setLoading(true);
-    setSearched(false);
     try {
       const res = await fetch(`${API_BASE}/users/search?q=${encodeURIComponent(query.trim())}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -49,69 +46,16 @@ export const UserSearchModal: React.FC<UserSearchModalProps> = ({
       } else {
         setResults([]);
       }
-    } catch (err) {
-      notify({ message: '搜尋失敗', type: 'danger' });
+      setSearched(true);
+    } catch (err: any) {
+      notify({ message: '搜尋使用者失敗，請檢查網路連線', type: 'danger' });
+      setResults([]);
     } finally {
       setLoading(false);
-      setSearched(true);
     }
   };
 
-  const isUserFriend = (targetId: number): boolean => {
-    return friends.some(f => f.id === targetId);
-  };
-
-  const handleAddFriend = async (targetUser: User) => {
-    if (!token) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/friends/request`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ account_id: targetUser.account_id })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || '發送好友邀請失敗');
-      }
-      notify({ message: '好友邀請已發送！', type: 'success' });
-      onFriendChange();
-    } catch (err: any) {
-      notify({ message: err.message || '發送好友邀請失敗', type: 'danger' });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleRemoveFriend = async (targetUser: User) => {
-    if (!token) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/friends/reject/${targetUser.id}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || '移除好友失敗');
-      }
-      notify({ message: `已移除好友 ${targetUser.display_name || targetUser.account_id}`, type: 'info' });
-      onFriendChange();
-    } catch (err: any) {
-      notify({ message: err.message || '移除好友失敗', type: 'danger' });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleStartChat = async (targetUser: User) => {
-    setActiveChatUser(targetUser);
-    onClose();
-  };
-
+  const isUserFriend = (id: number) => friends.some((f) => f.id === id);
   const getDisplayName = (u: User) => u.display_name || u.account_id;
 
   return (
@@ -156,9 +100,11 @@ export const UserSearchModal: React.FC<UserSearchModalProps> = ({
                 return (
                   <div key={targetUser.id} className={styles.userCardItem}>
                     <div className={styles.userCardHeader}>
-                      <div className={styles.userAvatar}>
-                        {displayName.charAt(0).toUpperCase()}
-                      </div>
+                      <Avatar
+                        src={targetUser.avatar}
+                        name={displayName}
+                        size={44}
+                      />
                       <div className={styles.userMeta}>
                         <h4>{displayName}</h4>
                         <div className={styles.userSubMeta}>
@@ -171,32 +117,17 @@ export const UserSearchModal: React.FC<UserSearchModalProps> = ({
                     </div>
 
                     <div className={styles.cardActionRow}>
-                      {isFriend ? (
-                        <button
-                          className={`uiBtnDanger ${styles.actionBtn}`}
-                          onClick={() => handleRemoveFriend(targetUser)}
-                          disabled={actionLoading}
-                        >
-                          <UserMinus size={15} />
-                          <span>移除好友</span>
-                        </button>
-                      ) : (
-                        <button
-                          className={`uiBtnPrimary ${styles.actionBtn}`}
-                          onClick={() => handleAddFriend(targetUser)}
-                          disabled={actionLoading}
-                        >
-                          <UserPlus size={15} />
-                          <span>新增好友</span>
-                        </button>
-                      )}
-
                       <button
-                        className={`uiBtnSecondary ${styles.actionBtn}`}
-                        onClick={() => handleStartChat(targetUser)}
+                        type="button"
+                        className={`uiBtnPrimary ${styles.actionBtn}`}
+                        onClick={() => {
+                          onClose();
+                          onViewProfile(targetUser);
+                        }}
+                        style={{ width: '100%', height: '38px' }}
                       >
-                        <MessageSquare size={15} />
-                        <span>{isFriend ? '發送訊息' : '發送陌生訊息'}</span>
+                        <UserCheck size={16} />
+                        <span>查看個人資料</span>
                       </button>
                     </div>
                   </div>
