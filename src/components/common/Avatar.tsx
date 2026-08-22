@@ -72,11 +72,16 @@ export const Avatar: React.FC<AvatarProps> = ({
   }
   const gradient = GRADIENTS[Math.abs(hash) % GRADIENTS.length];
 
-  // 判斷是否為 IPFS CID
+  // 判斷是否為 IPFS CID 或外部/本地圖片 URL
   let finalSrc = src;
-  if (src && (src.startsWith('Qm') || src.startsWith('bafy'))) {
-    const base = getApiBase();
-    finalSrc = `${base}/ipfs/gateway/${src}`;
+  if (src) {
+    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('blob:') || src.startsWith('data:')) {
+      finalSrc = src;
+    } else if (src.startsWith('Qm') || src.startsWith('baf') || !src.includes('/')) {
+      // 支援所有 IPFS CID 格式 (Qm..., bafy..., bafk..., bafkrei... 等)
+      const base = getApiBase();
+      finalSrc = `${base}/ipfs/gateway/${src}`;
+    }
   }
 
   const containerStyle: React.CSSProperties = {

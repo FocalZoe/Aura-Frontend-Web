@@ -51,6 +51,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [editDisplayName, setEditDisplayName] = useState<string>('');
   const [editBio, setEditBio] = useState<string>('');
   const [avatarCid, setAvatarCid] = useState<string>('');
+  const [previewUrl, setPreviewUrl] = useState<string>('');
 
   // 備註暱稱狀態 (他人模式)
   const [customAlias, setCustomAlias] = useState<string>('');
@@ -64,6 +65,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       setEditDisplayName(userProfile.display_name || '');
       setEditBio(userProfile.bio || '');
       setAvatarCid(userProfile.avatar || '');
+      setPreviewUrl('');
 
       const hasPending = pendingRequests.some((p) => p.id === userProfile.id);
       setIsPendingSent(hasPending);
@@ -84,6 +86,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       notify({ message: '請選擇圖片格式檔案 (.jpg, .png, .webp 等)', type: 'warning' });
       return;
     }
+
+    // 0 延遲本地即時預覽
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
 
     setUploadingAvatar(true);
     try {
@@ -213,7 +219,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             title="點擊更換大頭貼"
           >
             <Avatar
-              src={avatarCid || userProfile.avatar}
+              src={previewUrl || avatarCid || userProfile.avatar}
               name={displayName}
               size={80}
             />
