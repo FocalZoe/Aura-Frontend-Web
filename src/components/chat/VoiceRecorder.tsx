@@ -201,7 +201,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           className={styles.voiceSendBtn}
           onClick={handleStopAndSend}
           disabled={disabled || isInitializing || recordingSeconds < 1}
-          title="加密發送語音訊息"
+          title="發送語音訊息"
         >
           {isInitializing ? <Loader2 size={18} className={styles.spin} /> : <Send size={18} />}
         </button>

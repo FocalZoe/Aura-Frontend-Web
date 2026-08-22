@@ -62,18 +62,12 @@ export const FriendList: React.FC<FriendListProps> = ({
               onClick={() => onSelectGroup(group)}
               onContextMenu={(e) => onContextMenuGroup(e, group)}
             >
-              <div
-                className={styles.userAvatar}
-                style={{
-                  background: 'var(--accent-color, #6366f1)',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Users size={18} />
-              </div>
+              <Avatar
+                src={group.avatar}
+                name={group.name}
+                fallbackSeed={group.name}
+                size={40}
+              />
 
               <div className={styles.userInfo}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -118,6 +112,7 @@ export const FriendList: React.FC<FriendListProps> = ({
             <Avatar
               src={item.avatar}
               name={displayName}
+              fallbackSeed={item.display_name || item.account_id}
               size={40}
               isOnline={isFriend ? online : undefined}
               onClick={(e) => {

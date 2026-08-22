@@ -47,6 +47,7 @@ export const StrangerList: React.FC<StrangerListProps> = ({
             <Avatar
               src={stranger.avatar}
               name={displayName}
+              fallbackSeed={stranger.display_name || stranger.account_id}
               size={40}
               onClick={(e) => {
                 if (onViewProfile) {

@@ -12,6 +12,8 @@ interface MessageBubbleProps {
   currentUserId: number;
   partnerUser?: User;
   senderUser?: User;
+  isGroup?: boolean;
+  groupNickname?: string;
   renderIPFSFileCard?: (msg: Message) => React.ReactNode;
   onReaction?: (messageId: number, emoji: string) => void;
   onViewProfile?: (user: User) => void;
@@ -26,6 +28,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   currentUserId,
   partnerUser,
   senderUser,
+  isGroup = false,
+  groupNickname,
   renderIPFSFileCard,
   onReaction,
   onViewProfile,
@@ -39,6 +43,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isIPFSPayload = !!msg.filePayload;
   const isRecalled = msg.is_recalled || msg.content === '[RECALLED]';
   const { getUserDisplayName } = useChatStore();
+
+  // 系統置中公告訊息 (無氣泡、小字、膠囊微光樣式)
+  if (msg.is_system) {
+    return (
+      <div className={styles.systemMsgRow}>
+        <div className={styles.systemMsgPill}>
+          {msg.content}
+        </div>
+      </div>
+    );
+  }
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return '';
@@ -98,12 +113,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
             <Phone size={16} />
-            <span>通話</span>
+            <span>{parts[0]}</span>
           </div>
           {durationStr && (
-            <div style={{ fontSize: '0.8rem', color: isSelf ? 'rgba(255,255,255,0.78)' : 'rgba(148,163,184,0.9)', fontWeight: 500, paddingLeft: '22px' }}>
-              {durationStr}
-            </div>
+            <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              通話時長: {durationStr}
+            </span>
           )}
         </div>
       );
@@ -172,8 +187,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     {}
   );
 
-  const displayUser = senderUser || partnerUser;
-  const userDisplayName = displayUser ? getUserDisplayName(displayUser) : '';
+  const displayUser = senderUser || partnerUser || msg.sender;
+  const finalDisplayName = groupNickname || (displayUser ? getUserDisplayName(displayUser) : `用戶 #${msg.sender_id}`);
 
   const handleBubbleClick = (e: React.MouseEvent) => {
     if (isScreenshotMode && onToggleSelectScreenshot) {
@@ -214,31 +229,47 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       )}
 
       {/* 他人發送之訊息展示頭像 */}
-      {!isSelf && displayUser && (
+      {!isSelf && (
         <div
           className={styles.msgAvatarWrapper}
           onClick={(e) => {
             if (isScreenshotMode) return;
-            if (onViewProfile) {
+            if (displayUser && onViewProfile) {
               e.stopPropagation();
               onViewProfile(displayUser);
             }
           }}
-          title={`點擊查看 ${userDisplayName} 的個人名片`}
+          title={`點擊查看 ${finalDisplayName} 的個人名片`}
         >
           <Avatar
-            src={displayUser.avatar}
-            name={userDisplayName}
+            src={displayUser?.avatar}
+            name={finalDisplayName}
+            fallbackSeed={displayUser?.display_name || displayUser?.account_id || `User_${msg.sender_id}`}
             size={32}
           />
         </div>
       )}
 
       <div className={styles.msgBubbleContainer}>
+        {/* 群組內他人發送訊息顯示發送者名字/群內暱稱 */}
+        {!isSelf && isGroup && (
+          <div
+            className={styles.msgSenderName}
+            onClick={(e) => {
+              if (displayUser && onViewProfile) {
+                e.stopPropagation();
+                onViewProfile(displayUser);
+              }
+            }}
+          >
+            {finalDisplayName}
+          </div>
+        )}
+
         <div className={bubbleClasses} onContextMenu={handleBubbleContextMenu}>
           {isError && <AlertCircle size={16} style={{ flexShrink: 0 }} />}
           {isRecalled ? (
-            <span>{isSelf ? '您已收回一則訊息' : `${userDisplayName || '對方'} 已收回一則訊息`}</span>
+            <span>{isSelf ? '您已收回一則訊息' : `${finalDisplayName || '對方'} 已收回一則訊息`}</span>
           ) : (
             <div>
               {msg.filePayload && renderIPFSFileCard ? (

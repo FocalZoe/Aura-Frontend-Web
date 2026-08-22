@@ -33,8 +33,8 @@ export const SecurityPinTab: React.FC<SecurityPinTabProps> = ({
       <div className={styles.securityInfoBox}>
         <ShieldCheck size={24} className={styles.accentIcon} />
         <div>
-          <h4>對話點對點加密保護</h4>
-          <p>您的訊息在發送前均已在裝置上完成加密保護，確保僅有您與對方能夠讀取聊天內容。</p>
+          <h4>對話安全與隱私保護</h4>
+          <p>您的訊息在發送前均已進行高規格隱私防護，確保僅有您與對話對象能夠查看聊天內容。</p>
         </div>
       </div>
 
@@ -46,7 +46,7 @@ export const SecurityPinTab: React.FC<SecurityPinTabProps> = ({
               {hasPublicKey ? (
                 <>
                   <CheckCircle size={12} style={{ display: 'inline', marginRight: '4px' }} />
-                  已防護 (金鑰運作中)
+                  安全防護中
                 </>
               ) : (
                 '尚未啟用'
@@ -55,16 +55,16 @@ export const SecurityPinTab: React.FC<SecurityPinTabProps> = ({
           </div>
 
           <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>雲端安全備份</span>
+            <span className={styles.infoLabel}>雲端安全同步</span>
             <span className={`${styles.statusBadge} ${hasEncryptedKey ? styles.statusBadgeGreen : styles.statusBadgeOrange}`}>
-              {hasEncryptedKey ? '已備份' : '未備份'}
+              {hasEncryptedKey ? '已完成備份' : '未備份'}
             </span>
           </div>
 
           <div className={styles.infoRow} style={{ borderBottom: 'none' }}>
             <span className={styles.infoLabel}>本機裝置狀態</span>
             <span className={`${styles.statusBadge} ${hasLocalKey ? styles.statusBadgeGreen : styles.statusBadgeOrange}`}>
-              {hasLocalKey ? '已解鎖 (安全連線中)' : '未解鎖 (需輸入 PIN 碼)'}
+              {hasLocalKey ? '已解鎖 (安全通訊中)' : '已鎖定 (需輸入 PIN 碼)'}
             </span>
           </div>
         </div>
@@ -91,8 +91,8 @@ export const SecurityPinTab: React.FC<SecurityPinTabProps> = ({
         {!hasLocalKey && hasEncryptedKey && (
           <div className={styles.settingOptionRow}>
             <div className={styles.optionLabel}>
-              <span className={styles.optionTitle}>解鎖本機通訊</span>
-              <span className={styles.optionDesc}>輸入您的 4 位數 PIN 碼解鎖本機加密功能</span>
+              <span className={styles.optionTitle}>解鎖對話訊息</span>
+              <span className={styles.optionDesc}>輸入您的 4 位數 PIN 碼以解鎖並存取訊息</span>
             </div>
             <button
               type="button"

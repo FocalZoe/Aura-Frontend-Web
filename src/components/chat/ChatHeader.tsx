@@ -52,9 +52,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </button>
           )}
           <div className={styles.chatUserDetail} onClick={onOpenGroupModal} style={{ cursor: 'pointer' }}>
-            <div className={sidebarStyles.avatar} style={{ background: 'var(--accent-color, #6366f1)', color: '#fff' }}>
-              <Users size={20} />
-            </div>
+            <Avatar
+              src={activeGroup.avatar}
+              name={activeGroup.name}
+              fallbackSeed={activeGroup.name}
+              size={40}
+            />
             <div style={{ minWidth: 0 }}>
               <h4 className={styles.userName} style={{ margin: 0 }}>{activeGroup.name}</h4>
               <span
@@ -72,17 +75,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {onStartScreenshot && (
-            <button
-              className={sidebarStyles.themeToggleBtn}
-              onClick={onStartScreenshot}
-              title="對話連續截圖 (可匿名)"
-              style={{ width: '34px', height: '34px' }}
-            >
-              <Camera size={18} />
-            </button>
-          )}
-
           <button
             className={sidebarStyles.themeToggleBtn}
             onClick={onOpenGroupModal}
@@ -118,6 +110,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <Avatar
               src={activeChatUser.avatar}
               name={displayName}
+              fallbackSeed={activeChatUser.display_name || activeChatUser.account_id}
               size={40}
               isOnline={!isStranger ? isUserOnline : undefined}
             />
@@ -139,17 +132,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {onStartScreenshot && (
-            <button
-              className={sidebarStyles.themeToggleBtn}
-              onClick={onStartScreenshot}
-              title="對話連續截圖 (可匿名)"
-              style={{ width: '34px', height: '34px' }}
-            >
-              <Camera size={18} />
-            </button>
-          )}
-
           {/* Context: [通話限制] 陌生訊息對話隱藏通話按鈕（手機版寬度亦由 CSS 隱藏） */}
           {!isStranger && (
             <div className={styles.callButtonsGroup} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

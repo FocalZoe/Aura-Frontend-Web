@@ -285,6 +285,48 @@
   cursor: pointer;
 }
 
+/* 系統公告訊息樣式 (水平置中、無氣泡、小字、膠囊微光) */
+.systemMsgRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 10px 0;
+  padding: 0 16px;
+}
+
+.systemMsgPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  background: var(--bg-card, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  user-select: none;
+}
+
+/* 群組發送者姓名標籤 (氣泡上方) */
+.msgSenderName {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+  margin-bottom: 3px;
+  padding-left: 2px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.msgSenderName:hover {
+  color: var(--accent-color, #6366f1);
+}
+
 /* Chat Input Area */
 .chatInputArea {
   padding: 16px 20px;

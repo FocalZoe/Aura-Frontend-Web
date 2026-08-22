@@ -45,7 +45,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         />
       ) : (
         <form className={styles.chatForm} onSubmit={onSendMessage}>
-          <label className={styles.chatAttachBtn} title="傳送加密檔案">
+          <label className={styles.chatAttachBtn} title="傳送檔案">
             <Paperclip size={20} />
             <input type="file" onChange={onFileUpload} disabled={disabled || isUploadingIPFS} style={{ display: 'none' }} />
           </label>

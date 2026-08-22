@@ -80,7 +80,7 @@ class E2EEService {
   }
 
   async decryptSingleGroupMessage(msg: GroupMessage, groupId: number, epoch: number = 1): Promise<GroupMessage> {
-    if (!msg.iv) return msg;
+    if (!msg.iv || msg.is_system) return msg;
     try {
       const groupKey = await this.getGroupKey(groupId, epoch);
       const plaintext = await decryptMessage(groupKey, msg.content, msg.iv);
@@ -95,7 +95,7 @@ class E2EEService {
     const groupKey = await this.getGroupKey(groupId, epoch);
     return Promise.all(
       messages.map(async (m) => {
-        if (!m.iv) return m;
+        if (!m.iv || m.is_system) return m;
         try {
           const plaintext = await decryptMessage(groupKey, m.content, m.iv);
           return { ...m, content: plaintext, decrypted: true };

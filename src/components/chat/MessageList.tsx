@@ -7,6 +7,8 @@ interface MessageListProps {
   messages: Message[];
   currentUserId: number;
   partnerUser?: User;
+  isGroup?: boolean;
+  groupMembersMap?: Record<number, { user?: User; nickname?: string }>;
   renderIPFSFileCard?: (msg: Message) => React.ReactNode;
   onReaction?: (messageId: number, emoji: string) => void;
   onViewProfile?: (user: User) => void;
@@ -20,6 +22,8 @@ export const MessageList: React.FC<MessageListProps> = ({
   messages,
   currentUserId,
   partnerUser,
+  isGroup = false,
+  groupMembersMap,
   renderIPFSFileCard,
   onReaction,
   onViewProfile,
@@ -45,12 +49,19 @@ export const MessageList: React.FC<MessageListProps> = ({
           idx <= selectedRange.end
         );
 
+        const memberInfo = groupMembersMap ? groupMembersMap[msg.sender_id] : undefined;
+        const senderUser = memberInfo?.user || msg.sender;
+        const groupNickname = memberInfo?.nickname;
+
         return (
           <MessageBubble
             key={msg.id || idx}
             msg={msg}
             currentUserId={currentUserId}
             partnerUser={partnerUser}
+            senderUser={senderUser}
+            isGroup={isGroup}
+            groupNickname={groupNickname}
             renderIPFSFileCard={renderIPFSFileCard}
             onReaction={onReaction}
             onViewProfile={onViewProfile}

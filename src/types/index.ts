@@ -71,6 +71,8 @@ export interface Message {
   content: string;
   iv?: string;
   timestamp: string;
+  sender?: User;
+  is_system?: boolean;
   decrypted?: boolean;
   error?: boolean;
   filePayload?: IPFSFilePayload;
@@ -133,6 +135,7 @@ export interface GroupMember {
   group_id: number;
   user_id: number;
   role: 'owner' | 'member';
+  nickname?: string; // Context: 群內專屬暱稱
   status?: 'accepted' | 'pending' | 'removed' | 'rejected'; // Context: 成員狀態
   joined_at: string;
   user?: User;
@@ -141,6 +144,7 @@ export interface GroupMember {
 export interface Group {
   id: number;
   name: string;
+  avatar?: string; // Context: 群組專屬頭像
   owner_id: number;
   created_at: string;
   members?: GroupMember[];
@@ -154,6 +158,7 @@ export interface GroupMessage {
   content: string;
   iv: string;
   timestamp: string;
+  is_system?: boolean; // Context: 置中系統公告標記
   sender?: User;
   decrypted?: boolean;
   error?: boolean;

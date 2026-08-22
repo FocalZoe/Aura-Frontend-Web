@@ -5,6 +5,7 @@ import { getApiBase } from '../../services/apiClient';
 export interface AvatarProps {
   src?: string | null;
   name?: string;
+  fallbackSeed?: string; // 專用於縮寫與色彩 Hash 的原始標識（即使外部傳入自訂暱稱，頭像仍保持原始身分一致）
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | number;
   isOnline?: boolean;
   onClick?: (e: React.MouseEvent) => void;
@@ -26,6 +27,7 @@ const GRADIENTS = [
 export const Avatar: React.FC<AvatarProps> = ({
   src,
   name = '',
+  fallbackSeed,
   size = 'md',
   isOnline,
   onClick,
@@ -62,12 +64,14 @@ export const Avatar: React.FC<AvatarProps> = ({
     }
   }
 
-  const initial = (name || '?').trim().charAt(0).toUpperCase();
+  // 縮寫與色彩一律由 fallbackSeed 優先決定，確保自訂暱稱不改變對方頭像
+  const seedString = (fallbackSeed || name || '?').trim();
+  const initial = seedString.charAt(0).toUpperCase();
 
   // 計算確定性漸層色彩
   let hash = 0;
-  for (let i = 0; i < (name || '').length; i++) {
-    hash = (hash << 5) - hash + (name || '').charCodeAt(i);
+  for (let i = 0; i < seedString.length; i++) {
+    hash = (hash << 5) - hash + seedString.charCodeAt(i);
     hash |= 0;
   }
   const gradient = GRADIENTS[Math.abs(hash) % GRADIENTS.length];

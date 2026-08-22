@@ -170,7 +170,7 @@ export const IPFSFileCard: React.FC<IPFSFileCardProps> = ({
       </div>
       <div className={styles.ipfsFileInfo}>
         <div className={styles.ipfsFileName} title={payload.name}>{payload.name}</div>
-        <div className={styles.ipfsFileSize}>{formatFileSize(payload.size)} • 加密檔案</div>
+        <div className={styles.ipfsFileSize}>{formatFileSize(payload.size)} • 安全檔案</div>
       </div>
       <button className="uiBtnSecondary" onClick={handleDownload} disabled={downloading} style={{ height: '32px', padding: '0 12px', fontSize: '0.78rem' }}>
         {downloading ? <Loader2 size={14} className={styles.spin} /> : <Download size={14} />}

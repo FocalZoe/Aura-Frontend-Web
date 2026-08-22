@@ -7,7 +7,7 @@ import { websocketService } from '../services/websocketService';
 import { e2eeService } from '../services/e2eeService';
 import { apiClient, getApiBase } from '../services/apiClient';
 import { MessageSquare, File, Download, Loader2, X, AlertCircle, Edit2 } from 'lucide-react';
-import { IPFSFilePayload, Message } from '../types';
+import { IPFSFilePayload, Message, User } from '../types';
 import { getLocalPrivateKey, importPublicKey, deriveSharedKey, encryptMessage, encryptFileBuffer, decryptFileBuffer } from '../utils/crypto';
 import { uploadToIPFS, fetchFromIPFS } from '../utils/ipfs';
 
@@ -334,12 +334,12 @@ export const ChatWindow: React.FC = () => {
       partnerPubKey = await e2eeService.fetchUserPublicKey(toUserId, token);
     }
     if (!partnerPubKey) {
-      throw new Error('對方尚未建立加密金鑰對');
+      throw new Error('對方尚未完成設定，暫時無法傳送訊息');
     }
 
     const privateKey = await getLocalPrivateKey(user.id);
     if (!privateKey) {
-      throw new Error('請先輸入 PIN 碼解鎖私鑰');
+      throw new Error('請先輸入 PIN 碼解鎖對話');
     }
 
     const targetPubKey: string = partnerPubKey;
@@ -442,7 +442,7 @@ export const ChatWindow: React.FC = () => {
 
       const ipfsMessageContent = `[IPFS_FILE]${JSON.stringify(payload)}`;
       await sendDirectMessage(activeChatUser.id, activeChatUser.public_key, ipfsMessageContent);
-      notify({ message: '檔案已安全加密傳送！', type: 'success' });
+      notify({ message: '檔案已成功傳送！', type: 'success' });
     } catch (err: any) {
       console.error('檔案傳送失敗:', err);
       notify({ message: err.message || '檔案傳送失敗', type: 'danger' });
@@ -452,7 +452,7 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
-  // Context: [語音訊息] 處理語音錄製完成後的 E2EE 加密與 IPFS 上傳
+  // Context: [語音訊息] 處理語音錄製完成後的音訊安全傳送
   const handleSendVoice = async (audioBlob: Blob) => {
     if (!user || !token) return;
     if (!activeChatUser && !activeGroup) return;
@@ -496,14 +496,14 @@ export const ChatWindow: React.FC = () => {
           sender: user,
         });
 
-        notify({ message: '語音訊息已加密傳送！', type: 'success' });
+        notify({ message: '語音訊息已成功傳送！', type: 'success' });
         return;
       }
 
       if (activeChatUser) {
         const privateKey = await getLocalPrivateKey(user.id);
         if (!privateKey || !activeChatUser.public_key) {
-          notify({ message: '請先確認金鑰已備份', type: 'warning' });
+          notify({ message: '請先解鎖通訊防護功能', type: 'warning' });
           return;
         }
 
@@ -524,7 +524,7 @@ export const ChatWindow: React.FC = () => {
 
         const ipfsMessageContent = `[IPFS_FILE]${JSON.stringify(payload)}`;
         await sendDirectMessage(activeChatUser.id, activeChatUser.public_key, ipfsMessageContent);
-        notify({ message: '語音訊息已加密傳送！', type: 'success' });
+        notify({ message: '語音訊息已成功傳送！', type: 'success' });
       }
     } catch (err: any) {
       console.error('語音傳送失敗:', err);
@@ -540,7 +540,7 @@ export const ChatWindow: React.FC = () => {
         <div className={styles.chatEmpty}>
           <MessageSquare size={48} strokeWidth={1.5} />
           <h3>點擊聯絡人或群組開始聊天</h3>
-          <p>選擇左側的好友、群組或陌生人，即可開始點對點加密通訊。</p>
+          <p>選擇左側的好友、群組或陌生人，即可開始安全暢聊。</p>
         </div>
       </div>
     );
@@ -559,8 +559,22 @@ export const ChatWindow: React.FC = () => {
         is_edited: gm.is_edited,
         is_recalled: gm.is_recalled,
         edited_at: gm.edited_at,
+        sender: gm.sender,
+        is_system: gm.is_system,
       }))
     : messages;
+
+  const groupMembersMap = React.useMemo(() => {
+    if (!activeGroup?.members) return undefined;
+    const map: Record<number, { user?: User; nickname?: string }> = {};
+    for (const m of activeGroup.members) {
+      map[m.user_id] = {
+        user: m.user,
+        nickname: m.nickname,
+      };
+    }
+    return map;
+  }, [activeGroup?.members]);
 
   return (
     <div className={styles.chatWindow}>
@@ -633,6 +647,8 @@ export const ChatWindow: React.FC = () => {
         messages={currentMessages}
         currentUserId={user?.id || 0}
         partnerUser={activeChatUser || undefined}
+        isGroup={Boolean(activeGroup)}
+        groupMembersMap={groupMembersMap}
         onReaction={handleReaction}
         onViewProfile={(u) => setSelectedProfileUser(u)}
         onContextMenu={handleMessageContextMenu}
