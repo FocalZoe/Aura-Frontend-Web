@@ -352,3 +352,22 @@ export const useChatStore = create<ChatState>((set) => ({
       ),
     })),
 }));
+
+// Context: [標題通知] 計算未讀訊息與好友邀請總數，自動同步網頁標題 Aura (<通知數量>)
+export const computeTotalNotifications = (state: ChatState): number => {
+  const directUnread = Object.values(state.unreadCounts || {}).reduce((acc, count) => acc + (Number(count) || 0), 0);
+  const groupUnread = Object.values(state.groupUnreadCounts || {}).reduce((acc, count) => acc + (Number(count) || 0), 0);
+  const pendingCount = (state.pendingRequests || []).length;
+  return directUnread + groupUnread + pendingCount;
+};
+
+if (typeof window !== 'undefined') {
+  useChatStore.subscribe((state) => {
+    const total = computeTotalNotifications(state);
+    if (total > 0) {
+      document.title = `Aura (${total})`;
+    } else {
+      document.title = 'Aura';
+    }
+  });
+}

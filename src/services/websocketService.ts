@@ -168,7 +168,7 @@ class WebSocketService {
                 chatStore.setGroups(groupsData);
               }
             })
-            .catch(() => {});
+            .catch(() => { });
 
           const activeGroup = chatStore.activeGroup;
           if (activeGroup && Number(activeGroup.id) === Number(gMsg.group_id)) {
@@ -185,7 +185,7 @@ class WebSocketService {
           if (gMsg.action === 'member_add') {
             soundEffects.playFriendRequestSound();
             if (notificationManager.isWindowUnfocused()) {
-              notificationManager.sendNotification('Focal Aura 群組通知', '您已被加入一個新群組！');
+              notificationManager.sendNotification('Aura', '您已被加入一個新群組！');
             }
           }
         }
@@ -204,14 +204,14 @@ class WebSocketService {
       if (activeToken) {
         apiClient.get<User[]>('/friends', activeToken)
           .then((friendsData) => { if (Array.isArray(friendsData)) chatStore.setFriends(friendsData); })
-          .catch(() => {});
+          .catch(() => { });
         apiClient.get<User[]>('/friends/pending', activeToken)
           .then((pendingData) => { if (Array.isArray(pendingData)) chatStore.setPendingRequests(pendingData); })
-          .catch(() => {});
+          .catch(() => { });
         // TEAM_015: 即時同步拉取最新黑名單
         apiClient.get<User[]>('/blocks', activeToken)
           .then((blockedData) => { if (Array.isArray(blockedData)) chatStore.setBlockedUsers(blockedData); })
-          .catch(() => {});
+          .catch(() => { });
       }
 
       if (data.type === 'friend_update') {
@@ -220,15 +220,13 @@ class WebSocketService {
 
         if (friendMsg.action === 'request' && isRecipient) {
           if (notificationManager.isWindowUnfocused()) {
-            notificationManager.sendNotification('Focal Aura 好友邀請', '您收到一則新的好友邀請！');
-            document.title = '💬 (好友邀請) Focal Aura';
+            notificationManager.sendNotification('Aura', '您收到一則新的好友邀請！');
           } else {
             soundEffects.playFriendRequestSound();
           }
         } else if (friendMsg.action === 'accept' && isRecipient) {
           if (notificationManager.isWindowUnfocused()) {
-            notificationManager.sendNotification('Focal Aura 好友通知', '對方已接受您的好友邀請！');
-            document.title = '💬 (好友接受) Focal Aura';
+            notificationManager.sendNotification('Aura', '對方已接受您的好友邀請！');
           } else {
             soundEffects.playFriendRequestSound();
           }
@@ -252,7 +250,7 @@ class WebSocketService {
           message: errData.content,
           danger: false,
           confirmText: '瞭解',
-          onConfirm: () => {},
+          onConfirm: () => { },
         });
       }
     } else if (data.type === 'group_message') {
@@ -269,9 +267,16 @@ class WebSocketService {
       }
 
       if (groupMsg.sender_id !== this.userId) {
+        const targetGroup = chatStore.groups.find((g) => Number(g.id) === Number(groupMsg.group_id)) || curGroup;
+        const groupTitle = targetGroup?.name || `群組 #${groupMsg.group_id}`;
+        let msgBody = decryptedGroupMsg.content;
+        if (msgBody && msgBody.startsWith('ipfs://')) {
+          msgBody = '[檔案/圖片]';
+        }
+
         if (notificationManager.isWindowUnfocused()) {
-          notificationManager.sendNotification('Focal Aura 群組新訊息', '您收到一則群組加密新訊息');
-          document.title = '💬 (群組新訊息) Focal Aura';
+          // Context: [通知規範] 群組訊息推播格式：(<群組名稱>, <訊息內容>)
+          notificationManager.sendNotification(groupTitle, msgBody || '您收到了一則群組加密訊息');
         } else {
           if (!curGroup || curGroup.id !== groupMsg.group_id) {
             soundEffects.playMessageSound();
@@ -304,9 +309,17 @@ class WebSocketService {
             chatStore.incrementUnread(senderId);
           }
 
+          const senderFriend = chatStore.friends.find((f) => Number(f.id) === Number(senderId)) ||
+            chatStore.incomingStrangerUsers.find((u) => Number(u.id) === Number(senderId));
+          const senderTitle = senderFriend ? (senderFriend.display_name || senderFriend.account_id || `用戶 #${senderId}`) : `用戶 #${senderId}`;
+          let msgBody = decryptedMsg.content;
+          if (decryptedMsg.filePayload) {
+            msgBody = `[檔案] ${decryptedMsg.filePayload.name || '檔案'}`;
+          }
+
           if (notificationManager.isWindowUnfocused()) {
-            notificationManager.sendNotification('Focal Aura 新訊息', '您收到了一則加密新訊息');
-            document.title = '💬 (新訊息) Focal Aura';
+            // Context: [通知規範] 一對一訊息推播格式：(<名稱>, <訊息內容>)
+            notificationManager.sendNotification(senderTitle, msgBody || '您收到了一則加密新訊息');
           } else {
             if (!curActive || curActive.id !== senderId) {
               soundEffects.playMessageSound();
@@ -331,14 +344,14 @@ class WebSocketService {
         const callerId = (data as any).sender_id;
         const callType = (data as any).content === 'video' ? 'video' : 'audio';
 
-        if (notificationManager.isWindowUnfocused()) {
-          notificationManager.sendNotification('Focal Aura 來電通知', `您收到一則${callType === 'video' ? '視訊' : '語音'}來電！`);
-          document.title = '📞 (來電中) Focal Aura';
-        }
-
         const friend = chatStore.friends.find((f) => Number(f.id) === Number(callerId));
         const callerName = friend ? (friend.display_name || friend.account_id || `User ${callerId}`) : `User ${callerId}`;
         const callerAvatar = friend?.avatar;
+
+        if (notificationManager.isWindowUnfocused()) {
+          // Context: [通知規範] 來電推播格式：(Aura, <名稱>來電)
+          notificationManager.sendNotification('Aura', `${callerName} ${callType === 'video' ? '視訊' : '語音'}來電`);
+        }
 
         callStore.handleIncomingCall(
           { id: callerId, name: callerName, avatar: callerAvatar },

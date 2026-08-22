@@ -7,6 +7,8 @@ import { IPFSFilePayload } from '../../types';
 import { getLocalPrivateKey, importPublicKey, deriveSharedKey, decryptFileBuffer } from '../../utils/crypto';
 import { fetchFromIPFS } from '../../utils/ipfs';
 import { getApiBase } from '../../services/apiClient';
+import { AudioPlayerCard } from './AudioPlayerCard';
+import { VideoPlayerCard } from './VideoPlayerCard';
 import styles from '../ChatWindow.module.css';
 
 export interface IPFSFileCardProps {
@@ -21,6 +23,7 @@ export interface IPFSFileCardProps {
 export const IPFSFileCard: React.FC<IPFSFileCardProps> = ({
   payload,
   iv,
+  senderId,
   partnerPublicKeyBase64,
   groupId,
 }) => {
@@ -35,6 +38,16 @@ export const IPFSFileCard: React.FC<IPFSFileCardProps> = ({
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
+
+  const isImage =
+    (payload.mime && payload.mime.startsWith('image/')) ||
+    /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(payload.name);
+  const isVideo =
+    (payload.mime && payload.mime.startsWith('video/')) ||
+    /\.(mp4|webm|mov|mkv|ogg)$/i.test(payload.name);
+  const isAudio =
+    (payload.mime && payload.mime.startsWith('audio/')) ||
+    /\.(mp3|wav|ogg|m4a|aac|flac|webm|opus)$/i.test(payload.name);
 
   const handleDownload = async () => {
     const targetIv = payload.iv || iv;
@@ -62,10 +75,7 @@ export const IPFSFileCard: React.FC<IPFSFileCardProps> = ({
       const blob = new Blob([decryptedBuffer], { type: payload.mime || 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
 
-      if (
-        (payload.mime && (payload.mime.startsWith('image/') || payload.mime.startsWith('video/'))) ||
-        /\.(mp4|webm|mov|mkv|ogg|jpg|jpeg|png|gif|webp|svg)$/i.test(payload.name)
-      ) {
+      if (isImage || isVideo || isAudio) {
         setPreviewUrl(url);
       } else {
         const a = document.createElement('a');
@@ -83,19 +93,47 @@ export const IPFSFileCard: React.FC<IPFSFileCardProps> = ({
     }
   };
 
-  const isImage =
-    (payload.mime && payload.mime.startsWith('image/')) ||
-    /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(payload.name);
-  const isVideo =
-    (payload.mime && payload.mime.startsWith('video/')) ||
-    /\.(mp4|webm|mov|mkv|ogg)$/i.test(payload.name);
-
   useEffect(() => {
-    if ((isImage || isVideo) && !previewUrl && !downloading) {
+    if ((isImage || isVideo || isAudio) && !previewUrl && !downloading) {
       handleDownload();
     }
-  }, [payload.cid, isImage, isVideo]);
+  }, [payload.cid, isImage, isVideo, isAudio]);
 
+  const isSelf = user ? Number(user.id) === Number(senderId) : false;
+
+  // 1. 音訊渲染
+  if (isAudio) {
+    if (previewUrl) {
+      return (
+        <AudioPlayerCard
+          src={previewUrl}
+          fileName={payload.name}
+          fileSize={formatFileSize(payload.size)}
+          isSelf={isSelf}
+        />
+      );
+    }
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+        <Loader2 size={18} className={styles.spin} />
+        <span>載入與解密語音中...</span>
+      </div>
+    );
+  }
+
+  // 2. 影片渲染
+  if (isVideo) {
+    return (
+      <VideoPlayerCard
+        src={previewUrl || ''}
+        fileName={payload.name}
+        fileSize={formatFileSize(payload.size)}
+        isLoading={!previewUrl || downloading}
+      />
+    );
+  }
+
+  // 3. 圖片渲染
   if (isImage) {
     return (
       <>
@@ -124,25 +162,7 @@ export const IPFSFileCard: React.FC<IPFSFileCardProps> = ({
     );
   }
 
-  if (isVideo) {
-    return (
-      <div style={{ marginTop: '6px', maxWidth: '360px', borderRadius: '12px', overflow: 'hidden' }}>
-        {previewUrl ? (
-          <video
-            src={previewUrl}
-            controls
-            style={{ width: '100%', maxHeight: '300px', display: 'block', borderRadius: '12px', background: '#000' }}
-          />
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            <Loader2 size={18} className={styles.spin} />
-            <span>載入影片中...</span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
+  // 4. 一般檔案渲染
   return (
     <div className={styles.ipfsFileCard}>
       <div className={styles.ipfsFileIcon}>
@@ -159,3 +179,4 @@ export const IPFSFileCard: React.FC<IPFSFileCardProps> = ({
     </div>
   );
 };
+

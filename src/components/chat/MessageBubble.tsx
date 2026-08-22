@@ -1,7 +1,8 @@
-// TEAM_014: 訊息氣泡組件 (包含 Lucide 通話紀錄卡片渲染與小微灰時間字形)
+// TEAM_014: 訊息氣泡組件 (包含 Lucide 通話紀錄卡片、網址 Link Embed 預覽與微灰時間字形)
 import React from 'react';
 import { Message, User } from '../../types';
 import { AlertCircle, Phone, PhoneOff } from 'lucide-react';
+import { LinkEmbed } from './LinkEmbed';
 import styles from '../ChatWindow.module.css';
 
 interface MessageBubbleProps {
@@ -28,6 +29,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     } catch {
       return '';
     }
+  };
+
+  // 提取文字中的所有 HTTP/HTTPS URL
+  const extractUrls = (text: string): string[] => {
+    if (!text) return [];
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const matches = text.match(urlRegex);
+    return matches ? Array.from(new Set(matches)) : [];
+  };
+
+  const renderTextWithLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const parts = text.split(urlRegex);
+
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.msgInlineLink}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
   };
 
   const renderMessageContent = (content: string) => {
@@ -80,7 +112,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </div>
       );
     }
-    return content;
+
+    const detectedUrls = extractUrls(content);
+
+    return (
+      <div className={styles.msgContentWrapper}>
+        <div className={styles.msgTextBody}>{renderTextWithLinks(content)}</div>
+        {/* Context: [網址 Embed] 當訊息中包含 URL 時渲染 LinkEmbed 卡片 */}
+        {detectedUrls.length > 0 && (
+          <div className={styles.msgLinkEmbedsContainer}>
+            {detectedUrls.map((url, i) => (
+              <LinkEmbed key={i} url={url} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const bubbleClasses = [
@@ -106,3 +153,4 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     </div>
   );
 };
+

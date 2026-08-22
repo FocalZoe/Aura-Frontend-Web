@@ -210,6 +210,88 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
+  // Context: [語音訊息] 處理語音錄製完成後的 E2EE 加密與 IPFS 上傳
+  const handleSendVoice = async (audioBlob: Blob) => {
+    if (!user || !token) return;
+    if (!activeChatUser && !activeGroup) return;
+
+    setUploading(true);
+    try {
+      const arrayBuffer = await audioBlob.arrayBuffer();
+
+      if (activeGroup) {
+        const groupKey = await e2eeService.getGroupKey(activeGroup.id);
+        const { encryptedData, iv } = await encryptFileBuffer(groupKey, arrayBuffer);
+        const cid = await uploadToIPFS(encryptedData, API_BASE || getApiBase());
+
+        const payload: IPFSFilePayload = {
+          cid,
+          name: `voice-message-${Date.now()}.webm`,
+          size: audioBlob.size,
+          mime: audioBlob.type || 'audio/webm',
+          encrypted: true,
+          iv,
+        };
+
+        const ipfsContent = `[IPFS_FILE]${JSON.stringify(payload)}`;
+        const { ciphertext, iv: groupIv } = await e2eeService.encryptGroupMessage(activeGroup.id, ipfsContent);
+
+        websocketService.send({
+          type: 'group_message',
+          group_id: activeGroup.id,
+          content: ciphertext,
+          iv: groupIv,
+        });
+
+        addGroupMessage({
+          id: Date.now(),
+          group_id: activeGroup.id,
+          sender_id: user.id,
+          content: ipfsContent,
+          iv: groupIv,
+          timestamp: new Date().toISOString(),
+          decrypted: true,
+          sender: user,
+        });
+
+        notify({ message: '語音訊息已加密傳送！', type: 'success' });
+        return;
+      }
+
+      if (activeChatUser) {
+        const privateKey = await getLocalPrivateKey(user.id);
+        if (!privateKey || !activeChatUser.public_key) {
+          notify({ message: '請先確認金鑰已備份', type: 'warning' });
+          return;
+        }
+
+        const partnerPublicKey = await importPublicKey(activeChatUser.public_key);
+        const sharedKey = await deriveSharedKey(privateKey, partnerPublicKey);
+
+        const { encryptedData, iv } = await encryptFileBuffer(sharedKey, arrayBuffer);
+        const cid = await uploadToIPFS(encryptedData, API_BASE || getApiBase());
+
+        const payload: IPFSFilePayload = {
+          cid,
+          name: `voice-message-${Date.now()}.webm`,
+          size: audioBlob.size,
+          mime: audioBlob.type || 'audio/webm',
+          encrypted: true,
+          iv,
+        };
+
+        const ipfsMessageContent = `[IPFS_FILE]${JSON.stringify(payload)}`;
+        await sendChatMessage(activeChatUser.id, activeChatUser.public_key, ipfsMessageContent);
+        notify({ message: '語音訊息已加密傳送！', type: 'success' });
+      }
+    } catch (err: any) {
+      console.error('語音傳送失敗:', err);
+      notify({ message: err.message || '語音傳送失敗', type: 'danger' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (!activeChatUser && !activeGroup) {
     return (
       <div className={styles.chatWindow}>
@@ -369,6 +451,7 @@ export const ChatWindow: React.FC = () => {
           setInputText={setInputText}
           onSendMessage={handleSend}
           onFileUpload={handleFileUpload}
+          onSendVoice={handleSendVoice}
           isUploadingIPFS={uploading}
           disabled={activeChatUser ? !activeChatUser.public_key : false}
         />

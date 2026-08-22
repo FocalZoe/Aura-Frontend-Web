@@ -97,6 +97,16 @@ class NotificationManager {
       console.error('發送桌面系統通知失敗:', e);
     }
   }
+
+  // Context: [標題通知] 收到新訊息或邀請時統一將 title 更新為 Aura (<通知數量>)
+  public updateTitleBadge(unreadCount: number) {
+    if (typeof document === 'undefined') return;
+    if (unreadCount > 0) {
+      document.title = `Aura (${unreadCount})`;
+    } else {
+      document.title = 'Aura';
+    }
+  }
 }
 
 export const notificationManager = new NotificationManager();

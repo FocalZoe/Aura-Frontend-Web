@@ -62,7 +62,7 @@ export const OAuthModal: React.FC<OAuthModalProps> = ({
       <div className={styles.providerBadge} style={{ background: providerBg }}>
         {providerName.charAt(0)}
       </div>
-      <span>{step === 'auth' ? `使用 ${providerName} 帳號登入` : '設定 Focal Aura 帳號 ID'}</span>
+      <span>{step === 'auth' ? `使用 ${providerName} 帳號登入` : '設定 Aura 帳號 ID'}</span>
     </div>
   );
 
@@ -78,7 +78,7 @@ export const OAuthModal: React.FC<OAuthModalProps> = ({
       {step === 'auth' ? (
         <div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px' }}>
-            請選擇欲授權登入 Focal Aura 的 {providerName} 帳戶：
+            請選擇欲授權登入 Aura 的 {providerName} 帳戶：
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

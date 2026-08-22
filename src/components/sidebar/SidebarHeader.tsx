@@ -30,7 +30,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
   const handleLogoutConfirm = () => {
     showConfirmModal({
       title: '確認登出帳號',
-      message: '確定要登出 Focal Aura 系統嗎？登出後需重新登入以存取通訊。',
+      message: '確定要登出 Aura 系統嗎？登出後需重新登入以存取通訊。',
       danger: true,
       confirmText: '登出',
       onConfirm: () => {

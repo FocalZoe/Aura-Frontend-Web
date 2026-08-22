@@ -351,14 +351,679 @@
   gap: 8px;
 }
 
-/* Context: [手機RWD] 手機端 (<= 768px) 專屬佈局與限制 */
+/* ==========================================================================
+   語音訊息錄製器 (Voice Recorder)
+   ========================================================================== */
+.chatMicBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.chatMicBtn:hover:not(:disabled) {
+  color: var(--primary, #6366f1);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.voiceRecorderContainer {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 6px 14px;
+  gap: 12px;
+  animation: slideInUp 0.25s ease-out;
+}
+
+.voiceRecordIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voiceRecordingDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+  animation: pulseGlow 1.2s infinite ease-in-out;
+}
+
+.voiceMicIcon {
+  color: #ef4444;
+}
+
+.voiceTimerText {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.voiceWaveforms {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 24px;
+}
+
+.voiceWaveBar {
+  width: 3px;
+  background: var(--primary, #6366f1);
+  border-radius: 3px;
+  animation: waveBounce 0.8s infinite ease-in-out alternate;
+}
+
+.wave1 { height: 8px; animation-delay: 0s; }
+.wave2 { height: 16px; animation-delay: 0.2s; }
+.wave3 { height: 22px; animation-delay: 0.4s; }
+.wave4 { height: 12px; animation-delay: 0.1s; }
+
+@keyframes waveBounce {
+  0% { transform: scaleY(0.4); opacity: 0.5; }
+  100% { transform: scaleY(1.3); opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.25); opacity: 0.4; }
+}
+
+.voiceRecorderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voiceCancelBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.voiceCancelBtn:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.voiceSendBtn {
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  transition: all 0.2s ease;
+}
+
+.voiceSendBtn:hover:not(:disabled) {
+  transform: scale(1.06);
+}
+
+/* ==========================================================================
+   音訊播放器 (Audio Player Card)
+   ========================================================================== */
+.audioPlayerCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 14px;
+  border-radius: 16px;
+  min-width: 260px;
+  max-width: 340px;
+  backdrop-filter: blur(12px);
+  margin-top: 4px;
+}
+
+.audioPlayerSelf {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.audioPlayBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.audioPlayBtn:hover:not(:disabled) {
+  transform: scale(1.06);
+}
+
+.audioMainContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.audioHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.audioTitleWrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.audioMusicIcon {
+  color: var(--primary, #6366f1);
+  flex-shrink: 0;
+}
+
+.audioTitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audioSizeText {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.audioWaveVisualizer {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 28px;
+  padding: 2px 0;
+}
+
+.waveVisualBar {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  transition: height 0.2s ease, background-color 0.2s ease;
+}
+
+.wavePlaying .waveVisualBar {
+  background: var(--primary, #6366f1);
+  animation: waveVisualPulse 0.6s infinite alternate ease-in-out;
+}
+
+.wavePlaying .waveVisualBar:nth-child(2) { animation-delay: 0.1s; }
+.wavePlaying .waveVisualBar:nth-child(3) { animation-delay: 0.2s; }
+.wavePlaying .waveVisualBar:nth-child(4) { animation-delay: 0.3s; }
+.wavePlaying .waveVisualBar:nth-child(5) { animation-delay: 0.15s; }
+.wavePlaying .waveVisualBar:nth-child(6) { animation-delay: 0.25s; }
+.wavePlaying .waveVisualBar:nth-child(7) { animation-delay: 0.05s; }
+.wavePlaying .waveVisualBar:nth-child(8) { animation-delay: 0.18s; }
+
+@keyframes waveVisualPulse {
+  0% { transform: scaleY(0.3); }
+  100% { transform: scaleY(1.2); }
+}
+
+.audioProgressRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.audioSeekSlider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.audioSeekSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+.audioTimeLabel {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.audioDownloadBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.audioDownloadBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   現代影片播放器 (Video Player Card)
+   ========================================================================== */
+.videoPlayerCard {
+  position: relative;
+  max-width: 380px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  margin-top: 4px;
+}
+
+.videoPlayerLoadingCard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.videoHeaderOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent);
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+.videoMetaInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.videoFilmIcon {
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+.videoTitleText {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.videoSizeBadge {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.videoOverlayActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.videoIconBtn {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.videoIconBtn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.videoWrapper {
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+}
+
+.videoElement {
+  width: 100%;
+  max-height: 300px;
+  display: block;
+  background: #000;
+}
+
+.videoCenterPlayBtn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255, 255, 255, 0.88);
+  pointer-events: none;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+  transition: all 0.2s ease;
+}
+
+.videoLightboxOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.videoLightboxContent {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.videoLightboxCloseBtn {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.videoLightboxElement {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
+}
+
+/* ==========================================================================
+   網址訊息 Link Embed 預覽
+   ========================================================================== */
+.msgContentWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.msgTextBody {
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+.msgInlineLink {
+  color: #38bdf8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+
+.msgInlineLink:hover {
+  color: #7dd3fc;
+}
+
+.msgLinkEmbedsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.linkEmbedCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  max-width: 380px;
+}
+
+.linkEmbedCard:hover {
+  background: rgba(30, 41, 59, 0.75);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
+.linkFaviconBox {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.linkFaviconImg {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.linkGlobeIcon {
+  color: var(--text-muted);
+}
+
+.linkEmbedContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.linkDomainName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkFullUrl {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkExternalIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* YouTube 卡片 */
+.youtubeCardPreview {
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  max-width: 380px;
+  transition: all 0.2s ease;
+}
+
+.youtubeCardPreview:hover {
+  border-color: #ef4444;
+}
+
+.youtubeThumbWrapper {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #000;
+  overflow: hidden;
+}
+
+.youtubeThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.youtubePlayOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
+  transition: all 0.2s ease;
+}
+
+.youtubeCardPreview:hover .youtubePlayOverlay {
+  background: rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+}
+
+.youtubeInfoRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.youtubeBadge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.youtubeUrlText {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.linkExternalBtn {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s ease;
+}
+
+.linkExternalBtn:hover {
+  color: #fff;
+}
+
+.youtubeEmbedContainer {
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.youtubeIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ==========================================================================
+   Context: [手機RWD] 手機端 (<= 768px) 專屬佈局與限制
+   ========================================================================== */
 @media (max-width: 768px) {
   .backBtn {
     display: flex;
   }
 
-  /* Context: [手機限制] 手機網頁版僅能傳訊息，隱藏語音與視訊通話按鈕 */
-  .callButtonsGroup {
+  /* Context: [手機限制] 手機網頁版僅能傳文字訊息，隱藏通話按鈕與麥克風錄音按鈕 */
+  .callButtonsGroup,
+  .chatMicBtn {
     display: none !important;
   }
 
@@ -387,3 +1052,4 @@
     height: 42px;
   }
 }
+
