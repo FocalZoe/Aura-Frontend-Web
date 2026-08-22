@@ -1,5 +1,5 @@
-// Context: [訊息氣泡右鍵選單] 整合快捷 Emoji、全套表情選取器、查看表情名單、對話截圖、複製文字、30 分鐘內編輯/收回與單方刪除
-import React, { useState, useEffect, useRef } from 'react';
+// Context: [訊息氣泡右鍵選單] 整合快捷 Emoji、查看表情名單、獨立全表情彈窗觸發、對話截圖、複製文字、30 分鐘內編輯/收回與單方刪除
+import React, { useEffect, useRef } from 'react';
 import { Message, User } from '../../types';
 import { Copy, Edit2, RotateCcw, Trash2, Camera, SmilePlus, Smile } from 'lucide-react';
 import styles from './MessageContextMenu.module.css';
@@ -17,42 +17,10 @@ export interface MessageContextMenuProps {
   onRecall?: (message: Message) => void;
   onDelete?: (message: Message) => void;
   onViewReactions?: (message: Message) => void;
+  onOpenFullEmojiPicker?: (message: Message, x: number, y: number) => void;
 }
 
 const QUICK_EMOJIS = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
-
-const ALL_EMOJIS = [
-  '😀', '😃', '😄', '😁', '😆', '😅',
-  '🤣', '😂', '🙂', '😉', '😊', '😇',
-  '🥰', '😍', '🤩', '😘', '😗', '😋',
-  '😛', '😜', '🤪', '😝', '🤗', '🤭',
-  '🤫', '🤔', '🤐', '🤨', '😐', '😑',
-  '😶', '😏', '😒', '🙄', '😬', '😮‍💨',
-  '🤥', '😌', '😔', '😪', '🤤', '😴',
-  '😷', '🤒', '🤕', '🤢', '🤮', '🤧',
-  '🥵', '🥶', '🥴', '😵', '🤯', '🤠',
-  '🥳', '😎', '🤓', '🧐', '😕', '😟',
-  '🙁', '😮', '😯', '😲', '😳', '🥺',
-  '😦', '😧', '😨', '😰', '😥', '😢',
-  '😭', '😱', '😖', '😣', '😞', '😓',
-  '😩', '😫', '🥱', '😤', '😡', '😠',
-  '🤬', '😈', '👿', '💀', '☠️', '💩',
-  '🤡', '👹', '👺', '👻', '👽', '👾',
-  '🤖', '😺', '😸', '😹', '😻', '😼',
-  '😽', '🙀', '😿', '😾', '🙈', '🙉',
-  '🙊', '💋', '💌', '💘', '💝', '💖',
-  '💗', '💓', '💞', '💕', '💟', '❣️',
-  '💔', '❤️', '🧡', '💛', '💚', '💙',
-  '💜', '🤎', '🖤', '🤍', '💯', '💢',
-  '💥', '💫', '💦', '💨', '🕳️', '💣',
-  '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💤',
-  '👋', '🤚', '🖐️', '✋', '🖖', '👌',
-  '🤌', '🤏', '✌️', '🤞', '🤟', '🤘',
-  '🤙', '👈', '👉', '👆', '🖕', '👇',
-  '☝️', '👍', '👎', '✊', '👊', '🤛',
-  '🤜', '👏', '🙌', '👐', '🤲', '🤝',
-  '🙏', '✍️', '💅', '🤳', '💪', '🦾'
-];
 
 export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   x,
@@ -67,9 +35,9 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   onRecall,
   onDelete,
   onViewReactions,
+  onOpenFullEmojiPicker,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [showAllEmojis, setShowAllEmojis] = useState(false);
 
   const isSelf = Number(message.sender_id) === Number(currentUserId);
   const isRecalled = message.is_recalled || message.content === '[RECALLED]';
@@ -100,8 +68,8 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
 
   // 自適應視窗邊界調整座標
   const adjustedPosition = React.useMemo(() => {
-    const menuWidth = 230;
-    const menuHeight = showAllEmojis ? 360 : 260;
+    const menuWidth = 220;
+    const menuHeight = 240;
     const winWidth = window.innerWidth;
     const winHeight = window.innerHeight;
 
@@ -116,7 +84,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
     }
 
     return { x: Math.max(10, posX), y: Math.max(10, posY) };
-  }, [x, y, showAllEmojis]);
+  }, [x, y]);
 
   return (
     <div
@@ -125,55 +93,38 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
       style={{ left: `${adjustedPosition.x}px`, top: `${adjustedPosition.y}px` }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* 頂部快捷表情反應列 + 展開更多按鈕 */}
+      {/* 頂部快捷表情反應列 + 游標旁彈出全套表情按鈕 */}
       {message.id && !isRecalled && (
-        <>
-          <div className={styles.emojiRow}>
-            {QUICK_EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                className={styles.emojiBtn}
-                onClick={() => {
-                  onReaction(message.id!, emoji);
-                  onClose();
-                }}
-                title={`反應 ${emoji}`}
-              >
-                {emoji}
-              </button>
-            ))}
-
+        <div className={styles.emojiRow}>
+          {QUICK_EMOJIS.map((emoji) => (
             <button
+              key={emoji}
               type="button"
-              className={styles.moreEmojiBtn}
-              onClick={() => setShowAllEmojis(!showAllEmojis)}
-              title="全部表情符號"
+              className={styles.emojiBtn}
+              onClick={() => {
+                onReaction(message.id!, emoji);
+                onClose();
+              }}
+              title={`反應 ${emoji}`}
             >
-              <SmilePlus size={16} />
+              {emoji}
             </button>
-          </div>
+          ))}
 
-          {/* 全套表情選取面板 */}
-          {showAllEmojis && (
-            <div className={styles.fullEmojiPickerPanel}>
-              {ALL_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  className={styles.emojiBtn}
-                  onClick={() => {
-                    onReaction(message.id!, emoji);
-                    onClose();
-                  }}
-                  title={`反應 ${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
+          <button
+            type="button"
+            className={styles.moreEmojiBtn}
+            onClick={(e) => {
+              if (onOpenFullEmojiPicker) {
+                onOpenFullEmojiPicker(message, e.clientX, e.clientY);
+              }
+              onClose();
+            }}
+            title="全部表情符號 (游標旁展開)"
+          >
+            <SmilePlus size={16} />
+          </button>
+        </div>
       )}
 
       <div className={styles.menuDivider} />

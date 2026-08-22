@@ -19,6 +19,7 @@ import { MessageContextMenu } from './chat/MessageContextMenu';
 import { ScreenshotToolbar } from './chat/ScreenshotToolbar';
 import { ChatScreenshotModal } from './chat/ChatScreenshotModal';
 import { MessageReactionsModal } from './chat/MessageReactionsModal';
+import { EmojiPickerPopover } from './chat/EmojiPickerPopover';
 import styles from './ChatWindow.module.css';
 import { useCallStore } from '../stores/useCallStore';
 
@@ -71,6 +72,7 @@ export const ChatWindow: React.FC = () => {
   // Context: [訊息載入與表情反應詳情狀態]
   const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
   const [selectedReactionMessage, setSelectedReactionMessage] = useState<Message | null>(null);
+  const [emojiPickerState, setEmojiPickerState] = useState<{ x: number; y: number; message: Message } | null>(null);
 
   // Context: 統一在頂部計算當前對話訊息列表與群成員對應表，嚴格遵守 React Rules of Hooks
   const currentMessages: Message[] = React.useMemo(() => {
@@ -808,8 +810,22 @@ export const ChatWindow: React.FC = () => {
           onRecall={handleRecallMessage}
           onDelete={handleDeleteMessage}
           onViewReactions={(msg) => setSelectedReactionMessage(msg)}
+          onOpenFullEmojiPicker={(msg, x, y) => setEmojiPickerState({ message: msg, x, y })}
         />
       )}
+
+      {/* 獨立全表情符號浮動選取器 (游標旁彈出) */}
+      <EmojiPickerPopover
+        isOpen={Boolean(emojiPickerState)}
+        x={emojiPickerState?.x || 0}
+        y={emojiPickerState?.y || 0}
+        onClose={() => setEmojiPickerState(null)}
+        onSelectEmoji={(emoji) => {
+          if (emojiPickerState?.message.id) {
+            handleReaction(emojiPickerState.message.id, emoji);
+          }
+        }}
+      />
 
       {/* 訊息表情反應名單彈窗 */}
       <MessageReactionsModal

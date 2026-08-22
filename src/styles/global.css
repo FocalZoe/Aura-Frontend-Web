@@ -111,7 +111,12 @@ input, textarea, select {
   --status-offline: #94a3b8;
 }
 
-/* 3. Common Glass & Scrollbar Utility */
+/* 3. 全域統一極致質感 Scrollbar (支援 WebKit、Blink 與 Firefox) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.16)) transparent;
+}
+
 .glass {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
@@ -127,15 +132,21 @@ input, textarea, select {
 
 ::-webkit-scrollbar-track {
   background: transparent;
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 10px;
+  background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.32));
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* 4. Core UI Primitives (Buttons & Form Inputs) */

@@ -1,0 +1,156 @@
+/* Context: 獨立 Emoji 全表情浮動選取器 (極致深色毛玻璃、分類切換、搜尋與邊界自適應) */
+
+.popoverContainer {
+  position: fixed;
+  z-index: 1050;
+  width: 320px;
+  max-height: 380px;
+  background: var(--bg-modal, rgba(21, 28, 44, 0.96));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popoverFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 頂部搜尋列 */
+.searchHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 8px 12px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.searchInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  background: var(--bg-input, rgba(15, 23, 42, 0.6));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
+.searchInput {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #f8fafc);
+  font-size: 0.84rem;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.82rem;
+}
+
+/* 分類導覽 Tabs */
+.categoryTabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.catBtn {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  padding: 4px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.catBtn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.catBtnActive {
+  opacity: 1;
+  background: var(--accent-light, rgba(59, 130, 246, 0.2));
+  box-shadow: 0 0 0 1px var(--accent-color, #3b82f6);
+}
+
+/* Emoji 網格滾動區域 */
+.emojiGridBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 260px;
+}
+
+.categoryGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.categoryTitle {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-secondary, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-left: 2px;
+}
+
+.emojiGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.emojiItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  font-size: 1.3rem;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+  line-height: 1;
+}
+
+.emojiItem:hover {
+  background: var(--accent-light, rgba(59, 130, 246, 0.2));
+  transform: scale(1.25);
+}
+
+.emptyTip {
+  text-align: center;
+  padding: 30px 10px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.84rem;
+}
