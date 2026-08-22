@@ -1,6 +1,5 @@
 import React, { useContext, useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { SocketContext } from '../context/SocketContext';
 import { useNotification } from '../context/NotificationContext';
 import { useChatStore } from '../stores/useChatStore';
 import { useUIStore } from '../stores/useUIStore';
@@ -9,7 +8,7 @@ import { e2eeService } from '../services/e2eeService';
 import { apiClient, getApiBase } from '../services/apiClient';
 import { MessageSquare, File, Download, Loader2, X, AlertCircle } from 'lucide-react';
 import { IPFSFilePayload, Message } from '../types';
-import { getLocalPrivateKey, importPublicKey, deriveSharedKey, encryptFileBuffer, decryptFileBuffer } from '../utils/crypto';
+import { getLocalPrivateKey, importPublicKey, deriveSharedKey, encryptMessage, encryptFileBuffer, decryptFileBuffer } from '../utils/crypto';
 import { uploadToIPFS, fetchFromIPFS } from '../utils/ipfs';
 
 import { ChatHeader } from './chat/ChatHeader';
@@ -17,9 +16,6 @@ import { MessageList } from './chat/MessageList';
 import { ChatInput } from './chat/ChatInput';
 import { IPFSFileCard } from './chat/IPFSFileCard';
 import styles from './ChatWindow.module.css';
-
-
-
 import { useCallStore } from '../stores/useCallStore';
 
 export const ChatWindow: React.FC = () => {
@@ -29,21 +25,22 @@ export const ChatWindow: React.FC = () => {
   const {
     activeChatUser,
     setActiveChatUser,
-    sendChatMessage,
-    isUserOnline,
+    onlineUsers,
     addStrangerUser,
-  } = useContext(SocketContext);
-
-  const {
+    friendsMap,
     activeGroup,
     groupMessages,
     setGroupMessages,
     addGroupMessage,
     messages,
+    setMessages,
+    addMessage,
     blockedUsers,
     updateGroupInStore,
     removeGroup,
   } = useChatStore();
+
+  const isUserOnline = (id: number) => onlineUsers.includes(Number(id));
 
   const { setShowGroupMembersModal, setActiveGroupForModal } = useUIStore();
   const { notify } = useNotification();
@@ -51,13 +48,13 @@ export const ChatWindow: React.FC = () => {
   const [uploading, setUploading] = useState<boolean>(false);
   const [isFriend, setIsFriend] = useState<boolean>(true);
 
-  // TEAM_009: 判斷當前一對一對象是否已被自己封鎖
+  // Context: 判斷當前一對一對象是否已被自己封鎖
   const isBlockedByMe = !!(
     activeChatUser &&
     blockedUsers.some((b) => Number(b.id) === Number(activeChatUser.id))
   );
 
-  // TEAM_009: 判斷當前使用者在群組中的 status (accepted, pending, removed)
+  // Context: 判斷當前使用者在群組中的 status (accepted, pending, removed)
   const currentGroupMember = activeGroup?.members?.find(
     (m) => Number(m.user_id) === Number(user?.id)
   );
@@ -71,6 +68,7 @@ export const ChatWindow: React.FC = () => {
       (activeGroup.members && user?.id && !activeGroup.members.some((m) => Number(m.user_id) === Number(user.id))))
   );
 
+  // Context: [訊息載入] 當切換群組時載入並解密群組歷史訊息
   useEffect(() => {
     const fetchGroupMessages = async () => {
       if (activeGroup && token) {
@@ -87,7 +85,26 @@ export const ChatWindow: React.FC = () => {
     fetchGroupMessages();
   }, [activeGroup?.id, token]);
 
-  // TEAM_013: 由 Zustand Store 的 friends 進行純淨響應式訂閱，消除重複 HTTP 請求與 DOM Event 監聽
+  // Context: [訊息載入] 當切換私聊/陌生人時載入並解密一對一歷史訊息
+  useEffect(() => {
+    const fetchDirectMessages = async () => {
+      if (activeChatUser && token && user) {
+        try {
+          const rawMsgs = await apiClient.get<Message[]>(`/messages/${activeChatUser.id}`, token);
+          if (Array.isArray(rawMsgs)) {
+            const decryptedList = await e2eeService.decryptHistoryMessages(rawMsgs, user.id, activeChatUser.id, token);
+            setMessages(decryptedList);
+          }
+        } catch (err) {
+          console.error('獲取私聊歷史訊息失敗:', err);
+        }
+      }
+    };
+
+    fetchDirectMessages();
+  }, [activeChatUser?.id, token, user?.id]);
+
+  // Context: [好友判定] 由 Zustand Store 的 friends 進行響應式訂閱
   const friends = useChatStore((s) => s.friends);
 
   useEffect(() => {
@@ -96,7 +113,7 @@ export const ChatWindow: React.FC = () => {
     }
   }, [activeChatUser, friends]);
 
-  // TEAM_009: 同意群組邀請
+  // Context: [群組管理] 同意群組邀請
   const handleAcceptInvite = async () => {
     if (!activeGroup || !token) return;
     try {
@@ -113,7 +130,7 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
-  // TEAM_009: 拒絕群組邀請
+  // Context: [群組管理] 拒絕群組邀請
   const handleRejectInvite = async () => {
     if (!activeGroup || !token) return;
     try {
@@ -122,6 +139,50 @@ export const ChatWindow: React.FC = () => {
       notify({ message: '已拒絕群組邀請', type: 'info' });
     } catch (err: any) {
       notify({ message: err.message || '操作失敗', type: 'danger' });
+    }
+  };
+
+  // Context: [一對一訊息發送] 封裝 E2EE 金鑰衍生與 WebSocket 即時傳送
+  const sendDirectMessage = async (toUserId: number, partnerPublicKeyBase64: string | undefined, content: string) => {
+    if (!user || !token) return;
+    let partnerPubKey: string | undefined = partnerPublicKeyBase64 || friendsMap[toUserId];
+    if (!partnerPubKey) {
+      partnerPubKey = await e2eeService.fetchUserPublicKey(toUserId, token);
+    }
+    if (!partnerPubKey) {
+      throw new Error('對方尚未建立加密金鑰對');
+    }
+
+    const privateKey = await getLocalPrivateKey(user.id);
+    if (!privateKey) {
+      throw new Error('請先輸入 PIN 碼解鎖私鑰');
+    }
+
+    const targetPubKey: string = partnerPubKey;
+    const importedPubKey = await importPublicKey(targetPubKey);
+    const sharedKey = await deriveSharedKey(privateKey, importedPubKey);
+    const { ciphertext, iv } = await encryptMessage(sharedKey, content);
+
+    websocketService.send({
+      type: 'message',
+      to: toUserId,
+      content: ciphertext,
+      iv,
+    });
+
+    addMessage({
+      id: Date.now(),
+      sender_id: user.id,
+      receiver_id: toUserId,
+      to: toUserId,
+      content,
+      iv,
+      timestamp: new Date().toISOString(),
+      decrypted: true,
+    });
+
+    if (!isFriend && activeChatUser) {
+      addStrangerUser(activeChatUser, true);
     }
   };
 
@@ -159,11 +220,8 @@ export const ChatWindow: React.FC = () => {
 
     if (activeChatUser) {
       try {
-        await sendChatMessage(activeChatUser.id, activeChatUser.public_key, inputText.trim());
+        await sendDirectMessage(activeChatUser.id, activeChatUser.public_key, inputText.trim());
         setInputText('');
-        if (!isFriend) {
-          addStrangerUser(activeChatUser, true);
-        }
       } catch (err: any) {
         notify({ message: err.message || '訊息發送失敗', type: 'danger' });
       }
@@ -199,7 +257,7 @@ export const ChatWindow: React.FC = () => {
       };
 
       const ipfsMessageContent = `[IPFS_FILE]${JSON.stringify(payload)}`;
-      await sendChatMessage(activeChatUser.id, activeChatUser.public_key, ipfsMessageContent);
+      await sendDirectMessage(activeChatUser.id, activeChatUser.public_key, ipfsMessageContent);
       notify({ message: '檔案已安全加密傳送！', type: 'success' });
     } catch (err: any) {
       console.error('檔案傳送失敗:', err);
@@ -281,7 +339,7 @@ export const ChatWindow: React.FC = () => {
         };
 
         const ipfsMessageContent = `[IPFS_FILE]${JSON.stringify(payload)}`;
-        await sendChatMessage(activeChatUser.id, activeChatUser.public_key, ipfsMessageContent);
+        await sendDirectMessage(activeChatUser.id, activeChatUser.public_key, ipfsMessageContent);
         notify({ message: '語音訊息已加密傳送！', type: 'success' });
       }
     } catch (err: any) {
@@ -402,7 +460,7 @@ export const ChatWindow: React.FC = () => {
         </div>
       )}
 
-      {/* TEAM_009: 聊天輸入區域狀態判定（已封鎖用戶 / 待同意邀請 / 被移出群組 / 正常輸入框） */}
+      {/* Context: 聊天輸入區域狀態判定（已封鎖用戶 / 待同意邀請 / 被移出群組 / 正常輸入框） */}
       {isBlockedByMe ? (
         <div style={{
           padding: '16px',
@@ -459,3 +517,4 @@ export const ChatWindow: React.FC = () => {
     </div>
   );
 };
+

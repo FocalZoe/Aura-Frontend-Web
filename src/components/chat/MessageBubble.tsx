@@ -1,4 +1,4 @@
-// TEAM_014: 訊息氣泡組件 (包含 Lucide 通話紀錄卡片、網址 Link Embed 預覽與微灰時間字形)
+﻿// Context: 訊息氣泡組件 (包含 Lucide 通話紀錄卡片、網址 Link Embed 預覽與微灰時間字形)
 import React from 'react';
 import { Message, User } from '../../types';
 import { AlertCircle, Phone, PhoneOff } from 'lucide-react';
@@ -153,4 +153,5 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     </div>
   );
 };
+
 

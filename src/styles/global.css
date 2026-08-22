@@ -1,4 +1,4 @@
-/* TEAM_012: 單一全域 SSOT CSS 設計系統 (Global CSS) */
+﻿/* Context: 單一全域 SSOT CSS 設計系統 (Global CSS) */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 /* 1. 全域 CSS Reset & Typography */
@@ -334,3 +334,4 @@ button:disabled,
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+

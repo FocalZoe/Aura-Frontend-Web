@@ -1,4 +1,4 @@
-// TEAM_012: PendingRequestsModal 重構 - 套用通用 BaseModal
+﻿// Context: PendingRequestsModal 重構 - 套用通用 BaseModal
 import React from 'react';
 import { User } from '../types';
 import { UserCheck, Check, X, Inbox } from 'lucide-react';
@@ -83,3 +83,4 @@ export const PendingRequestsModal: React.FC<PendingRequestsModalProps> = ({
     </BaseModal>
   );
 };
+

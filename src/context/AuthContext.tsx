@@ -1,9 +1,9 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+﻿import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
 import { useAuthStore } from '../stores/useAuthStore';
 import { apiClient } from '../services/apiClient';
 
-// TEAM_014: 動態推導 API 端點，若跨網/區網存取自動將 localhost/127.0.0.1 替換為當前主機 IP
+// Context: 動態推導 API 端點，若跨網/區網存取自動將 localhost/127.0.0.1 替換為當前主機 IP
 export const getApiBase = () => {
   let url = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
   if (!url) {
@@ -23,7 +23,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// TEAM_006: AuthProvider 與 Zustand useAuthStore 全步同步
+// Context: AuthProvider 與 Zustand useAuthStore 全步同步
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { user: storeUser, token: storeToken, setAuth, updateUser: storeUpdateUser, logout: storeLogout } = useAuthStore();
   const [user, setUser] = useState<User | null>(storeUser);
@@ -95,3 +95,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+

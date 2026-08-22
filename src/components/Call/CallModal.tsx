@@ -1,4 +1,4 @@
-// TEAM_014: 通話 Modal 組件 (完全統一步調影音 Viewport、畫中畫顯示個人頭像與獨立聲軌播放器)
+﻿// Context: 通話 Modal 組件 (完全統一步調影音 Viewport、畫中畫顯示個人頭像與獨立聲軌播放器)
 import React, { useEffect, useRef } from 'react';
 import {
   PhoneOff,
@@ -337,3 +337,4 @@ export const CallModal: React.FC = () => {
     </>
   );
 };
+

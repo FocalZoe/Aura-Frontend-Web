@@ -1,4 +1,4 @@
-// TEAM_012: PinModal 重構 - 套用通用 BaseModal
+﻿// Context: PinModal 重構 - 套用通用 BaseModal
 import React, { useState, FormEvent, useRef, KeyboardEvent, ClipboardEvent, ChangeEvent } from 'react';
 import { Shield, Key, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 import { BaseModal } from './common/BaseModal';
@@ -243,3 +243,4 @@ export const PinModal: React.FC<PinModalProps> = ({
     </BaseModal>
   );
 };
+

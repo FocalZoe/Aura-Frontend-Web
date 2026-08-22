@@ -1,4 +1,4 @@
-// TEAM_012: GroupMembersModal 重構 - 套用通用 BaseModal
+﻿// Context: GroupMembersModal 重構 - 套用通用 BaseModal
 import React, { useState, useRef, useEffect } from 'react';
 import { Users, UserMinus, LogOut, Trash2, UserPlus, ChevronDown } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
@@ -290,3 +290,4 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
     </BaseModal>
   );
 };
+

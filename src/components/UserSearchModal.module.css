@@ -1,4 +1,4 @@
-/* TEAM_012: UserSearchModal Module CSS */
+﻿/* Context: UserSearchModal Module CSS */
 .searchFormRow {
   display: flex;
   gap: 10px;
@@ -154,3 +154,4 @@
     padding: 12px;
   }
 }
+

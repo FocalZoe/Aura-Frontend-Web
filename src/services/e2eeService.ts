@@ -32,27 +32,28 @@ class E2EEService {
     this.groupKeysCache = {};
   }
 
-  // TEAM_015: 強化群組 E2EE 金鑰推導機制 (結合動態群組 Salt 與用戶私有上下文)
-  async getGroupKey(groupId: number): Promise<CryptoKey> {
-    if (this.groupKeysCache[groupId]) {
-      return this.groupKeysCache[groupId];
+  // Context: [E2EE群組加密] 結合動態群組 Salt 與 Epoch 版本推導群組對稱密鑰
+  async getGroupKey(groupId: number, epoch: number = 1): Promise<CryptoKey> {
+    const cacheKey = `${groupId}_ep${epoch}`;
+    if ((this.groupKeysCache as any)[cacheKey]) {
+      return (this.groupKeysCache as any)[cacheKey];
     }
-    const rawSalt = `focal_aura_group_v2_${groupId}_salt`;
+    const rawSalt = `focal_aura_group_v2_${groupId}_ep${epoch}_salt`;
     const saltBase64 = window.btoa(rawSalt);
-    const key = await deriveKEK(`focal_group_sec_${groupId}_${rawSalt}`, saltBase64);
-    this.groupKeysCache[groupId] = key;
+    const key = await deriveKEK(`focal_group_sec_${groupId}_ep${epoch}_${rawSalt}`, saltBase64);
+    (this.groupKeysCache as any)[cacheKey] = key;
     return key;
   }
 
-  async encryptGroupMessage(groupId: number, plaintext: string): Promise<{ ciphertext: string; iv: string }> {
-    const groupKey = await this.getGroupKey(groupId);
+  async encryptGroupMessage(groupId: number, plaintext: string, epoch: number = 1): Promise<{ ciphertext: string; iv: string }> {
+    const groupKey = await this.getGroupKey(groupId, epoch);
     return await encryptMessage(groupKey, plaintext);
   }
 
-  async decryptSingleGroupMessage(msg: GroupMessage, groupId: number): Promise<GroupMessage> {
+  async decryptSingleGroupMessage(msg: GroupMessage, groupId: number, epoch: number = 1): Promise<GroupMessage> {
     if (!msg.iv) return msg;
     try {
-      const groupKey = await this.getGroupKey(groupId);
+      const groupKey = await this.getGroupKey(groupId, epoch);
       const plaintext = await decryptMessage(groupKey, msg.content, msg.iv);
       return { ...msg, content: plaintext, decrypted: true };
     } catch (err) {
@@ -61,8 +62,8 @@ class E2EEService {
     }
   }
 
-  async decryptGroupMessages(messages: GroupMessage[], groupId: number): Promise<GroupMessage[]> {
-    const groupKey = await this.getGroupKey(groupId);
+  async decryptGroupMessages(messages: GroupMessage[], groupId: number, epoch: number = 1): Promise<GroupMessage[]> {
+    const groupKey = await this.getGroupKey(groupId, epoch);
     return Promise.all(
       messages.map(async (m) => {
         if (!m.iv) return m;

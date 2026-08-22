@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+﻿import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { NotificationModel, NotificationOptions, NotificationType, NotificationContextType } from '../types';
 import { NotificationContainer } from '../components/NotificationContainer';
 import { soundEffects } from '../utils/audio';
@@ -9,7 +9,7 @@ export const NotificationContext = createContext<NotificationContextType>({
   clearNotifications: () => {},
 });
 
-// TEAM_005: 全新 Notification Context (完全替代 ToastContext，全域 CSS Module，支援 withSound / persistent / 4 種訊息類型)
+// Context: 全新 Notification Context (完全替代 ToastContext，全域 CSS Module，支援 withSound / persistent / 4 種訊息類型)
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<NotificationModel[]>([]);
 
@@ -84,7 +84,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   );
 };
 
-// TEAM_005: 自訂 Hook 方便各組件呼叫 notification
+// Context: 自訂 Hook 方便各組件呼叫 notification
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
@@ -92,3 +92,4 @@ export const useNotification = () => {
   }
   return context;
 };
+

@@ -1,4 +1,4 @@
-/* TEAM_012: PinModal CSS Module */
+﻿/* Context: PinModal CSS Module */
 .header {
   display: flex;
   flex-direction: column;
@@ -153,3 +153,4 @@
     font-size: 1.1rem;
   }
 }
+

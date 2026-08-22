@@ -1,10 +1,10 @@
-// TEAM_005: 使用者資料與認證介面重構
+﻿// Context: 使用者資料與認證介面重構
 export interface User {
   id: number;
   email: string;
   account_id: string; // 帳號 ID (例如: alex_dev)
   display_name?: string; // 帳號顯示名稱 (例如: Alex Chen)
-  avatar?: string; // TEAM_014: 個人大頭貼選填屬性
+  avatar?: string; // Context: 個人大頭貼選填屬性
   provider?: string;
   public_key?: string;
   has_backup_key?: boolean;
@@ -13,7 +13,7 @@ export interface User {
   created_at?: string;
 }
 
-// TEAM_005: Notification Model 與 Options 介面定義 (完全取代舊 ToastContext)
+// Context: Notification Model 與 Options 介面定義 (完全取代舊 ToastContext)
 export type NotificationType = 'danger' | 'warning' | 'info' | 'success';
 
 export interface NotificationModel {
@@ -41,7 +41,7 @@ export interface NotificationContextType {
   clearNotifications: () => void;
 }
 
-// TEAM_003: IPFS 檔案傳輸 Payload 結構
+// Context: IPFS 檔案傳輸 Payload 結構
 export interface IPFSFilePayload {
   cid: string;
   name: string;
@@ -100,38 +100,18 @@ export interface AuthContextType {
   API_BASE: string;
 }
 
-export interface SocketContextType {
-  socket: WebSocket | null;
-  onlineUsers: number[];
-  messages: Message[];
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
-  sendChatMessage: (toUserId: number, partnerPublicKeyBase64: string | undefined, content: string) => Promise<void>;
-  isUserOnline: (userId: number) => boolean;
-  loadChatHistory: (partnerId: number) => Promise<void>;
-  fetchFriendsMap: () => Promise<void>;
-  fetchUserPublicKey: (userId: number) => Promise<string | undefined>;
-  activeChatUser: User | null;
-  setActiveChatUser: React.Dispatch<React.SetStateAction<User | null>>;
-  unreadCounts: Record<number, number>;
-  markChatAsRead: (userId: number) => void;
-  strangers: User[];
-  addStrangerUser: (stranger: User, isSent?: boolean) => void;
-  incomingStrangerUsers: User[];
-  sentStrangerUsers: User[];
-}
-
 export interface ThemeContextType {
   theme: 'dark' | 'light';
   toggleTheme: () => void;
 }
 
-// TEAM_007: 群組與封鎖模型介面定義
+// Context: 群組與封鎖模型介面定義
 export interface GroupMember {
   id: number;
   group_id: number;
   user_id: number;
   role: 'owner' | 'member';
-  status?: 'accepted' | 'pending' | 'removed' | 'rejected'; // TEAM_009: 成員狀態
+  status?: 'accepted' | 'pending' | 'removed' | 'rejected'; // Context: 成員狀態
   joined_at: string;
   user?: User;
 }
@@ -164,3 +144,4 @@ export interface BlockedUser {
   created_at?: string;
   blocked_user?: User;
 }
+

@@ -1,4 +1,4 @@
-// TEAM_003: Helia IPFS 瀏覽器原生區塊管理與去中心化 CID 上傳/下載 (Production-First Architecture)
+﻿// Context: Helia IPFS 瀏覽器原生區塊管理與去中心化 CID 上傳/下載 (Production-First Architecture)
 import { getCryptoSubtle } from './crypto';
 
 let unixfsInstance: any = null;
@@ -54,7 +54,7 @@ export const uploadToIPFS = async (encryptedData: Uint8Array, apiBaseUrl?: strin
       const exactBuffer = encryptedData.buffer.slice(encryptedData.byteOffset, encryptedData.byteOffset + encryptedData.byteLength) as ArrayBuffer;
       const headers: Record<string, string> = { 'Content-Type': 'application/octet-stream' };
       
-      // TEAM_015: 帶上 JWT Authorization Bearer 標頭
+      // Context: 帶上 JWT Authorization Bearer 標頭
       const authToken = localStorage.getItem('token') || (window as any)?.__auth_token;
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
@@ -145,3 +145,4 @@ export const fetchFromIPFS = async (cid: string, apiBaseUrl: string): Promise<Ar
 
   throw new Error(`無法由 IPFS 網路下載 CID [${cid}]`);
 };
+

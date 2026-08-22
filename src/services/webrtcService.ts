@@ -1,4 +1,4 @@
-// TEAM_014: 雙架構 WebRTC 通話引擎抽象介面與 P2P 實作 (自由鏡頭切換與對手 Track 狀態監聽)
+﻿// Context: 雙架構 WebRTC 通話引擎抽象介面與 P2P 實作 (自由鏡頭切換與對手 Track 狀態監聽)
 
 export interface CallEngineEvents {
   onLocalStream?: (stream: MediaStream) => void;
@@ -279,3 +279,4 @@ export class PeerToPeerCallEngine implements ICallEngine {
     this.iceCandidateQueue = [];
   }
 }
+

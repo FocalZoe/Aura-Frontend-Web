@@ -1,4 +1,4 @@
-// TEAM_004: 使用 Web Audio API 原生動態合成通知音效（無需外部音訊檔）
+﻿// Context: 使用 Web Audio API 原生動態合成通知音效（無需外部音訊檔）
 
 class SoundEffects {
   private ctx: AudioContext | null = null;
@@ -102,3 +102,4 @@ class SoundEffects {
 }
 
 export const soundEffects = new SoundEffects();
+

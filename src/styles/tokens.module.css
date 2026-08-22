@@ -1,4 +1,4 @@
-/* TEAM_005: 全域 CSS Color Tokens (CSS Module) */
+﻿/* Context: 全域 CSS Color Tokens (CSS Module) */
 :root {
   --token-danger: #EF4444;
   --token-danger-bg: rgba(239, 68, 68, 0.16);
@@ -47,3 +47,4 @@
 .accentToken {
   color: var(--token-accent);
 }
+

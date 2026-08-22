@@ -1,4 +1,4 @@
-// TEAM_001 & TEAM_003: Web Crypto API 端到端加密 (E2EE) 工具函數庫
+﻿// Context: Web Crypto API 端到端加密 (E2EE) 工具函數庫
 
 const DB_NAME = 'focal_aura_db';
 const STORE_NAME = 'keypairs';
@@ -95,7 +95,7 @@ export const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   if (!base64 || typeof base64 !== 'string') {
     return new ArrayBuffer(0);
   }
-  // TEAM_008: 處理 URL-safe Base64 換算與補齊 '='
+  // Context: 處理 URL-safe Base64 換算與補齊 '='
   let cleanBase64 = base64.trim().replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
   while (cleanBase64.length % 4 !== 0) {
     cleanBase64 += '=';
@@ -261,7 +261,7 @@ export const decryptMessage = async (
   return dec.decode(decrypted);
 };
 
-// TEAM_003: 檔案 ArrayBuffer 之 E2EE (AES-GCM 256-bit) 加解密支援
+// Context: 檔案 ArrayBuffer 之 E2EE (AES-GCM 256-bit) 加解密支援
 export const encryptFileBuffer = async (
   sharedKey: CryptoKey,
   fileData: ArrayBuffer
@@ -291,3 +291,4 @@ export const decryptFileBuffer = async (
     encryptedData
   );
 };
+

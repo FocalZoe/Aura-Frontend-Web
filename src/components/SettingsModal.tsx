@@ -1,4 +1,4 @@
-// TEAM_012: SettingsModal 重構 - 套用通用 BaseModal
+﻿// Context: SettingsModal 重構 - 套用通用 BaseModal
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -136,3 +136,4 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     </BaseModal>
   );
 };
+

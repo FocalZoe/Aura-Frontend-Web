@@ -1,8 +1,8 @@
-// TEAM_012: UserProfileModal 重構 - 套用通用 BaseModal
+// Context: [用戶名片] 個人名片彈窗，支援好友關係操作與發起對話
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { SocketContext } from '../context/SocketContext';
 import { useNotification } from '../context/NotificationContext';
+import { useChatStore } from '../stores/useChatStore';
 import { User } from '../types';
 import { UserPlus, UserMinus, MessageSquare, ShieldCheck, AtSign } from 'lucide-react';
 import { BaseModal } from './common/BaseModal';
@@ -22,7 +22,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onFriendChange
 }) => {
   const { token, API_BASE } = useContext(AuthContext);
-  const { setActiveChatUser, isUserOnline } = useContext(SocketContext);
+  const { setActiveChatUser, onlineUsers } = useChatStore();
+  const isUserOnline = (id: number) => onlineUsers.includes(Number(id));
   const { notify } = useNotification();
 
   const [loading, setLoading] = useState<boolean>(false);

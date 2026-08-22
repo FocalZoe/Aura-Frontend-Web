@@ -1,4 +1,4 @@
-// TEAM_012: ConfirmModal 重構 - 使用通用 BaseModal
+﻿// Context: ConfirmModal 重構 - 使用通用 BaseModal
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
@@ -75,3 +75,4 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = (props) => {
     </BaseModal>
   );
 };
+

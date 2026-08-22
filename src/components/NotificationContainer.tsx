@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { AlertCircle, AlertTriangle, Info, CheckCircle, X } from 'lucide-react';
 import { NotificationModel } from '../types';
 import styles from './NotificationContainer.module.css';
@@ -8,7 +8,7 @@ interface NotificationContainerProps {
   onRemove: (id: string) => void;
 }
 
-// TEAM_005: 採用全域 CSS Module 渲染 Notification 堆疊卡片
+// Context: 採用全域 CSS Module 渲染 Notification 堆疊卡片
 export const NotificationContainer: React.FC<NotificationContainerProps> = ({
   notifications,
   onRemove,
@@ -56,3 +56,4 @@ export const NotificationContainer: React.FC<NotificationContainerProps> = ({
     </div>
   );
 };
+

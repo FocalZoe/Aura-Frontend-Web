@@ -1,4 +1,4 @@
-// TEAM_012: CreateGroupModal 重構 - 套用通用 BaseModal
+﻿// Context: CreateGroupModal 重構 - 套用通用 BaseModal
 import React, { useState } from 'react';
 import { Users, Check } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
@@ -150,3 +150,4 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({ token, notif
     </BaseModal>
   );
 };
+

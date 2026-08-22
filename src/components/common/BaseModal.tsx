@@ -1,4 +1,4 @@
-// TEAM_012: 高度自訂義與統一風格之 BaseModal 通用 Primitive 組件
+﻿// Context: 高度自訂義與統一風格之 BaseModal 通用 Primitive 組件
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
@@ -110,3 +110,4 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   return createPortal(modalContent, document.body);
 };
+

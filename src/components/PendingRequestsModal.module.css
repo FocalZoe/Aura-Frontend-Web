@@ -1,4 +1,4 @@
-/* TEAM_005: 待處理好友邀請 Modal CSS Module */
+﻿/* Context: 待處理好友邀請 Modal CSS Module */
 .modalBackdrop {
   position: fixed;
   inset: 0;
@@ -205,3 +205,4 @@
     height: 38px;
   }
 }
+

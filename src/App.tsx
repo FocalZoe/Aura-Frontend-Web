@@ -1,8 +1,10 @@
-// TEAM_012: App.tsx 全域 CSS Modules 遷移
+// Context: [App核心架構] 全域狀態與初始化管理，直連 Zustand Stores 與 WebSocket/E2EE 服務
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from './context/AuthContext';
-import { SocketContext } from './context/SocketContext';
 import { useChatStore } from './stores/useChatStore';
+import { websocketService } from './services/websocketService';
+import { e2eeService } from './services/e2eeService';
+import { apiClient } from './services/apiClient';
 import { Login } from './components/Login';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/ChatWindow';
@@ -13,27 +15,65 @@ import { CallModal } from './components/Call/CallModal';
 import { 
   getLocalPrivateKey, 
   saveLocalPrivateKey, 
-  clearLocalPrivateKey,
+  clearLocalPrivateKey, 
   generateECDHKeyPair, 
   exportPublicKey, 
   encryptPrivateKey, 
-  decryptPrivateKey,
+  decryptPrivateKey, 
   arrayBufferToBase64 
 } from './utils/crypto';
+import { User } from './types';
 import './styles/global.css';
 import styles from './styles/App.module.css';
 
 const ChatApp: React.FC = () => {
   const { token, user, loading, updateUser, API_BASE } = useContext(AuthContext);
-  const { fetchFriendsMap } = useContext(SocketContext);
   // Context: [單欄切換] 直接響應式訂閱 Zustand Store，確保好友、群組與陌生訊息均能無縫觸發單欄切換
   const activeChatUser = useChatStore((s) => s.activeChatUser);
   const activeGroup = useChatStore((s) => s.activeGroup);
+  const { setFriends, setFriendsMap, setIncomingStrangerUsers, setSentStrangerUsers } = useChatStore();
   const hasActiveChat = Boolean(activeChatUser || activeGroup);
   
   const [pinModalMode, setPinModalMode] = useState<'setup' | 'enter' | 'confirm-reset' | null>(null);
   const [pinError, setPinError] = useState<string>('');
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+
+  const fetchInitialData = async (authToken: string) => {
+    try {
+      const friendsData = await apiClient.get<User[]>('/friends', authToken);
+      if (Array.isArray(friendsData)) {
+        const map: Record<number, string> = {};
+        friendsData.forEach((f) => {
+          if (f.public_key) map[f.id] = f.public_key;
+        });
+        setFriendsMap(map);
+        setFriends(friendsData);
+      }
+    } catch (e) {
+      console.error('[App] 獲取好友列表失敗:', e);
+    }
+
+    try {
+      const [inc, sent] = await Promise.all([
+        apiClient.get<User[]>('/messages/strangers/incoming', authToken),
+        apiClient.get<User[]>('/messages/strangers/sent', authToken),
+      ]);
+      if (Array.isArray(inc)) setIncomingStrangerUsers(inc);
+      if (Array.isArray(sent)) setSentStrangerUsers(sent);
+    } catch (e) {
+      console.error('[App] 獲取陌生人名單失敗:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (token && user) {
+      websocketService.connect(token, user.id);
+      fetchInitialData(token);
+    } else {
+      websocketService.disconnect();
+      e2eeService.clearCache();
+    }
+  }, [token, user?.id]);
 
   useEffect(() => {
     const checkKeyPair = async () => {
@@ -59,7 +99,7 @@ const ChatApp: React.FC = () => {
     checkKeyPair();
   }, [token, user]);
 
-  // TEAM_013: 修正 PIN 設定與輸入時加密解密私鑰之參數與 API 終端
+  // Context: 修正 PIN 設定與輸入時加密解密私鑰之參數與 API 終端
   const handlePinSubmit = async (pin: string | null) => {
     if (!token || !user || !pin) return;
     setPinError('');
@@ -101,7 +141,7 @@ const ChatApp: React.FC = () => {
           key_salt: saltBase64,
           has_backup_key: true
         });
-        await fetchFriendsMap();
+        await fetchInitialData(token);
         setPinModalMode(null);
 
       } else if (pinModalMode === 'enter') {
@@ -118,7 +158,7 @@ const ChatApp: React.FC = () => {
 
         const privateKey = await decryptPrivateKey(encryptedBase64, pin, saltBase64, ivBase64);
         await saveLocalPrivateKey(user.id, privateKey);
-        await fetchFriendsMap();
+        await fetchInitialData(token);
         setPinModalMode(null);
       }
     } catch (err: any) {
@@ -176,10 +216,11 @@ const ChatApp: React.FC = () => {
       )}
 
       <ConfirmModal />
-      {/* TEAM_014: 掛載即時語音與視訊通話 Modal */}
+      {/* Context: 掛載即時語音與視訊通話 Modal */}
       <CallModal />
     </div>
   );
 };
 
 export default ChatApp;
+

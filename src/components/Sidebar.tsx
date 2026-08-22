@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useState, MouseEvent } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { SocketContext } from '../context/SocketContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { useNotification } from '../context/NotificationContext';
 import { UserSearchModal } from './UserSearchModal';
@@ -21,23 +20,34 @@ import { apiClient } from '../services/apiClient';
 import styles from './Sidebar.module.css';
 
 interface SidebarProps {
-
   onOpenSettings?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
   const { user, logout, token, API_BASE } = useContext(AuthContext);
+  const { theme, toggleTheme } = useContext(ThemeContext);
+  const { notify } = useNotification();
+
   const {
-    isUserOnline,
     activeChatUser,
     setActiveChatUser,
     unreadCounts,
     incomingStrangerUsers,
     sentStrangerUsers,
-  } = useContext(SocketContext);
+    onlineUsers,
+    groups,
+    setGroups,
+    activeGroup,
+    setActiveGroup,
+    removeConversation,
+    removeGroup,
+    friends,
+    setFriends,
+    pendingRequests,
+    setPendingRequests,
+  } = useChatStore();
 
-  const { theme, toggleTheme } = useContext(ThemeContext);
-  const { notify } = useNotification();
+  const isUserOnline = (id: number) => onlineUsers.includes(Number(id));
 
   const {
     currentTab,
@@ -55,19 +65,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     setContextMenu,
     showConfirmModal,
   } = useUIStore();
-
-  const {
-    groups,
-    setGroups,
-    activeGroup,
-    setActiveGroup,
-    removeConversation,
-    removeGroup,
-    friends,
-    setFriends,
-    pendingRequests,
-    setPendingRequests,
-  } = useChatStore();
 
   const chatUsers = React.useMemo(() => {
     const friendIds = new Set(friends.map((f) => f.id));

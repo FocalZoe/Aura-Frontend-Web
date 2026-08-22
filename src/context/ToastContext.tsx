@@ -1,4 +1,4 @@
-// TEAM_005: ToastContext 已重構為 NotificationContext (此處為向下相容適配器)
+﻿// Context: ToastContext 已重構為 NotificationContext (此處為向下相容適配器)
 import React, { createContext, ReactNode } from 'react';
 import { useNotification } from './NotificationContext';
 
@@ -26,3 +26,4 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     </ToastContext.Provider>
   );
 };
+

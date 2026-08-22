@@ -1,4 +1,4 @@
-/* TEAM_005: Notification 堆疊容器與卡片之 CSS Module */
+﻿/* Context: Notification 堆疊容器與卡片之 CSS Module */
 .notificationStack {
   position: fixed;
   top: 24px;
@@ -152,3 +152,4 @@
     border-radius: 12px;
   }
 }
+

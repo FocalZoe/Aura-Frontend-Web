@@ -1,4 +1,4 @@
-/* TEAM_013: ChatWindow 專屬 CSS Module 樣式 */
+﻿/* Context: ChatWindow 專屬 CSS Module 樣式 */
 .chatWindow {
   flex: 1;
   height: 100%;
@@ -1052,4 +1052,5 @@
     height: 42px;
   }
 }
+
 

@@ -1,4 +1,4 @@
-// TEAM_004: 瀏覽器系統級桌面通知 (Web Notification API) 模組
+﻿// Context: 瀏覽器系統級桌面通知 (Web Notification API) 模組
 
 class NotificationManager {
   private enabled: boolean = true;
@@ -110,3 +110,4 @@ class NotificationManager {
 }
 
 export const notificationManager = new NotificationManager();
+

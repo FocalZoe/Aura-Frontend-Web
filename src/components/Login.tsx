@@ -1,4 +1,4 @@
-// TEAM_012: Login.tsx 重構 - 套用 Module CSS
+﻿// Context: Login.tsx 重構 - 套用 Module CSS
 import React, { useState, useContext, FormEvent } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { MessageSquare, ArrowRight, AtSign, Mail, Lock, User as UserIcon } from 'lucide-react';
@@ -267,3 +267,4 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+

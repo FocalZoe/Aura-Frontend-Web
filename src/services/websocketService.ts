@@ -1,4 +1,4 @@
-// TEAM_006 & TEAM_014: 獨立 WebSocket 單例服務 (包含多 JSON 黏包強健解析與通話信號轉發)
+﻿// Context: 獨立 WebSocket 單例服務 (包含多 JSON 黏包強健解析與通話信號轉發)
 import { useAuthStore } from '../stores/useAuthStore';
 import { useChatStore } from '../stores/useChatStore';
 import { useUIStore } from '../stores/useUIStore';
@@ -9,7 +9,7 @@ import { soundEffects } from '../utils/audio';
 import { notificationManager } from '../utils/notification';
 import { Message, WSMessage, Group, User } from '../types';
 
-// TEAM_014: 動態推導 WebSocket URL，若跨網/區網存取自動將 localhost/127.0.0.1 替換為當前主機 IP
+// Context: 動態推導 WebSocket URL，若跨網/區網存取自動將 localhost/127.0.0.1 替換為當前主機 IP
 const getWsBase = (): string => {
   let url = import.meta.env.VITE_WS_URL || import.meta.env.VITE_WS_BASE_URL;
   if (!url) {
@@ -208,7 +208,7 @@ class WebSocketService {
         apiClient.get<User[]>('/friends/pending', activeToken)
           .then((pendingData) => { if (Array.isArray(pendingData)) chatStore.setPendingRequests(pendingData); })
           .catch(() => { });
-        // TEAM_015: 即時同步拉取最新黑名單
+        // Context: 即時同步拉取最新黑名單
         apiClient.get<User[]>('/blocks', activeToken)
           .then((blockedData) => { if (Array.isArray(blockedData)) chatStore.setBlockedUsers(blockedData); })
           .catch(() => { });
@@ -337,7 +337,7 @@ class WebSocketService {
       data.type === 'call_hangup' ||
       data.type === 'busy_incoming_call'
     ) {
-      // TEAM_014: 處理即時影音通話信號轉發至 useCallStore
+      // Context: 處理即時影音通話信號轉發至 useCallStore
       const callStore = useCallStore.getState();
 
       if (data.type === 'call_request') {
@@ -377,3 +377,4 @@ class WebSocketService {
 }
 
 export const websocketService = new WebSocketService();
+

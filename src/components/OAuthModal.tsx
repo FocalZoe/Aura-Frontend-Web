@@ -1,4 +1,4 @@
-// TEAM_012: OAuthModal 重構 - 套用通用 BaseModal
+﻿// Context: OAuthModal 重構 - 套用通用 BaseModal
 import React, { useState, FormEvent } from 'react';
 import { CheckCircle, AtSign, User as UserIcon } from 'lucide-react';
 import { BaseModal } from './common/BaseModal';
@@ -217,3 +217,4 @@ export const OAuthModal: React.FC<OAuthModalProps> = ({
     </BaseModal>
   );
 };
+

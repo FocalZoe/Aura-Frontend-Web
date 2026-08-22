@@ -53,6 +53,25 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         mediaRecorderRef.current = recorder;
         audioChunksRef.current = [];
 
+        // Context: [多媒體生命週期] 監聽麥克風硬體意外拔除與 MediaRecorder 異常
+        const audioTrack = stream.getAudioTracks()[0];
+        if (audioTrack) {
+          audioTrack.onended = () => {
+            if (isMounted) {
+              setErrorMsg('麥克風裝置已斷開連線');
+              cleanupStream();
+            }
+          };
+        }
+
+        recorder.onerror = (event: any) => {
+          console.error('MediaRecorder 錄音異常:', event);
+          if (isMounted) {
+            setErrorMsg('錄音過程中斷，請重試');
+            cleanupStream();
+          }
+        };
+
         recorder.ondataavailable = (event) => {
           if (event.data && event.data.size > 0) {
             audioChunksRef.current.push(event.data);

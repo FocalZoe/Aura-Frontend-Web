@@ -1,7 +1,7 @@
-// TEAM_006: 集中式前端 API Client，自動注入 Auth Header 與處理通用 Error
+﻿// Context: 集中式前端 API Client，自動注入 Auth Header 與處理通用 Error
 import { User, Message } from '../types';
 
-// TEAM_014: 動態推導 API 端點，若跨網/區網存取自動將 localhost/127.0.0.1 替換為當前主機 IP
+// Context: 動態推導 API 端點，若跨網/區網存取自動將 localhost/127.0.0.1 替換為當前主機 IP
 export const getApiBase = (): string => {
   let url = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
   if (!url) {
@@ -110,3 +110,4 @@ class APIClient {
 }
 
 export const apiClient = new APIClient();
+

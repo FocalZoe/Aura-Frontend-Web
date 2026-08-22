@@ -1,4 +1,4 @@
-/* TEAM_013: Sidebar 專屬 CSS Module 樣式 */
+﻿/* Context: Sidebar 專屬 CSS Module 樣式 */
 .sidebar {
   width: 320px;
   min-width: 320px;
@@ -344,3 +344,4 @@
     min-height: 56px;
   }
 }
+

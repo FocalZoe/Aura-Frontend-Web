@@ -1,4 +1,4 @@
-// TEAM_006: Zustand Auth Store 管理 Token 與當前 User 資訊
+﻿// Context: Zustand Auth Store 管理 Token 與當前 User 資訊
 import { create } from 'zustand';
 import { User } from '../types';
 
@@ -40,3 +40,4 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token: null, user: null });
   },
 }));
+

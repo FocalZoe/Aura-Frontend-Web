@@ -1,8 +1,8 @@
-// TEAM_012: UserSearchModal 重構 - 套用通用 BaseModal
+// Context: [用戶搜尋] 使用者搜尋彈窗，支援好友關係操作與直接發起聊天
 import React, { useContext, useState, FormEvent } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { SocketContext } from '../context/SocketContext';
 import { useNotification } from '../context/NotificationContext';
+import { useChatStore } from '../stores/useChatStore';
 import { User } from '../types';
 import { Search, UserPlus, UserMinus, MessageSquare, Loader2, AlertCircle } from 'lucide-react';
 import { BaseModal } from './common/BaseModal';
@@ -22,7 +22,7 @@ export const UserSearchModal: React.FC<UserSearchModalProps> = ({
   onFriendChange
 }) => {
   const { token, API_BASE } = useContext(AuthContext);
-  const { setActiveChatUser } = useContext(SocketContext);
+  const { setActiveChatUser } = useChatStore();
   const { notify } = useNotification();
 
   const [query, setQuery] = useState<string>('');

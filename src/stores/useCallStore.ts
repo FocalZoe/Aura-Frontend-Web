@@ -1,4 +1,4 @@
-// TEAM_014: Zustand 全域通話狀態管理與 Signaling / 發起時間戳與統一紀錄 (Zero Tech Debt Architecture)
+﻿// Context: Zustand 全域通話狀態管理與 Signaling / 發起時間戳與統一紀錄 (Zero Tech Debt Architecture)
 import { create } from 'zustand';
 import { ICallEngine, PeerToPeerCallEngine } from '../services/webrtcService';
 import { websocketService } from '../services/websocketService';
@@ -583,3 +583,4 @@ export const useCallStore = create<CallStore>((set, get) => ({
     set({ busyNotification: `未接來電通知 (對方嘗試來電時您正忙線中)` });
   },
 }));
+
