@@ -67,6 +67,40 @@ export const ChatWindow: React.FC = () => {
   // Context: [訊息編輯狀態]
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
 
+  // Context: 統一在頂部計算當前對話訊息列表與群成員對應表，嚴格遵守 React Rules of Hooks
+  const currentMessages: Message[] = React.useMemo(() => {
+    if (activeGroup) {
+      return groupMessages.map((gm) => ({
+        id: gm.id,
+        sender_id: gm.sender_id,
+        content: gm.content,
+        iv: gm.iv,
+        timestamp: gm.timestamp,
+        decrypted: gm.decrypted,
+        error: gm.error,
+        reactions: gm.reactions,
+        is_edited: gm.is_edited,
+        is_recalled: gm.is_recalled,
+        edited_at: gm.edited_at,
+        sender: gm.sender,
+        is_system: gm.is_system,
+      }));
+    }
+    return messages;
+  }, [activeGroup, groupMessages, messages]);
+
+  const groupMembersMap = React.useMemo(() => {
+    if (!activeGroup?.members) return undefined;
+    const map: Record<number, { user?: User; nickname?: string }> = {};
+    for (const m of activeGroup.members) {
+      map[m.user_id] = {
+        user: m.user,
+        nickname: m.nickname,
+      };
+    }
+    return map;
+  }, [activeGroup?.members]);
+
   // Context: [訊息表情反應] 處理單聊與群組訊息 Emoji Reaction 送出
   const handleReaction = (messageId: number, emoji: string) => {
     if (!user) return;
@@ -545,36 +579,6 @@ export const ChatWindow: React.FC = () => {
       </div>
     );
   }
-
-  const currentMessages: Message[] = activeGroup
-    ? groupMessages.map((gm) => ({
-        id: gm.id,
-        sender_id: gm.sender_id,
-        content: gm.content,
-        iv: gm.iv,
-        timestamp: gm.timestamp,
-        decrypted: gm.decrypted,
-        error: gm.error,
-        reactions: gm.reactions,
-        is_edited: gm.is_edited,
-        is_recalled: gm.is_recalled,
-        edited_at: gm.edited_at,
-        sender: gm.sender,
-        is_system: gm.is_system,
-      }))
-    : messages;
-
-  const groupMembersMap = React.useMemo(() => {
-    if (!activeGroup?.members) return undefined;
-    const map: Record<number, { user?: User; nickname?: string }> = {};
-    for (const m of activeGroup.members) {
-      map[m.user_id] = {
-        user: m.user,
-        nickname: m.nickname,
-      };
-    }
-    return map;
-  }, [activeGroup?.members]);
 
   return (
     <div className={styles.chatWindow}>

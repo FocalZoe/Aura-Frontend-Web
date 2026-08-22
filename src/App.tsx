@@ -25,6 +25,7 @@ import {
   arrayBufferToBase64 
 } from './utils/crypto';
 import { User } from './types';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import './styles/global.css';
 import styles from './styles/App.module.css';
 
@@ -238,5 +239,13 @@ const ChatApp: React.FC = () => {
   );
 };
 
-export default ChatApp;
+export const App: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <ChatApp />
+    </ErrorBoundary>
+  );
+};
+
+export default App;
 
