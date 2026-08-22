@@ -661,6 +661,7 @@ export const ChatWindow: React.FC = () => {
       <MessageList
         messages={currentMessages}
         currentUserId={user?.id || 0}
+        currentUser={user || undefined}
         partnerUser={activeChatUser || undefined}
         isGroup={Boolean(activeGroup)}
         groupMembersMap={groupMembersMap}

@@ -152,7 +152,7 @@
 
 .msgBubble {
   width: fit-content;
-  min-width: 68px;
+  min-width: auto;
   max-width: 100%;
   padding: 9px 14px;
   border-radius: 18px;

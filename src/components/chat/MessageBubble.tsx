@@ -10,6 +10,7 @@ import styles from '../ChatWindow.module.css';
 interface MessageBubbleProps {
   msg: Message;
   currentUserId: number;
+  currentUser?: User;
   partnerUser?: User;
   senderUser?: User;
   isGroup?: boolean;
@@ -28,6 +29,7 @@ interface MessageBubbleProps {
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
   msg,
   currentUserId,
+  currentUser,
   partnerUser,
   senderUser,
   isGroup = false,
@@ -206,6 +208,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       if (gm.user?.display_name || gm.user?.account_id) {
         fallbackSeed = gm.user.display_name || gm.user.account_id;
       }
+    } else if (currentUser && Number(r.user_id) === Number(currentUser.id)) {
+      avatar = currentUser.avatar;
+      displayName = getUserDisplayName(currentUser);
+      fallbackSeed = currentUser.display_name || currentUser.account_id || `User_${currentUser.id}`;
     } else if (partnerUser && Number(r.user_id) === Number(partnerUser.id)) {
       avatar = partnerUser.avatar;
       displayName = getUserDisplayName(partnerUser);

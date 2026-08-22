@@ -6,6 +6,7 @@ import styles from '../ChatWindow.module.css';
 interface MessageListProps {
   messages: Message[];
   currentUserId: number;
+  currentUser?: User;
   partnerUser?: User;
   isGroup?: boolean;
   groupMembersMap?: Record<number, { user?: User; nickname?: string }>;
@@ -23,6 +24,7 @@ interface MessageListProps {
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
   currentUserId,
+  currentUser,
   partnerUser,
   isGroup = false,
   groupMembersMap,
@@ -83,6 +85,7 @@ export const MessageList: React.FC<MessageListProps> = ({
             key={msg.id || idx}
             msg={msg}
             currentUserId={currentUserId}
+            currentUser={currentUser}
             partnerUser={partnerUser}
             senderUser={senderUser}
             isGroup={isGroup}
