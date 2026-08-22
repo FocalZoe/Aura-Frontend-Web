@@ -25,7 +25,9 @@ import styles from './styles/App.module.css';
 
 const ChatApp: React.FC = () => {
   const { token, user, loading, updateUser, API_BASE } = useContext(AuthContext);
-  const { fetchFriendsMap, activeChatUser } = useContext(SocketContext);
+  const { fetchFriendsMap } = useContext(SocketContext);
+  // Context: [單欄切換] 直接響應式訂閱 Zustand Store，確保好友、群組與陌生訊息均能無縫觸發單欄切換
+  const activeChatUser = useChatStore((s) => s.activeChatUser);
   const activeGroup = useChatStore((s) => s.activeGroup);
   const hasActiveChat = Boolean(activeChatUser || activeGroup);
   

@@ -319,12 +319,12 @@
 }
 
 .contextMenuItemDanger {
-  color: var(--token-danger);
+  color: var(--token-danger, #ef4444);
 }
 
 .contextMenuItemDanger:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--token-danger);
+  background: var(--token-danger, #ef4444) !important;
+  color: #ffffff !important;
 }
 
 /* Context: [手機RWD] 手機端 (<= 768px) 側邊欄滿版與觸控面積優化 */

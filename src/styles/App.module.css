@@ -32,28 +32,28 @@
   min-height: 0;
 }
 
-/* Context: [手機RWD] 手機端 (<= 768px) 單欄切換：有對話時顯示聊天室，無對話時顯示側邊欄 */
+/* Context: [手機RWD] 手機端 (<= 768px) 單欄切換：有對話（好友/群組/陌生人）時顯示聊天室，無對話時顯示側邊欄 */
 @media (max-width: 768px) {
   .mainPanel {
     flex-direction: column;
     position: relative;
   }
 
-  .mainPanel:not(.hasActiveChat) :global(.sidebar) {
+  .mainPanel:not(.hasActiveChat) > :first-child {
     display: flex !important;
     width: 100% !important;
     min-width: 100% !important;
   }
 
-  .mainPanel:not(.hasActiveChat) :global(.chatWindow) {
+  .mainPanel:not(.hasActiveChat) > :last-child {
     display: none !important;
   }
 
-  .mainPanel.hasActiveChat :global(.sidebar) {
+  .mainPanel.hasActiveChat > :first-child {
     display: none !important;
   }
 
-  .mainPanel.hasActiveChat :global(.chatWindow) {
+  .mainPanel.hasActiveChat > :last-child {
     display: flex !important;
     width: 100% !important;
   }
