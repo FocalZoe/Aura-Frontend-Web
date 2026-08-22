@@ -41,6 +41,7 @@ interface ChatState {
   addStrangerUser: (stranger: User, isSent?: boolean) => void;
   removeConversation: (id: number, isGroup?: boolean) => void;
   updateUserInStore: (userId: number, fields: Partial<User>) => void;
+  updateMessageReactions: (messageId: number, isGroup: boolean, reactions: any[]) => void;
 }
 
 export const isOptimisticId = (id: any): boolean => !id || typeof id !== 'number' || id > 1000000000000;
@@ -351,6 +352,23 @@ export const useChatStore = create<ChatState>((set) => ({
         u.id === userId ? { ...u, ...fields } : u
       ),
     })),
+
+  updateMessageReactions: (messageId, isGroup, reactions) =>
+    set((state) => {
+      if (isGroup) {
+        return {
+          groupMessages: state.groupMessages.map((m) =>
+            m.id && Number(m.id) === Number(messageId) ? { ...m, reactions } : m
+          ),
+        };
+      } else {
+        return {
+          messages: state.messages.map((m) =>
+            m.id && Number(m.id) === Number(messageId) ? { ...m, reactions } : m
+          ),
+        };
+      }
+    }),
 }));
 
 // Context: [標題通知] 計算未讀訊息與好友邀請總數，自動同步網頁標題 Aura (<通知數量>)

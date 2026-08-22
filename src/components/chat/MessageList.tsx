@@ -8,6 +8,8 @@ interface MessageListProps {
   currentUserId: number;
   partnerUser?: User;
   renderIPFSFileCard?: (msg: Message) => React.ReactNode;
+  onReaction?: (messageId: number, emoji: string) => void;
+  onViewProfile?: (user: User) => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -15,6 +17,8 @@ export const MessageList: React.FC<MessageListProps> = ({
   currentUserId,
   partnerUser,
   renderIPFSFileCard,
+  onReaction,
+  onViewProfile,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -31,6 +35,8 @@ export const MessageList: React.FC<MessageListProps> = ({
           currentUserId={currentUserId}
           partnerUser={partnerUser}
           renderIPFSFileCard={renderIPFSFileCard}
+          onReaction={onReaction}
+          onViewProfile={onViewProfile}
         />
       ))}
       <div ref={bottomRef} />

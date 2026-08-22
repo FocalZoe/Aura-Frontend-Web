@@ -1,4 +1,4 @@
-﻿/* Context: 單一全域 SSOT CSS 設計系統 (Global CSS) */
+/* Context: 單一全域 SSOT CSS 設計系統 (Global CSS) */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 /* 1. 全域 CSS Reset & Typography */
@@ -58,6 +58,8 @@ input, textarea, select {
   --bg-sidebar: rgba(15, 23, 42, 0.65);
   --bg-chat: rgba(9, 13, 22, 0.4);
   --bg-card: rgba(30, 41, 59, 0.45);
+  --bg-modal: #151c2c;
+  --bg-modal-header: #111724;
   --bg-input: rgba(15, 23, 42, 0.6);
   --bg-bubble-self: linear-gradient(135deg, #3b82f6, #1d4ed8);
   --bg-bubble-other: rgba(30, 41, 59, 0.7);
@@ -85,6 +87,8 @@ input, textarea, select {
   --bg-sidebar: rgba(255, 255, 255, 0.65);
   --bg-chat: rgba(248, 250, 252, 0.5);
   --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-modal: #ffffff;
+  --bg-modal-header: #f8fafc;
   --bg-input: rgba(241, 245, 249, 0.8);
   --bg-bubble-self: linear-gradient(135deg, #2563eb, #1d4ed8);
   --bg-bubble-other: rgba(255, 255, 255, 0.9);

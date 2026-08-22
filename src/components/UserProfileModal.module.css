@@ -1,16 +1,43 @@
-﻿/* Context: UserProfileModal Module CSS */
-.avatarLarge {
-  width: 72px;
-  height: 72px;
+/* Context: UserProfileModal Module CSS */
+.profileWrapper {
+  text-align: center;
+  padding-top: 4px;
+}
+
+.avatarUploadWrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
   border-radius: 50%;
-  background: var(--accent-color);
-  color: #ffffff;
-  font-size: 2rem;
-  font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.avatarUploadWrapper:hover {
+  transform: scale(1.04);
+}
+
+.avatarUploadOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 0 auto;
+  gap: 2px;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.avatarUploadWrapper:hover .avatarUploadOverlay {
+  opacity: 1;
 }
 
 .infoBox {
@@ -22,8 +49,28 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 20px 0 16px 0;
+  margin: 16px 0;
   border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.bioCard {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 14px 0 6px 0;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+  text-align: left;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.bioCardEmpty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.82rem;
 }
 
 .statusBadge {
@@ -46,11 +93,6 @@
 .statusBadge.online {
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
-}
-
-.profileWrapper {
-  text-align: center;
-  padding-top: 8px;
 }
 
 .profileName {
@@ -85,21 +127,35 @@
 .actionGroup {
   display: flex;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
 .flexBtn {
   flex: 1;
 }
 
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+  margin-top: 16px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inputLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 /* Context: [手機RWD] UserProfileModal 操作按鈕在超窄螢幕自動垂直堆疊 */
 @media (max-width: 768px) {
-  .avatarLarge {
-    width: 60px;
-    height: 60px;
-    font-size: 1.6rem;
-  }
-
   .actionGroup {
     flex-direction: column;
     gap: 8px;

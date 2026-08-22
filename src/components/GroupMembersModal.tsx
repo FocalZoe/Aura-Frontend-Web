@@ -1,20 +1,22 @@
-﻿// Context: GroupMembersModal 重構 - 套用通用 BaseModal
+// Context: GroupMembersModal 重構 - 套用通用 BaseModal 與 Avatar 頭像名片聯動
 import React, { useState, useRef, useEffect } from 'react';
 import { Users, UserMinus, LogOut, Trash2, UserPlus, ChevronDown } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { useChatStore } from '../stores/useChatStore';
 import { apiClient } from '../services/apiClient';
-import { Group } from '../types';
+import { Group, User } from '../types';
 import { BaseModal } from './common/BaseModal';
+import { Avatar } from './common/Avatar';
 import styles from './GroupMembersModal.module.css';
 
 interface GroupMembersModalProps {
   currentUserId: number;
   token: string | null;
-  notify?: (msg: string, type?: 'danger' | 'warning' | 'info' | 'success') => void;
+  notify?: (options: any, type?: any) => void;
+  onViewProfile?: (user: User) => void;
 }
 
-export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUserId, token, notify }) => {
+export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUserId, token, notify, onViewProfile }) => {
   const { showGroupMembersModal, setShowGroupMembersModal, showConfirmModal } = useUIStore();
   const { activeGroup, setActiveGroup, friends, updateGroupInStore, removeGroup, setGroups } = useChatStore();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -246,9 +248,16 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
             return (
               <div key={m.id} className={styles.memberItem}>
                 <div className={styles.memberUser}>
-                  <div className={styles.avatar}>
-                    {name.charAt(0).toUpperCase()}
-                  </div>
+                  <Avatar
+                    src={u?.avatar}
+                    name={name}
+                    size={36}
+                    onClick={() => {
+                      if (u && onViewProfile) {
+                        onViewProfile(u);
+                      }
+                    }}
+                  />
                   <span style={{ fontSize: '0.9rem' }}>
                     {name}{' '}
                     {isGroupOwner && (

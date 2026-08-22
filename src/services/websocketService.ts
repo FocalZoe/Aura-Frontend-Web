@@ -1,4 +1,4 @@
-﻿// Context: 獨立 WebSocket 單例服務 (包含多 JSON 黏包強健解析與通話信號轉發)
+// Context: 獨立 WebSocket 單例服務 (包含多 JSON 黏包強健解析與通話信號轉發)
 import { useAuthStore } from '../stores/useAuthStore';
 import { useChatStore } from '../stores/useChatStore';
 import { useUIStore } from '../stores/useUIStore';
@@ -190,6 +190,11 @@ class WebSocketService {
           }
         }
       }
+    } else if (data.type === 'reaction_update') {
+      const rMsg = data as any;
+      if (rMsg.message_id) {
+        chatStore.updateMessageReactions(Number(rMsg.message_id), !!rMsg.is_group, rMsg.reactions || []);
+      }
     } else if (data.type === 'friend_update' || data.type === 'key_update' || data.type === 'user_update' || data.type === 'block_update') {
       if (data.type === 'user_update') {
         const uMsg = data as any;
@@ -197,6 +202,8 @@ class WebSocketService {
           chatStore.updateUserInStore(uMsg.user_id, {
             account_id: uMsg.account_id,
             display_name: uMsg.display_name,
+            avatar: uMsg.avatar,
+            bio: uMsg.bio,
           });
         }
       }

@@ -1,7 +1,8 @@
-// Context: [手機RWD] 支援手機端返回列表導航與手機版隱藏音視訊通話按鈕
+// Context: [手機RWD] 支援手機端返回列表導航與個人名片 Avatar 整合
 import React from 'react';
 import { User, Group } from '../../types';
 import { UserPlus, Users, Info, Phone, Video, ArrowLeft } from 'lucide-react';
+import { Avatar } from '../common/Avatar';
 import styles from '../ChatWindow.module.css';
 import sidebarStyles from '../Sidebar.module.css';
 
@@ -80,7 +81,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   if (!activeChatUser) return null;
 
   const displayName = activeChatUser.display_name || activeChatUser.account_id;
-  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <>
@@ -97,7 +97,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </button>
           )}
           <div className={styles.chatUserDetail} onClick={onViewProfile} style={{ cursor: 'pointer' }}>
-            <div className={sidebarStyles.avatar}>{initial}</div>
+            <Avatar
+              src={activeChatUser.avatar}
+              name={displayName}
+              size={40}
+              isOnline={!isStranger ? isUserOnline : undefined}
+            />
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <h4 className={styles.userName} style={{ margin: 0 }}>{displayName}</h4>

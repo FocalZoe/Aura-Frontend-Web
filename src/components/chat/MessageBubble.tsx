@@ -1,22 +1,33 @@
-﻿// Context: 訊息氣泡組件 (包含 Lucide 通話紀錄卡片、網址 Link Embed 預覽與微灰時間字形)
-import React from 'react';
-import { Message, User } from '../../types';
+// Context: 訊息氣泡組件 (包含 Emoji 表情反應、Lucide 通話紀錄卡片、Link Embed 與發送者 Avatar 名片)
+import React, { useState } from 'react';
+import { Message, User, ReactionItem } from '../../types';
 import { AlertCircle, Phone, PhoneOff } from 'lucide-react';
 import { LinkEmbed } from './LinkEmbed';
+import { Avatar } from '../common/Avatar';
 import styles from '../ChatWindow.module.css';
 
 interface MessageBubbleProps {
   msg: Message;
   currentUserId: number;
   partnerUser?: User;
+  senderUser?: User;
   renderIPFSFileCard?: (msg: Message) => React.ReactNode;
+  onReaction?: (messageId: number, emoji: string) => void;
+  onViewProfile?: (user: User) => void;
 }
+
+const COMMON_EMOJIS = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
   msg,
   currentUserId,
+  partnerUser,
+  senderUser,
   renderIPFSFileCard,
+  onReaction,
+  onViewProfile,
 }) => {
+  const [showPicker, setShowPicker] = useState<boolean>(false);
   const isSelf = Number(msg.sender_id) === Number(currentUserId);
   const isError = msg.error === true;
   const isIPFSPayload = !!msg.filePayload;
@@ -31,7 +42,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
-  // 提取文字中的所有 HTTP/HTTPS URL
   const extractUrls = (text: string): string[] => {
     if (!text) return [];
     const urlRegex = /(https?:\/\/[^\s]+)/gi;
@@ -118,7 +128,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     return (
       <div className={styles.msgContentWrapper}>
         <div className={styles.msgTextBody}>{renderTextWithLinks(content)}</div>
-        {/* Context: [網址 Embed] 當訊息中包含 URL 時渲染 LinkEmbed 卡片 */}
         {detectedUrls.length > 0 && (
           <div className={styles.msgLinkEmbedsContainer}>
             {detectedUrls.map((url, i) => (
@@ -137,21 +146,99 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     isIPFSPayload ? styles.msgBubbleImage : '',
   ].filter(Boolean).join(' ');
 
+  // 聚合 Emoji 反應統計
+  const reactionMap = (msg.reactions || []).reduce<Record<string, { count: number; users: number[]; reactedByMe: boolean }>>(
+    (acc, r) => {
+      if (!acc[r.emoji]) {
+        acc[r.emoji] = { count: 0, users: [], reactedByMe: false };
+      }
+      acc[r.emoji].count += 1;
+      acc[r.emoji].users.push(r.user_id);
+      if (Number(r.user_id) === Number(currentUserId)) {
+        acc[r.emoji].reactedByMe = true;
+      }
+      return acc;
+    },
+    {}
+  );
+
+  const displayUser = senderUser || partnerUser;
+
   return (
-    <div className={`${styles.msgRow} ${isSelf ? styles.msgRowSelf : styles.msgRowOther}`}>
-      <div className={bubbleClasses}>
-        {isError && <AlertCircle size={16} style={{ flexShrink: 0 }} />}
-        <div>
-          {msg.filePayload && renderIPFSFileCard ? (
-            renderIPFSFileCard(msg)
-          ) : (
-            renderMessageContent(msg.content)
-          )}
-          <span className={styles.msgMeta}>{formatTime(msg.timestamp)}</span>
+    <div
+      className={`${styles.msgRow} ${isSelf ? styles.msgRowSelf : styles.msgRowOther}`}
+      onMouseEnter={() => setShowPicker(true)}
+      onMouseLeave={() => setShowPicker(false)}
+    >
+      {/* 他人發送之訊息展示頭像 */}
+      {!isSelf && displayUser && (
+        <div
+          className={styles.msgAvatarWrapper}
+          onClick={() => onViewProfile && onViewProfile(displayUser)}
+          title={`點擊查看 ${displayUser.display_name || displayUser.account_id} 的個人名片`}
+        >
+          <Avatar
+            src={displayUser.avatar}
+            name={displayUser.display_name || displayUser.account_id}
+            size={32}
+          />
         </div>
+      )}
+
+      <div className={styles.msgBubbleContainer}>
+        {/* 表情反應懸停快捷列 */}
+        {showPicker && msg.id && onReaction && (
+          <div className={`${styles.reactionPickerBar} ${isSelf ? styles.reactionPickerBarSelf : styles.reactionPickerBarOther}`}>
+            {COMMON_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                className={styles.reactionPickerEmoji}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReaction(msg.id!, emoji);
+                  setShowPicker(false);
+                }}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className={bubbleClasses}>
+          {isError && <AlertCircle size={16} style={{ flexShrink: 0 }} />}
+          <div>
+            {msg.filePayload && renderIPFSFileCard ? (
+              renderIPFSFileCard(msg)
+            ) : (
+              renderMessageContent(msg.content)
+            )}
+            <span className={styles.msgMeta}>{formatTime(msg.timestamp)}</span>
+          </div>
+        </div>
+
+        {/* 訊息下方已獲得的表情反應膠囊 */}
+        {Object.keys(reactionMap).length > 0 && (
+          <div className={`${styles.reactionsWrapper} ${isSelf ? styles.reactionsWrapperSelf : styles.reactionsWrapperOther}`}>
+            {Object.entries(reactionMap).map(([emoji, data]) => (
+              <button
+                key={emoji}
+                type="button"
+                className={`${styles.reactionPill} ${data.reactedByMe ? styles.reactionPillActive : ''}`}
+                onClick={() => msg.id && onReaction && onReaction(msg.id, emoji)}
+                title={data.reactedByMe ? '點擊取消反應' : '點擊新增此反應'}
+              >
+                <span>{emoji}</span>
+                <span>{data.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
 
 
