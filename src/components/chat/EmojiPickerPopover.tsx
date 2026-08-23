@@ -1,14 +1,16 @@
-// Context: 獨立 Emoji / 貼圖 / 顏文字全能浮動選取器 (支援主系統分頁、全套 Emoji、日系顏文字、主題貼圖、即時搜尋與邊界自適應)
+// Context: 獨立 Emoji / 貼圖 / 表情貼 (Custom Emoji) 浮動選取器 (支援 reaction 純表情模式 vs input 整合貼圖與創作者商店 Placeholder)
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, X, Smile, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Search, X, Smile, Sparkles, Image as ImageIcon, Store, ExternalLink } from 'lucide-react';
 import styles from './EmojiPickerPopover.module.css';
 
 interface EmojiPickerPopoverProps {
   x: number;
   y: number;
   isOpen: boolean;
+  mode?: 'reaction' | 'input';
   onClose: () => void;
   onSelectEmoji: (emoji: string) => void;
+  onSelectSticker?: (sticker: { id: string; emoji: string; label: string }) => void;
 }
 
 interface EmojiCategory {
@@ -77,7 +79,7 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
       '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝',
       '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🐢',
       '🐍', '🦎', '🐙', '🦑', '🦐', '🦞', '🦀',
-      '🐡', '🐠', '🐟', '🐬', '🐳', '🦈', '🐊'
+      '🐡', '🐠', '🐟', '🐬', '🐳', '鯊', '🐊'
     ],
   },
   {
@@ -144,44 +146,53 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
   },
 ];
 
-const KAOMOJI_LIST = [
-  '(｡♥‿♥｡)', '(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧', '(✿◠‿◠)', '(つ≧▽≦)つ',
-  '(•‿•)', '(｡•̀ᴗ-)✧', '(づ｡◕‿‿◕｡)づ', 'ʕ•ᴥ•ʔ',
-  '(ノಠ益ಠ)ノ彡┻━┻', '¯\\_(ツ)_/¯', '(╯°□°)╯︵ ┻━┻', '(⊙_⊙)',
-  '(ಥ﹏ಥ)', '(╥﹏╥)', '(T_T)', '(ง •̀_•́)ง',
-  '(•̀o•́)ง', '(◕‿◕✿)', '(^人^)', '(~˘▾˘)~',
-  '(*^▽^*)', '(o^▽^o)', '٩(◕‿◕｡)۶', '(´∀｀*)'
-];
-
-const STICKER_PACKS = [
-  { id: 'aura_cat_1', emoji: '🐱', label: '嗨！' },
-  { id: 'aura_cat_2', emoji: '😻', label: '大心' },
+// 預設 Aura 主題貼圖包
+const DEFAULT_STICKERS = [
+  { id: 'aura_cat_1', emoji: '🐱', label: '嗨～' },
+  { id: 'aura_cat_2', emoji: '😻', label: '大愛！' },
   { id: 'aura_cat_3', emoji: '😹', label: '笑哭' },
   { id: 'aura_cat_4', emoji: '😿', label: '委屈' },
   { id: 'aura_dog_1', emoji: '🐶', label: '期待' },
   { id: 'aura_dog_2', emoji: '🐕', label: '衝啊' },
   { id: 'aura_dog_3', emoji: '🐾', label: '讚啦' },
   { id: 'aura_dog_4', emoji: '🦴', label: '開動' },
-  { id: 'aura_fox_1', emoji: '🦊', label: '聰明' },
+  { id: 'aura_fox_1', emoji: '🦊', label: '機智' },
   { id: 'aura_bear_1', emoji: '🐻', label: '抱抱' },
-  { id: 'aura_panda_1', emoji: '🐼', label: '發呆' },
-  { id: 'aura_rabbit_1', emoji: '🐰', label: '蹦蹦跳' },
+  { id: 'aura_panda_1', emoji: '🐼', label: '發呆中' },
+  { id: 'aura_rabbit_1', emoji: '🐰', label: '蹦跳' },
+];
+
+// 預設自訂表情貼 (Custom Emoji) - 行內微型表情
+const DEFAULT_CUSTOM_EMOJIS = [
+  '💖', '🌟', '🔥', '🎉', '☕', '🐱',
+  '🌸', '🍀', '✨', '⚡', '🌙', '🍕',
+  '🚀', '🎯', '💡', '💎', '🌈', '🍦',
+  '🎈', '🎨', '🎵', '🧸', '🌺', '🍓'
 ];
 
 export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
   x,
   y,
   isOpen,
+  mode = 'reaction',
   onClose,
   onSelectEmoji,
+  onSelectSticker,
 }) => {
   const popoverRef = useRef<HTMLDivElement>(null);
   const scrollBodyRef = useRef<HTMLDivElement>(null);
-  const [mainTab, setMainTab] = useState<'emoji' | 'stickers' | 'kaomoji'>('emoji');
+  const [mainTab, setMainTab] = useState<'emoji' | 'stickers' | 'custom_emoji'>('emoji');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('smileys');
 
-  // 點擊外部自動關閉
+  // 若切換為 reaction 模式，強制鎖定在 emoji
+  useEffect(() => {
+    if (mode === 'reaction') {
+      setMainTab('emoji');
+    }
+  }, [mode]);
+
+  // 點擊外部關閉
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
@@ -197,7 +208,7 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
   // 自適應視窗邊界定位
   const adjustedPosition = useMemo(() => {
     const width = 340;
-    const height = 420;
+    const height = mode === 'reaction' ? 380 : 440;
     const winWidth = window.innerWidth;
     const winHeight = window.innerHeight;
 
@@ -212,7 +223,7 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
     }
 
     return { x: Math.max(12, posX), y: Math.max(12, posY) };
-  }, [x, y]);
+  }, [x, y, mode]);
 
   // 搜尋過濾
   const filteredCategories = useMemo(() => {
@@ -223,12 +234,6 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
       ...cat,
       emojis: cat.emojis.filter((emoji) => emoji.includes(query)),
     })).filter((cat) => cat.emojis.length > 0);
-  }, [searchQuery]);
-
-  const filteredKaomoji = useMemo(() => {
-    const query = searchQuery.trim();
-    if (!query) return KAOMOJI_LIST;
-    return KAOMOJI_LIST.filter((k) => k.includes(query));
   }, [searchQuery]);
 
   const handleScrollToCategory = (catId: string) => {
@@ -248,63 +253,61 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
       style={{ left: `${adjustedPosition.x}px`, top: `${adjustedPosition.y}px` }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* 頂部主系統分頁 Tabs (LINE 風格) */}
-      <div className={styles.mainSystemTabs}>
-        <button
-          type="button"
-          className={`${styles.mainTabBtn} ${mainTab === 'emoji' ? styles.mainTabBtnActive : ''}`}
-          onClick={() => setMainTab('emoji')}
-        >
-          <Smile size={14} />
-          <span>表情 Emoji</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.mainTabBtn} ${mainTab === 'stickers' ? styles.mainTabBtnActive : ''}`}
-          onClick={() => setMainTab('stickers')}
-        >
-          <ImageIcon size={14} />
-          <span>貼圖 Stickers</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.mainTabBtn} ${mainTab === 'kaomoji' ? styles.mainTabBtnActive : ''}`}
-          onClick={() => setMainTab('kaomoji')}
-        >
-          <Sparkles size={14} />
-          <span>顏文字 Kaomoji</span>
-        </button>
-      </div>
-
-      {/* 頂部搜尋列 */}
-      <div className={styles.searchHeader}>
-        <div className={styles.searchInputWrapper}>
-          <Search size={14} color="var(--text-muted)" />
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder={
-              mainTab === 'emoji'
-                ? '搜尋表情符號...'
-                : mainTab === 'kaomoji'
-                ? '搜尋日系顏文字...'
-                : '搜尋貼圖...'
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            autoFocus
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}
-            >
-              <X size={13} />
-            </button>
-          )}
+      {/* 模式判斷：僅在輸入模式 (mode="input") 下顯示 LINE 風格三大主系統 Tabs */}
+      {mode === 'input' && (
+        <div className={styles.mainSystemTabs}>
+          <button
+            type="button"
+            className={`${styles.mainTabBtn} ${mainTab === 'emoji' ? styles.mainTabBtnActive : ''}`}
+            onClick={() => setMainTab('emoji')}
+          >
+            <Smile size={14} />
+            <span>表情 Emoji</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.mainTabBtn} ${mainTab === 'stickers' ? styles.mainTabBtnActive : ''}`}
+            onClick={() => setMainTab('stickers')}
+          >
+            <ImageIcon size={14} />
+            <span>貼圖 Stickers</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.mainTabBtn} ${mainTab === 'custom_emoji' ? styles.mainTabBtnActive : ''}`}
+            onClick={() => setMainTab('custom_emoji')}
+          >
+            <Sparkles size={14} />
+            <span>表情貼 Custom</span>
+          </button>
         </div>
-      </div>
+      )}
+
+      {/* 頂部搜尋列 (Emoji 模式下呈現) */}
+      {mainTab === 'emoji' && (
+        <div className={styles.searchHeader}>
+          <div className={styles.searchInputWrapper}>
+            <Search size={14} color="var(--text-muted)" />
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="搜尋表情符號..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoFocus
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Emoji 分類快速導航 Tabs */}
       {mainTab === 'emoji' && !searchQuery && (
@@ -325,6 +328,7 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
 
       {/* 滾動內容主體 */}
       <div ref={scrollBodyRef} className={styles.emojiGridBody}>
+        {/* Tab 1: 標準 Emoji 網格 */}
         {mainTab === 'emoji' && (
           filteredCategories.length === 0 ? (
             <div className={styles.emptyTip}>找不到符合的表情符號</div>
@@ -353,46 +357,98 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
           )
         )}
 
-        {mainTab === 'kaomoji' && (
-          filteredKaomoji.length === 0 ? (
-            <div className={styles.emptyTip}>找不到符合的顏文字</div>
-          ) : (
-            <div className={styles.kaomojiGrid}>
-              {filteredKaomoji.map((kao) => (
+        {/* Tab 2: 貼圖 Stickers (含創作者貼圖商店 Placeholder) */}
+        {mainTab === 'stickers' && (
+          <div>
+            {/* 創作者市場宣傳卡片 Placeholder */}
+            <div className={styles.creatorMarketCard}>
+              <div className={styles.marketHeader}>
+                <span className={styles.marketTitle}>
+                  <Store size={15} color="#38bdf8" />
+                  <span>Aura 貼圖商店 & 創作者市集</span>
+                </span>
+                <span className={styles.marketBadge}>即將登場</span>
+              </div>
+              <span className={styles.marketDesc}>
+                在創作者網站自製專屬貼圖並上架商店，與全球用戶分享並賺取收益！
+              </span>
+              <div className={styles.marketFooter}>
+                <span className={styles.marketTag}>#創作者分成 #原創貼圖</span>
+                <button type="button" className={styles.marketBtn} onClick={() => {}}>
+                  前往創作者中心
+                </button>
+              </div>
+            </div>
+
+            <span className={styles.categoryTitle} style={{ display: 'block', margin: '8px 0 4px 2px' }}>
+              預設萌寵貼圖包
+            </span>
+            <div className={styles.stickerGrid}>
+              {DEFAULT_STICKERS.map((stk) => (
                 <button
-                  key={kao}
+                  key={stk.id}
                   type="button"
-                  className={styles.kaomojiItem}
+                  className={styles.stickerItem}
                   onClick={() => {
-                    onSelectEmoji(kao);
+                    if (onSelectSticker) {
+                      onSelectSticker(stk);
+                    } else {
+                      onSelectEmoji(stk.emoji);
+                    }
                     onClose();
                   }}
-                  title={kao}
+                  title={stk.label}
                 >
-                  {kao}
+                  <span className={styles.stickerEmoji}>{stk.emoji}</span>
+                  <span className={styles.stickerLabel}>{stk.label}</span>
                 </button>
               ))}
             </div>
-          )
+          </div>
         )}
 
-        {mainTab === 'stickers' && (
-          <div className={styles.stickerGrid}>
-            {STICKER_PACKS.map((stk) => (
-              <button
-                key={stk.id}
-                type="button"
-                className={styles.stickerItem}
-                onClick={() => {
-                  onSelectEmoji(stk.emoji);
-                  onClose();
-                }}
-                title={stk.label}
-              >
-                <span className={styles.stickerEmoji}>{stk.emoji}</span>
-                <span className={styles.stickerLabel}>{stk.label}</span>
-              </button>
-            ))}
+        {/* Tab 3: 表情貼 Custom Emoji (含創作者表情貼市集 Placeholder) */}
+        {mainTab === 'custom_emoji' && (
+          <div>
+            {/* 創作者表情貼宣傳卡片 Placeholder */}
+            <div className={styles.creatorMarketCard}>
+              <div className={styles.marketHeader}>
+                <span className={styles.marketTitle}>
+                  <Sparkles size={15} color="#ec4899" />
+                  <span>Aura 表情貼商店 (Custom Emoji)</span>
+                </span>
+                <span className={styles.marketBadge}>即將登場</span>
+              </div>
+              <span className={styles.marketDesc}>
+                微型行內表情貼可在文字中穿插使用，創作者可自訂繪製並上架販售。
+              </span>
+              <div className={styles.marketFooter}>
+                <span className={styles.marketTag}>#行內表情貼 #主題商店</span>
+                <button type="button" className={styles.marketBtn} onClick={() => {}}>
+                  探索表情貼市集
+                </button>
+              </div>
+            </div>
+
+            <span className={styles.categoryTitle} style={{ display: 'block', margin: '8px 0 4px 2px' }}>
+              精選自訂表情貼
+            </span>
+            <div className={styles.customEmojiGrid}>
+              {DEFAULT_CUSTOM_EMOJIS.map((cEmoji, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={styles.customEmojiItem}
+                  onClick={() => {
+                    onSelectEmoji(cEmoji);
+                    onClose();
+                  }}
+                  title={`表情貼 ${cEmoji}`}
+                >
+                  {cEmoji}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

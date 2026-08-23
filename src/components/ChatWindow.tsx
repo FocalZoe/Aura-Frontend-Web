@@ -1004,11 +1004,12 @@ export const ChatWindow: React.FC = () => {
         />
       )}
 
-      {/* 獨立全表情/貼圖/顏文字浮動選取器 (游標旁/輸入框旁彈出) */}
+      {/* 獨立全表情/貼圖/表情貼浮動選取器 (游標旁/輸入框旁彈出) */}
       <EmojiPickerPopover
         isOpen={Boolean(emojiPickerState)}
         x={emojiPickerState?.x || 0}
         y={emojiPickerState?.y || 0}
+        mode={emojiPickerState?.isInputTarget ? 'input' : 'reaction'}
         onClose={() => setEmojiPickerState(null)}
         onSelectEmoji={(emoji) => {
           if (emojiPickerState?.isInputTarget) {
@@ -1016,6 +1017,11 @@ export const ChatWindow: React.FC = () => {
           } else if (emojiPickerState?.message?.id) {
             handleReaction(emojiPickerState.message.id, emoji);
             setContextMenuState(null); // 完成表情反應後關閉選單
+          }
+        }}
+        onSelectSticker={(stk) => {
+          if (emojiPickerState?.isInputTarget) {
+            setInputText((prev) => prev + stk.emoji);
           }
         }}
       />
