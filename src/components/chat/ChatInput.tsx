@@ -92,7 +92,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleEmojiBtnClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    onOpenEmojiPicker(rect.left - 140, rect.top - 430);
+    onOpenEmojiPicker(rect.right, rect.top);
   };
 
   // 鍵盤按下事件處理：支援 Shift+Enter 換行與 Enter 發送 (防 IME 中文選字誤觸)

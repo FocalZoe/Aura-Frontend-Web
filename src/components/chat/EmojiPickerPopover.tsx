@@ -180,25 +180,22 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
     return () => window.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
-  // 自適應定位計算 (支援 input 模式底側固定與 reaction 模式游標跟隨)
+  // 自適應定位計算 (支援 input 模式底側右下角固定與 reaction 模式游標跟隨)
   const adjustedStyle = useMemo<React.CSSProperties>(() => {
     const width = 340;
     const winWidth = window.innerWidth;
     const winHeight = window.innerHeight;
 
     if (mode === 'input') {
-      // 永遠底側固定在輸入框上方 (Bottom-anchored)
-      let posX = x - 280;
-      if (posX + width > winWidth - 12) {
-        posX = winWidth - width - 12;
-      }
-      posX = Math.max(12, posX);
+      // 永遠緊貼在右下角 Emoji 按鈕的正上方 (Bottom-right Anchored)
+      const rightOffset = Math.max(16, Math.min(winWidth - x, winWidth - width - 16));
+      const bottomOffset = Math.max(72, winHeight - y + 10);
 
-      const bottomOffset = Math.max(68, winHeight - y + 10);
       return {
         position: 'fixed',
-        left: `${posX}px`,
+        right: `${rightOffset}px`,
         bottom: `${bottomOffset}px`,
+        left: 'auto',
         top: 'auto',
       };
     }
@@ -220,6 +217,7 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
       left: `${Math.max(12, posX)}px`,
       top: `${Math.max(12, posY)}px`,
       bottom: 'auto',
+      right: 'auto',
     };
   }, [x, y, mode]);
 
