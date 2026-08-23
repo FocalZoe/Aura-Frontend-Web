@@ -19,6 +19,11 @@ interface MessageListProps {
   isScreenshotMode?: boolean;
   selectedRange?: { start: number; end: number } | null;
   onToggleSelectScreenshot?: (msg: Message, index: number) => void;
+  highlightKeyword?: string;
+  highlightedMessageId?: number | null;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -37,12 +42,42 @@ export const MessageList: React.FC<MessageListProps> = ({
   isScreenshotMode = false,
   selectedRange = null,
   onToggleSelectScreenshot,
+  highlightKeyword,
+  highlightedMessageId,
+  onLoadMore,
+  hasMore = false,
+  loadingMore = false,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const prevScrollHeightRef = useRef<number>(0);
+  const isInitialLoadRef = useRef<boolean>(true);
+
+  // 監聽滾動觸發無感向上載入歷史訊息
+  const handleScroll = () => {
+    if (!containerRef.current || !onLoadMore || !hasMore || loadingMore) return;
+    if (containerRef.current.scrollTop <= 40) {
+      prevScrollHeightRef.current = containerRef.current.scrollHeight;
+      onLoadMore();
+    }
+  };
+
+  // 向上加載後保持平穩無感滾動位置
+  useEffect(() => {
+    if (containerRef.current && prevScrollHeightRef.current > 0) {
+      const newScrollHeight = containerRef.current.scrollHeight;
+      const diff = newScrollHeight - prevScrollHeightRef.current;
+      if (diff > 0) {
+        containerRef.current.scrollTop += diff;
+      }
+      prevScrollHeightRef.current = 0;
+    }
+  }, [messages.length]);
 
   useEffect(() => {
-    if (!isScreenshotMode && !loading) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!isScreenshotMode && !loading && isInitialLoadRef.current && messages.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+      isInitialLoadRef.current = false;
     }
   }, [messages, isScreenshotMode, loading]);
 
@@ -68,7 +103,14 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <div className={styles.chatMessages}>
+    <div ref={containerRef} onScroll={handleScroll} className={styles.chatMessages}>
+      {/* 頂部向上加載指示器 */}
+      {loadingMore && (
+        <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+          載入更多歷史訊息中...
+        </div>
+      )}
+
       {messages.map((msg, idx) => {
         const isSelected = !!(
           selectedRange &&
@@ -99,6 +141,8 @@ export const MessageList: React.FC<MessageListProps> = ({
             isScreenshotMode={isScreenshotMode}
             isSelectedForScreenshot={isSelected}
             onToggleSelectScreenshot={() => onToggleSelectScreenshot && onToggleSelectScreenshot(msg, idx)}
+            highlightKeyword={highlightKeyword}
+            isSearchHighlighted={highlightedMessageId === msg.id}
           />
         );
       })}

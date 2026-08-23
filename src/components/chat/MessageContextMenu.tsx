@@ -118,7 +118,6 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
               if (onOpenFullEmojiPicker) {
                 onOpenFullEmojiPicker(message, e.clientX, e.clientY);
               }
-              onClose();
             }}
             title="全部表情符號 (游標旁展開)"
           >

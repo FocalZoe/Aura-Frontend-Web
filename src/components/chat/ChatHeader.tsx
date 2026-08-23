@@ -1,7 +1,6 @@
-// Context: [手機RWD] 支援手機端返回列表導航、個人名片 Avatar、自訂備註暱稱與對話截圖按鈕
 import React from 'react';
 import { User, Group } from '../../types';
-import { UserPlus, Users, Info, Phone, Video, ArrowLeft, Camera } from 'lucide-react';
+import { UserPlus, Users, Info, Phone, Video, ArrowLeft, Camera, Search } from 'lucide-react';
 import { Avatar } from '../common/Avatar';
 import { useChatStore } from '../../stores/useChatStore';
 import styles from '../ChatWindow.module.css';
@@ -18,6 +17,7 @@ interface ChatHeaderProps {
   onStartAudioCall?: () => void; // 語音通話觸發器
   onStartVideoCall?: () => void; // 視訊通話觸發器
   onStartScreenshot?: () => void; // 對話截圖觸發器
+  onToggleSearch?: () => void;   // 聊天室內搜尋開關
   onBack?: () => void;          // 手機端返回列表回呼
 }
 
@@ -32,6 +32,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onStartAudioCall,
   onStartVideoCall,
   onStartScreenshot,
+  onToggleSearch,
   onBack,
 }) => {
   const { getUserDisplayName } = useChatStore();
@@ -75,6 +76,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onToggleSearch && (
+            <button
+              className={sidebarStyles.themeToggleBtn}
+              onClick={onToggleSearch}
+              title="搜尋訊息"
+              style={{ width: '34px', height: '34px' }}
+            >
+              <Search size={18} />
+            </button>
+          )}
+
           <button
             className={sidebarStyles.themeToggleBtn}
             onClick={onOpenGroupModal}
@@ -132,6 +144,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onToggleSearch && (
+            <button
+              className={sidebarStyles.themeToggleBtn}
+              onClick={onToggleSearch}
+              title="搜尋訊息"
+              style={{ width: '36px', height: '36px', borderRadius: '50%' }}
+            >
+              <Search size={18} />
+            </button>
+          )}
+
           {/* Context: [通話限制] 陌生訊息對話隱藏通話按鈕（手機版寬度亦由 CSS 隱藏） */}
           {!isStranger && (
             <div className={styles.callButtonsGroup} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

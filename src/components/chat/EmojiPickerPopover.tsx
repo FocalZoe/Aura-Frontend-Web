@@ -1,6 +1,6 @@
-// Context: 獨立全表情符號浮動選取器 (全套 Emoji 分組、關鍵字搜尋、游標定位與邊界自適應)
+// Context: 獨立 Emoji / 貼圖 / 顏文字全能浮動選取器 (支援主系統分頁、全套 Emoji、日系顏文字、主題貼圖、即時搜尋與邊界自適應)
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Smile, Sparkles, Image as ImageIcon } from 'lucide-react';
 import styles from './EmojiPickerPopover.module.css';
 
 interface EmojiPickerPopoverProps {
@@ -144,6 +144,30 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
   },
 ];
 
+const KAOMOJI_LIST = [
+  '(｡♥‿♥｡)', '(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧', '(✿◠‿◠)', '(つ≧▽≦)つ',
+  '(•‿•)', '(｡•̀ᴗ-)✧', '(づ｡◕‿‿◕｡)づ', 'ʕ•ᴥ•ʔ',
+  '(ノಠ益ಠ)ノ彡┻━┻', '¯\\_(ツ)_/¯', '(╯°□°)╯︵ ┻━┻', '(⊙_⊙)',
+  '(ಥ﹏ಥ)', '(╥﹏╥)', '(T_T)', '(ง •̀_•́)ง',
+  '(•̀o•́)ง', '(◕‿◕✿)', '(^人^)', '(~˘▾˘)~',
+  '(*^▽^*)', '(o^▽^o)', '٩(◕‿◕｡)۶', '(´∀｀*)'
+];
+
+const STICKER_PACKS = [
+  { id: 'aura_cat_1', emoji: '🐱', label: '嗨！' },
+  { id: 'aura_cat_2', emoji: '😻', label: '大心' },
+  { id: 'aura_cat_3', emoji: '😹', label: '笑哭' },
+  { id: 'aura_cat_4', emoji: '😿', label: '委屈' },
+  { id: 'aura_dog_1', emoji: '🐶', label: '期待' },
+  { id: 'aura_dog_2', emoji: '🐕', label: '衝啊' },
+  { id: 'aura_dog_3', emoji: '🐾', label: '讚啦' },
+  { id: 'aura_dog_4', emoji: '🦴', label: '開動' },
+  { id: 'aura_fox_1', emoji: '🦊', label: '聰明' },
+  { id: 'aura_bear_1', emoji: '🐻', label: '抱抱' },
+  { id: 'aura_panda_1', emoji: '🐼', label: '發呆' },
+  { id: 'aura_rabbit_1', emoji: '🐰', label: '蹦蹦跳' },
+];
+
 export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
   x,
   y,
@@ -153,6 +177,7 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
 }) => {
   const popoverRef = useRef<HTMLDivElement>(null);
   const scrollBodyRef = useRef<HTMLDivElement>(null);
+  const [mainTab, setMainTab] = useState<'emoji' | 'stickers' | 'kaomoji'>('emoji');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('smileys');
 
@@ -171,8 +196,8 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
 
   // 自適應視窗邊界定位
   const adjustedPosition = useMemo(() => {
-    const width = 320;
-    const height = 380;
+    const width = 340;
+    const height = 420;
     const winWidth = window.innerWidth;
     const winHeight = window.innerHeight;
 
@@ -200,7 +225,12 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
     })).filter((cat) => cat.emojis.length > 0);
   }, [searchQuery]);
 
-  // 點擊分類導覽 Tab 跳轉到對應分組
+  const filteredKaomoji = useMemo(() => {
+    const query = searchQuery.trim();
+    if (!query) return KAOMOJI_LIST;
+    return KAOMOJI_LIST.filter((k) => k.includes(query));
+  }, [searchQuery]);
+
   const handleScrollToCategory = (catId: string) => {
     setActiveCategory(catId);
     const targetElement = document.getElementById(`emoji-cat-${catId}`);
@@ -218,6 +248,34 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
       style={{ left: `${adjustedPosition.x}px`, top: `${adjustedPosition.y}px` }}
       onClick={(e) => e.stopPropagation()}
     >
+      {/* 頂部主系統分頁 Tabs (LINE 風格) */}
+      <div className={styles.mainSystemTabs}>
+        <button
+          type="button"
+          className={`${styles.mainTabBtn} ${mainTab === 'emoji' ? styles.mainTabBtnActive : ''}`}
+          onClick={() => setMainTab('emoji')}
+        >
+          <Smile size={14} />
+          <span>表情 Emoji</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.mainTabBtn} ${mainTab === 'stickers' ? styles.mainTabBtnActive : ''}`}
+          onClick={() => setMainTab('stickers')}
+        >
+          <ImageIcon size={14} />
+          <span>貼圖 Stickers</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.mainTabBtn} ${mainTab === 'kaomoji' ? styles.mainTabBtnActive : ''}`}
+          onClick={() => setMainTab('kaomoji')}
+        >
+          <Sparkles size={14} />
+          <span>顏文字 Kaomoji</span>
+        </button>
+      </div>
+
       {/* 頂部搜尋列 */}
       <div className={styles.searchHeader}>
         <div className={styles.searchInputWrapper}>
@@ -225,7 +283,13 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="搜尋全部表情符號..."
+            placeholder={
+              mainTab === 'emoji'
+                ? '搜尋表情符號...'
+                : mainTab === 'kaomoji'
+                ? '搜尋日系顏文字...'
+                : '搜尋貼圖...'
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
@@ -242,8 +306,8 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
         </div>
       </div>
 
-      {/* 分類快速導航 Tabs */}
-      {!searchQuery && (
+      {/* Emoji 分類快速導航 Tabs */}
+      {mainTab === 'emoji' && !searchQuery && (
         <div className={styles.categoryTabs}>
           {EMOJI_CATEGORIES.map((cat) => (
             <button
@@ -259,32 +323,77 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
         </div>
       )}
 
-      {/* Emoji 網格主體 */}
+      {/* 滾動內容主體 */}
       <div ref={scrollBodyRef} className={styles.emojiGridBody}>
-        {filteredCategories.length === 0 ? (
-          <div className={styles.emptyTip}>找不到符合的表情符號</div>
-        ) : (
-          filteredCategories.map((cat) => (
-            <div key={cat.id} id={`emoji-cat-${cat.id}`} className={styles.categoryGroup}>
-              <span className={styles.categoryTitle}>{cat.name}</span>
-              <div className={styles.emojiGrid}>
-                {cat.emojis.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    className={styles.emojiItem}
-                    onClick={() => {
-                      onSelectEmoji(emoji);
-                      onClose();
-                    }}
-                    title={emoji}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+        {mainTab === 'emoji' && (
+          filteredCategories.length === 0 ? (
+            <div className={styles.emptyTip}>找不到符合的表情符號</div>
+          ) : (
+            filteredCategories.map((cat) => (
+              <div key={cat.id} id={`emoji-cat-${cat.id}`} className={styles.categoryGroup}>
+                <span className={styles.categoryTitle}>{cat.name}</span>
+                <div className={styles.emojiGrid}>
+                  {cat.emojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={styles.emojiItem}
+                      onClick={() => {
+                        onSelectEmoji(emoji);
+                        onClose();
+                      }}
+                      title={emoji}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
+            ))
+          )
+        )}
+
+        {mainTab === 'kaomoji' && (
+          filteredKaomoji.length === 0 ? (
+            <div className={styles.emptyTip}>找不到符合的顏文字</div>
+          ) : (
+            <div className={styles.kaomojiGrid}>
+              {filteredKaomoji.map((kao) => (
+                <button
+                  key={kao}
+                  type="button"
+                  className={styles.kaomojiItem}
+                  onClick={() => {
+                    onSelectEmoji(kao);
+                    onClose();
+                  }}
+                  title={kao}
+                >
+                  {kao}
+                </button>
+              ))}
             </div>
-          ))
+          )
+        )}
+
+        {mainTab === 'stickers' && (
+          <div className={styles.stickerGrid}>
+            {STICKER_PACKS.map((stk) => (
+              <button
+                key={stk.id}
+                type="button"
+                className={styles.stickerItem}
+                onClick={() => {
+                  onSelectEmoji(stk.emoji);
+                  onClose();
+                }}
+                title={stk.label}
+              >
+                <span className={styles.stickerEmoji}>{stk.emoji}</span>
+                <span className={styles.stickerLabel}>{stk.label}</span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>

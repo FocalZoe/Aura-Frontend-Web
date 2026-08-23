@@ -1,9 +1,18 @@
-﻿// Context: Helia IPFS 瀏覽器原生區塊管理與去中心化 CID 上傳/下載 (Production-First Architecture)
+// Context: Helia IPFS 瀏覽器原生區塊管理與去中心化 CID 上傳/下載 (Production-First Architecture)
 import { getCryptoSubtle } from './crypto';
 
 let unixfsInstance: any = null;
 let initPromise: Promise<any> | null = null;
 const localBlockCache = new Map<string, Uint8Array>();
+
+export const getIPFSGatewayUrl = (cid: string, apiBaseUrl?: string): string => {
+  if (!cid) return '';
+  if (apiBaseUrl) {
+    const cleanBase = apiBaseUrl.replace(/\/$/, '');
+    return `${cleanBase}/ipfs/${cid}`;
+  }
+  return `https://ipfs.io/ipfs/${cid}`;
+};
 
 export const getHeliaUnixFS = async () => {
   if (unixfsInstance) return unixfsInstance;

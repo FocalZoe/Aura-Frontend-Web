@@ -1,4 +1,5 @@
-import React, { useContext, useState, useEffect, FormEvent, ChangeEvent } from 'react';
+// Context: 核心聊天室視窗 (整合搜尋與跳轉聚焦、分頁無感加載、多附件暫存打字再傳、IG多圖預覽、LINE貼圖Tab與右鍵常駐)
+import React, { useContext, useState, useEffect, FormEvent, ChangeEvent, useMemo, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useChatStore } from '../stores/useChatStore';
@@ -20,6 +21,7 @@ import { ScreenshotToolbar } from './chat/ScreenshotToolbar';
 import { ChatScreenshotModal } from './chat/ChatScreenshotModal';
 import { MessageReactionsModal } from './chat/MessageReactionsModal';
 import { EmojiPickerPopover } from './chat/EmojiPickerPopover';
+import { ChatSearchBar } from './chat/ChatSearchBar';
 import styles from './ChatWindow.module.css';
 import { useCallStore } from '../stores/useCallStore';
 
@@ -54,6 +56,7 @@ export const ChatWindow: React.FC = () => {
   const { setShowGroupMembersModal, setActiveGroupForModal, setSelectedProfileUser, showConfirmModal } = useUIStore();
   const { notify } = useNotification();
   const [inputText, setInputText] = useState<string>('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<boolean>(false);
   const [isFriend, setIsFriend] = useState<boolean>(true);
 
@@ -72,10 +75,20 @@ export const ChatWindow: React.FC = () => {
   // Context: [訊息載入與表情反應詳情狀態]
   const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
   const [selectedReactionMessage, setSelectedReactionMessage] = useState<Message | null>(null);
-  const [emojiPickerState, setEmojiPickerState] = useState<{ x: number; y: number; message: Message } | null>(null);
+  const [emojiPickerState, setEmojiPickerState] = useState<{ x: number; y: number; message?: Message; isInputTarget?: boolean } | null>(null);
 
-  // Context: 統一在頂部計算當前對話訊息列表與群成員對應表，嚴格遵守 React Rules of Hooks
-  const currentMessages: Message[] = React.useMemo(() => {
+  // Context: [聊天室內搜尋狀態]
+  const [showSearch, setShowSearch] = useState<boolean>(false);
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [searchCurrentMatchIndex, setSearchCurrentMatchIndex] = useState<number>(0);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<number | null>(null);
+
+  // Context: [歷史訊息分頁與無感向上加載]
+  const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(false);
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState<boolean>(false);
+
+  // Context: 統一在頂部計算當前對話訊息列表與群成員對應表
+  const currentMessages: Message[] = useMemo(() => {
     if (activeGroup) {
       return groupMessages.map((gm) => ({
         id: gm.id,
@@ -91,12 +104,13 @@ export const ChatWindow: React.FC = () => {
         edited_at: gm.edited_at,
         sender: gm.sender,
         is_system: gm.is_system,
+        filePayload: gm.filePayload,
       }));
     }
     return messages;
   }, [activeGroup, groupMessages, messages]);
 
-  const groupMembersMap = React.useMemo(() => {
+  const groupMembersMap = useMemo(() => {
     if (!activeGroup?.members) return undefined;
     const map: Record<number, { user?: User; nickname?: string }> = {};
     for (const m of activeGroup.members) {
@@ -108,7 +122,47 @@ export const ChatWindow: React.FC = () => {
     return map;
   }, [activeGroup?.members]);
 
-  // Context: [訊息表情反應] 處理單聊與群組訊息 Emoji Reaction 送出
+  // 搜尋關鍵字匹配
+  const matchedMessageIds = useMemo(() => {
+    const q = searchKeyword.trim().toLowerCase();
+    if (!q) return [];
+    return currentMessages
+      .filter((m) => {
+        if (m.content && m.content.toLowerCase().includes(q)) return true;
+        if (m.filePayload?.name && m.filePayload.name.toLowerCase().includes(q)) return true;
+        return false;
+      })
+      .map((m) => m.id!)
+      .filter(Boolean);
+  }, [currentMessages, searchKeyword]);
+
+  // 跳至指定搜尋結果
+  const jumpToMatchedMessage = (index: number) => {
+    if (matchedMessageIds.length === 0) return;
+    const boundedIndex = (index + matchedMessageIds.length) % matchedMessageIds.length;
+    setSearchCurrentMatchIndex(boundedIndex);
+    const targetId = matchedMessageIds[boundedIndex];
+    setHighlightedMessageId(targetId);
+
+    const el = document.getElementById(`message-${targetId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    setTimeout(() => {
+      setHighlightedMessageId((prev) => (prev === targetId ? null : prev));
+    }, 1800);
+  };
+
+  useEffect(() => {
+    if (matchedMessageIds.length > 0) {
+      jumpToMatchedMessage(0);
+    } else {
+      setHighlightedMessageId(null);
+    }
+  }, [matchedMessageIds.length, searchKeyword]);
+
+  // Context: [訊息表情反應] 送出
   const handleReaction = (messageId: number, emoji: string) => {
     if (!user) return;
     if (activeGroup) {
@@ -139,61 +193,72 @@ export const ChatWindow: React.FC = () => {
     });
   };
 
-  // 啟動對話截圖模式
-  const handleStartScreenshot = (startMsg?: Message) => {
+  // 啟動對話截圖
+  const handleStartScreenshot = (initialMsg?: Message) => {
     setIsScreenshotMode(true);
-    if (startMsg) {
-      const idx = currentMessages.findIndex((m) => m.id === startMsg.id);
+    if (initialMsg && initialMsg.id) {
+      const idx = currentMessages.findIndex((m) => m.id === initialMsg.id);
       if (idx !== -1) {
         setScreenshotRange({ start: idx, end: idx });
-      } else {
-        setScreenshotRange(null);
+        return;
       }
-    } else {
-      setScreenshotRange(null);
+    }
+    if (currentMessages.length > 0) {
+      setScreenshotRange({ start: 0, end: currentMessages.length - 1 });
     }
   };
 
-  // 切換/選取截圖訊息 (嚴格連續區間，不可跳行)
-  const handleToggleSelectScreenshot = (msg: Message, index: number) => {
+  const handleToggleSelectScreenshot = (msg: Message, clickedIndex: number) => {
     if (!screenshotRange) {
-      setScreenshotRange({ start: index, end: index });
+      setScreenshotRange({ start: clickedIndex, end: clickedIndex });
+      return;
+    }
+    if (clickedIndex < screenshotRange.start) {
+      setScreenshotRange({ ...screenshotRange, start: clickedIndex });
+    } else if (clickedIndex > screenshotRange.end) {
+      setScreenshotRange({ ...screenshotRange, end: clickedIndex });
     } else {
-      setScreenshotRange({
-        start: Math.min(screenshotRange.start, index),
-        end: Math.max(screenshotRange.end, index),
-      });
+      const distToStart = Math.abs(clickedIndex - screenshotRange.start);
+      const distToEnd = Math.abs(clickedIndex - screenshotRange.end);
+      if (distToStart <= distToEnd) {
+        setScreenshotRange({ ...screenshotRange, start: Math.min(clickedIndex + 1, screenshotRange.end) });
+      } else {
+        setScreenshotRange({ ...screenshotRange, end: Math.max(clickedIndex - 1, screenshotRange.start) });
+      }
     }
   };
 
-  // 複製訊息內容
+  // 複製訊息文字
   const handleCopyMessage = (content: string) => {
-    navigator.clipboard.writeText(content);
-    notify({ message: '訊息內容已複製至剪貼簿', type: 'success' });
+    if (!content) return;
+    navigator.clipboard.writeText(content).then(
+      () => notify({ message: '已複製訊息文字至剪貼簿', type: 'info' }),
+      () => notify({ message: '複製失敗', type: 'danger' })
+    );
   };
 
-  // 開始編輯訊息
+  // 編輯訊息
   const handleStartEditMessage = (msg: Message) => {
     setEditingMessage(msg);
-    setInputText(msg.content);
+    setInputText(msg.content || '');
   };
 
-  // 取消編輯訊息
   const handleCancelEdit = () => {
     setEditingMessage(null);
     setInputText('');
   };
 
-  // 發送/儲存編輯訊息
-  const handleSendEditedMessage = async (newText: string) => {
-    if (!editingMessage || !user || !editingMessage.id) return;
-    const trimmed = newText.trim();
-    if (!trimmed) return;
+  const handleSendEditedMessage = async (newContent: string) => {
+    if (!editingMessage || !editingMessage.id || !user) return;
+    const trimmed = newContent.trim();
+    if (!trimmed) {
+      notify({ message: '訊息內容不可為空', type: 'warning' });
+      return;
+    }
 
-    try {
-      if (activeGroup) {
-        const groupKey = await e2eeService.getGroupKey(activeGroup.id);
-        const { ciphertext, iv } = await e2eeService.encryptAESGCM(trimmed, groupKey);
+    if (activeGroup) {
+      try {
+        const { ciphertext, iv } = await e2eeService.encryptGroupMessage(activeGroup.id, trimmed);
         websocketService.send({
           type: 'edit_message',
           message_id: editingMessage.id,
@@ -203,10 +268,29 @@ export const ChatWindow: React.FC = () => {
           iv,
         });
         editMessageInStore(editingMessage.id, true, trimmed, iv, new Date().toISOString());
-      } else if (activeChatUser) {
-        const sharedKey = await e2eeService.getSharedKey(activeChatUser.id, user.id, token!);
-        if (!sharedKey) throw new Error('無法取得加密金鑰');
-        const { ciphertext, iv } = await e2eeService.encryptAESGCM(trimmed, sharedKey);
+        handleCancelEdit();
+        notify({ message: '已成功修改訊息', type: 'success' });
+      } catch (err: any) {
+        notify({ message: err.message || '編輯群組訊息失敗', type: 'danger' });
+      }
+      return;
+    }
+
+    if (activeChatUser) {
+      try {
+        let partnerPubKey: string | null | undefined = activeChatUser.public_key || friendsMap[activeChatUser.id];
+        if (!partnerPubKey && token) {
+          partnerPubKey = await e2eeService.fetchUserPublicKey(activeChatUser.id, token);
+        }
+        if (!partnerPubKey) throw new Error('無法獲取對方公鑰');
+
+        const privateKey = await getLocalPrivateKey(user.id);
+        if (!privateKey) throw new Error('請先輸入 PIN 碼解鎖私鑰');
+
+        const importedPubKey = await importPublicKey(partnerPubKey);
+        const sharedKey = await deriveSharedKey(privateKey, importedPubKey);
+        const { ciphertext, iv } = await encryptMessage(sharedKey, trimmed);
+
         websocketService.send({
           type: 'edit_message',
           message_id: editingMessage.id,
@@ -215,93 +299,79 @@ export const ChatWindow: React.FC = () => {
           content: ciphertext,
           iv,
         });
-        editMessageInStore(editingMessage.id, false, trimmed, iv, new Date().toISOString());
-      }
 
-      setEditingMessage(null);
-      setInputText('');
-      notify({ message: '訊息已成功編輯並同步！', type: 'success' });
-    } catch (err: any) {
-      console.error('編輯訊息失敗:', err);
-      notify({ message: err.message || '編輯訊息失敗', type: 'danger' });
+        editMessageInStore(editingMessage.id, false, trimmed, iv, new Date().toISOString());
+        handleCancelEdit();
+        notify({ message: '已成功修改訊息', type: 'success' });
+      } catch (err: any) {
+        notify({ message: err.message || '編輯訊息失敗', type: 'danger' });
+      }
     }
   };
 
-  // 收回訊息 (二次確認保護)
-  const handleRecallMessage = (msg: Message) => {
-    if (!msg.id) return;
+  // 收回訊息
+  const handleRecallMessage = async (msg: Message) => {
+    if (!msg.id || !user) return;
+    const msgId = msg.id;
     showConfirmModal({
-      title: '確認收回訊息',
-      message: '您確定要收回此則訊息嗎？收回後所有成員將無法再查看該訊息內容。',
+      title: '收回訊息',
+      message: '確定要收回此訊息嗎？收回後所有成員皆無法再看見該訊息內容。',
+      confirmText: '確認收回',
       danger: true,
-      confirmText: '確定收回',
       onConfirm: () => {
         if (activeGroup) {
           websocketService.send({
             type: 'recall_message',
-            message_id: msg.id,
+            message_id: msgId,
             is_group: true,
             group_id: activeGroup.id,
           });
-          recallMessageInStore(msg.id!, true);
+          recallMessageInStore(msgId, true);
         } else if (activeChatUser) {
           websocketService.send({
             type: 'recall_message',
-            message_id: msg.id,
+            message_id: msgId,
             is_group: false,
             to: activeChatUser.id,
           });
-          recallMessageInStore(msg.id!, false);
+          recallMessageInStore(msgId, false);
         }
-        notify({ message: '訊息已成功收回', type: 'info' });
+        notify({ message: '已收回訊息', type: 'info' });
       },
     });
   };
 
-  // 刪除訊息 (單方本地刪除，二次確認保護)
-  const handleDeleteMessage = (msg: Message) => {
-    if (!msg.id) return;
+  // 單方刪除訊息
+  const handleDeleteMessage = async (msg: Message) => {
+    if (!msg.id || !user || !token) return;
+    const msgId = msg.id;
     showConfirmModal({
-      title: '確認刪除訊息',
-      message: '您確定要在您的裝置上刪除此訊息嗎？（此動作僅影響您的視角）',
+      title: '刪除訊息',
+      message: '確定要在您的裝置上刪除此訊息嗎？（此操作僅對本機生效，對方仍可看見）',
+      confirmText: '確認刪除',
       danger: true,
-      confirmText: '確定刪除',
-      onConfirm: () => {
-        deleteMessageFromStore(msg.id!, !!activeGroup);
-        notify({ message: '訊息已從您的裝置刪除', type: 'info' });
+      onConfirm: async () => {
+        try {
+          await apiClient.delete(`/messages/single/${msgId}`, token);
+          deleteMessageFromStore(msgId, Boolean(activeGroup));
+          notify({ message: '已刪除該訊息', type: 'info' });
+        } catch (err: any) {
+          notify({ message: err.message || '刪除失敗', type: 'danger' });
+        }
       },
     });
   };
 
-  // Context: 判斷當前一對一對象是否已被自己封鎖
-  const isBlockedByMe = !!(
-    activeChatUser &&
-    blockedUsers.some((b) => Number(b.id) === Number(activeChatUser.id))
-  );
-
-  // Context: 判斷當前使用者在群組中的 status (accepted, pending, removed)
-  const currentGroupMember = activeGroup?.members?.find(
-    (m) => Number(m.user_id) === Number(user?.id)
-  );
-
-  const isPendingGroupInvite = currentGroupMember?.status === 'pending';
-
-  const isRemovedFromGroup = !!(
-    activeGroup &&
-    (activeGroup.is_removed ||
-      currentGroupMember?.status === 'removed' ||
-      (activeGroup.members && user?.id && !activeGroup.members.some((m) => Number(m.user_id) === Number(user.id))))
-  );
-
-  // Context: [訊息載入] 當切換群組時載入並解密群組歷史訊息
+  // Context: [群組歷史訊息載入 (支援分頁與向上加載)]
   useEffect(() => {
     const fetchGroupMessages = async () => {
       if (activeGroup && token) {
         setLoadingMessages(true);
         try {
-          const rawMsgs = await apiClient.get<any[]>(`/groups/${activeGroup.id}/messages`, token);
+          const rawMsgs = await apiClient.get<any[]>(`/groups/${activeGroup.id}/messages?limit=25`, token);
           const decryptedList = await e2eeService.decryptGroupMessages(rawMsgs, activeGroup.id);
           setGroupMessages(decryptedList);
+          setHasMoreMessages(rawMsgs.length >= 25);
         } catch (err) {
           console.error('獲取群組歷史訊息失敗:', err);
         } finally {
@@ -313,16 +383,17 @@ export const ChatWindow: React.FC = () => {
     fetchGroupMessages();
   }, [activeGroup?.id, token]);
 
-  // Context: [訊息載入] 當切換私聊/陌生人時載入並解密一對一歷史訊息
+  // Context: [私聊歷史訊息載入 (支援分頁與向上加載)]
   useEffect(() => {
     const fetchDirectMessages = async () => {
       if (activeChatUser && token && user) {
         setLoadingMessages(true);
         try {
-          const rawMsgs = await apiClient.get<Message[]>(`/messages/${activeChatUser.id}`, token);
+          const rawMsgs = await apiClient.get<Message[]>(`/messages/${activeChatUser.id}?limit=25`, token);
           if (Array.isArray(rawMsgs)) {
             const decryptedList = await e2eeService.decryptHistoryMessages(rawMsgs, user.id, activeChatUser.id, token);
             setMessages(decryptedList);
+            setHasMoreMessages(rawMsgs.length >= 25);
           }
         } catch (err) {
           console.error('獲取私聊歷史訊息失敗:', err);
@@ -335,7 +406,44 @@ export const ChatWindow: React.FC = () => {
     fetchDirectMessages();
   }, [activeChatUser?.id, token, user?.id]);
 
-  // Context: [好友判定] 由 Zustand Store 的 friends 進行響應式訂閱
+  // Context: 向上滾動加載更多歷史訊息 (每次 25 則)
+  const handleLoadMoreMessages = async () => {
+    if (loadingMoreMessages || !hasMoreMessages || !token || !user) return;
+    if (currentMessages.length === 0) return;
+
+    const earliestMsgId = currentMessages[0]?.id;
+    if (!earliestMsgId) return;
+
+    setLoadingMoreMessages(true);
+    try {
+      if (activeGroup) {
+        const rawMsgs = await apiClient.get<any[]>(
+          `/groups/${activeGroup.id}/messages?limit=25&before_id=${earliestMsgId}`,
+          token
+        );
+        if (rawMsgs.length > 0) {
+          const decryptedList = await e2eeService.decryptGroupMessages(rawMsgs, activeGroup.id);
+          setGroupMessages([...decryptedList, ...groupMessages]);
+        }
+        setHasMoreMessages(rawMsgs.length >= 25);
+      } else if (activeChatUser) {
+        const rawMsgs = await apiClient.get<Message[]>(
+          `/messages/${activeChatUser.id}?limit=25&before_id=${earliestMsgId}`,
+          token
+        );
+        if (rawMsgs.length > 0) {
+          const decryptedList = await e2eeService.decryptHistoryMessages(rawMsgs, user.id, activeChatUser.id, token);
+          setMessages([...decryptedList, ...messages]);
+        }
+        setHasMoreMessages(rawMsgs.length >= 25);
+      }
+    } catch (err) {
+      console.error('加載更多歷史訊息失敗:', err);
+    } finally {
+      setLoadingMoreMessages(false);
+    }
+  };
+
   const friends = useChatStore((s) => s.friends);
 
   useEffect(() => {
@@ -344,7 +452,7 @@ export const ChatWindow: React.FC = () => {
     }
   }, [activeChatUser, friends]);
 
-  // Context: [群組管理] 同意群組邀請
+  // 同意/拒絕群組邀請
   const handleAcceptInvite = async () => {
     if (!activeGroup || !token) return;
     try {
@@ -361,7 +469,6 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
-  // Context: [群組管理] 拒絕群組邀請
   const handleRejectInvite = async () => {
     if (!activeGroup || !token) return;
     try {
@@ -373,7 +480,7 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
-  // Context: [一對一訊息發送] 封裝 E2EE 金鑰衍生與 WebSocket 即時傳送
+  // 一對一直接傳訊
   const sendDirectMessage = async (toUserId: number, partnerPublicKeyBase64: string | undefined, content: string) => {
     if (!user || !token) return;
     let partnerPubKey: string | undefined = partnerPublicKeyBase64 || friendsMap[toUserId];
@@ -417,59 +524,52 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
-  const handleSend = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() || !user) return;
+  // Context: [檔案加密上傳] 支援私聊與群聊
+  const uploadAndSendSingleFile = async (file: File) => {
+    if (!user || !token) return;
+    const arrayBuffer = await file.arrayBuffer();
 
     if (activeGroup) {
-      try {
-        const { ciphertext, iv } = await e2eeService.encryptGroupMessage(activeGroup.id, inputText.trim());
-        websocketService.send({
-          type: 'group_message',
-          group_id: activeGroup.id,
-          content: ciphertext,
-          iv,
-        });
+      const groupKey = await e2eeService.getGroupKey(activeGroup.id);
+      const { encryptedData, iv } = await encryptFileBuffer(groupKey, arrayBuffer);
+      const cid = await uploadToIPFS(encryptedData, API_BASE || getApiBase());
 
-        addGroupMessage({
-          id: Date.now(),
-          group_id: activeGroup.id,
-          sender_id: user.id,
-          content: inputText.trim(),
-          iv,
-          timestamp: new Date().toISOString(),
-          decrypted: true,
-          sender: user,
-        });
+      const payload: IPFSFilePayload = {
+        cid,
+        name: file.name,
+        size: file.size,
+        mime: file.type || 'application/octet-stream',
+        encrypted: true,
+        iv,
+      };
 
-        setInputText('');
-      } catch (err: any) {
-        notify({ message: err.message || '群組訊息發送失敗', type: 'danger' });
-      }
+      const ipfsContent = `[IPFS_FILE]${JSON.stringify(payload)}`;
+      const { ciphertext, iv: groupIv } = await e2eeService.encryptGroupMessage(activeGroup.id, ipfsContent);
+
+      websocketService.send({
+        type: 'group_message',
+        group_id: activeGroup.id,
+        content: ciphertext,
+        iv: groupIv,
+      });
+
+      addGroupMessage({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        group_id: activeGroup.id,
+        sender_id: user.id,
+        content: ipfsContent,
+        iv: groupIv,
+        timestamp: new Date().toISOString(),
+        decrypted: true,
+        sender: user,
+      });
       return;
     }
 
     if (activeChatUser) {
-      try {
-        await sendDirectMessage(activeChatUser.id, activeChatUser.public_key, inputText.trim());
-        setInputText('');
-      } catch (err: any) {
-        notify({ message: err.message || '訊息發送失敗', type: 'danger' });
-      }
-    }
-  };
-
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !activeChatUser || !user || !token) return;
-
-    setUploading(true);
-    try {
-      const arrayBuffer = await file.arrayBuffer();
       const privateKey = await getLocalPrivateKey(user.id);
       if (!privateKey || !activeChatUser.public_key) {
-        notify({ message: '請先確認對方與自身的金鑰已備份', type: 'warning' });
-        return;
+        throw new Error('請先解鎖通訊金鑰');
       }
 
       const partnerPublicKey = await importPublicKey(activeChatUser.public_key);
@@ -489,17 +589,72 @@ export const ChatWindow: React.FC = () => {
 
       const ipfsMessageContent = `[IPFS_FILE]${JSON.stringify(payload)}`;
       await sendDirectMessage(activeChatUser.id, activeChatUser.public_key, ipfsMessageContent);
-      notify({ message: '檔案已成功傳送！', type: 'success' });
-    } catch (err: any) {
-      console.error('檔案傳送失敗:', err);
-      notify({ message: err.message || '檔案傳送失敗', type: 'danger' });
-    } finally {
-      setUploading(false);
-      e.target.value = '';
     }
   };
 
-  // Context: [語音訊息] 處理語音錄製完成後的音訊安全傳送
+  // Context: [統一發送] 支援附件與文字一併發送
+  const handleSend = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const hasText = inputText.trim().length > 0;
+    const hasFiles = pendingFiles.length > 0;
+    if (!hasText && !hasFiles) return;
+
+    // 1. 若有待發送附件，依序加密上傳並發送
+    if (hasFiles) {
+      setUploading(true);
+      try {
+        for (const file of pendingFiles) {
+          await uploadAndSendSingleFile(file);
+        }
+        setPendingFiles([]);
+        notify({ message: '附件已成功傳送！', type: 'success' });
+      } catch (err: any) {
+        notify({ message: err.message || '附件傳送失敗', type: 'danger' });
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    // 2. 若有文字訊息，送出文字
+    if (hasText) {
+      const text = inputText.trim();
+      if (activeGroup) {
+        try {
+          const { ciphertext, iv } = await e2eeService.encryptGroupMessage(activeGroup.id, text);
+          websocketService.send({
+            type: 'group_message',
+            group_id: activeGroup.id,
+            content: ciphertext,
+            iv,
+          });
+
+          addGroupMessage({
+            id: Date.now(),
+            group_id: activeGroup.id,
+            sender_id: user.id,
+            content: text,
+            iv,
+            timestamp: new Date().toISOString(),
+            decrypted: true,
+            sender: user,
+          });
+          setInputText('');
+        } catch (err: any) {
+          notify({ message: err.message || '群組訊息發送失敗', type: 'danger' });
+        }
+      } else if (activeChatUser) {
+        try {
+          await sendDirectMessage(activeChatUser.id, activeChatUser.public_key, text);
+          setInputText('');
+        } catch (err: any) {
+          notify({ message: err.message || '訊息發送失敗', type: 'danger' });
+        }
+      }
+    }
+  };
+
+  // 語音傳送
   const handleSendVoice = async (audioBlob: Blob) => {
     if (!user || !token) return;
     if (!activeChatUser && !activeGroup) return;
@@ -581,6 +736,14 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
+  const isBlockedByMe = activeChatUser
+    ? blockedUsers.some((u) => Number(u.id) === Number(activeChatUser.id))
+    : false;
+  const isPendingGroupInvite = activeGroup?.members?.some(
+    (m) => Number(m.user_id) === Number(user?.id) && m.status === 'pending'
+  );
+  const isRemovedFromGroup = activeGroup?.is_removed;
+
   if (!activeChatUser && !activeGroup) {
     return (
       <div className={styles.chatWindow}>
@@ -600,6 +763,7 @@ export const ChatWindow: React.FC = () => {
         activeGroup={activeGroup}
         isUserOnline={activeChatUser ? isUserOnline(activeChatUser.id) : false}
         isStranger={activeChatUser ? !isFriend : false}
+        onToggleSearch={() => setShowSearch(!showSearch)}
         onViewProfile={() => {
           if (activeChatUser) setSelectedProfileUser(activeChatUser);
         }}
@@ -660,6 +824,24 @@ export const ChatWindow: React.FC = () => {
         }}
       />
 
+      {/* 聊天室內即時搜尋列 */}
+      {showSearch && (
+        <ChatSearchBar
+          keyword={searchKeyword}
+          onKeywordChange={setSearchKeyword}
+          currentIndex={searchCurrentMatchIndex}
+          matchCount={matchedMessageIds.length}
+          onNext={() => jumpToMatchedMessage(searchCurrentMatchIndex + 1)}
+          onPrev={() => jumpToMatchedMessage(searchCurrentMatchIndex - 1)}
+          onClose={() => {
+            setShowSearch(false);
+            setSearchKeyword('');
+            setHighlightedMessageId(null);
+          }}
+        />
+      )}
+
+      {/* 訊息列表 (支援向上無感載入與搜尋高亮) */}
       <MessageList
         messages={currentMessages}
         currentUserId={user?.id || 0}
@@ -675,6 +857,11 @@ export const ChatWindow: React.FC = () => {
         isScreenshotMode={isScreenshotMode}
         selectedRange={screenshotRange}
         onToggleSelectScreenshot={handleToggleSelectScreenshot}
+        highlightKeyword={searchKeyword}
+        highlightedMessageId={highlightedMessageId}
+        onLoadMore={handleLoadMoreMessages}
+        hasMore={hasMoreMessages}
+        loadingMore={loadingMoreMessages}
         renderIPFSFileCard={(msg) => (
           <IPFSFileCard
             payload={msg.filePayload!}
@@ -690,11 +877,11 @@ export const ChatWindow: React.FC = () => {
       {uploading && (
         <div className={styles.ipfsUploadingBanner}>
           <Loader2 size={16} className="spin" />
-          <span>安全傳送檔案中...</span>
+          <span>安全處理並傳送檔案中...</span>
         </div>
       )}
 
-      {/* 底部操作區域：若在截圖模式則直接呈現截圖控制列，否則呈現正常聊天輸入列 */}
+      {/* 底部操作區域 */}
       {isScreenshotMode ? (
         <ScreenshotToolbar
           selectedCount={screenshotRange ? screenshotRange.end - screenshotRange.start + 1 : 0}
@@ -731,7 +918,7 @@ export const ChatWindow: React.FC = () => {
             </div>
           )}
 
-          {/* Context: 聊天輸入區域狀態判定（已封鎖用戶 / 待同意邀請 / 被移出群組 / 正常輸入框） */}
+          {/* 聊天輸入區域狀態判定 */}
           {isBlockedByMe ? (
             <div style={{
               padding: '16px',
@@ -778,6 +965,9 @@ export const ChatWindow: React.FC = () => {
             <ChatInput
               inputText={inputText}
               setInputText={setInputText}
+              pendingFiles={pendingFiles}
+              onRemovePendingFile={(idx) => setPendingFiles((prev) => prev.filter((_, i) => i !== idx))}
+              onFilesSelected={(files) => setPendingFiles((prev) => [...prev, ...Array.from(files)])}
               onSendMessage={(e) => {
                 if (editingMessage) {
                   e.preventDefault();
@@ -786,8 +976,8 @@ export const ChatWindow: React.FC = () => {
                   handleSend(e);
                 }
               }}
-              onFileUpload={handleFileUpload}
               onSendVoice={handleSendVoice}
+              onOpenEmojiPicker={(x, y) => setEmojiPickerState({ x, y, isInputTarget: true })}
               isUploadingIPFS={uploading}
               disabled={activeChatUser ? !activeChatUser.public_key : false}
             />
@@ -795,7 +985,7 @@ export const ChatWindow: React.FC = () => {
         </>
       )}
 
-      {/* 訊息氣泡右鍵選單 */}
+      {/* 訊息氣泡右鍵選單 (常駐不自動消失) */}
       {contextMenuState && (
         <MessageContextMenu
           x={contextMenuState.x}
@@ -810,19 +1000,22 @@ export const ChatWindow: React.FC = () => {
           onRecall={handleRecallMessage}
           onDelete={handleDeleteMessage}
           onViewReactions={(msg) => setSelectedReactionMessage(msg)}
-          onOpenFullEmojiPicker={(msg, x, y) => setEmojiPickerState({ message: msg, x, y })}
+          onOpenFullEmojiPicker={(msg, x, y) => setEmojiPickerState({ message: msg, x, y, isInputTarget: false })}
         />
       )}
 
-      {/* 獨立全表情符號浮動選取器 (游標旁彈出) */}
+      {/* 獨立全表情/貼圖/顏文字浮動選取器 (游標旁/輸入框旁彈出) */}
       <EmojiPickerPopover
         isOpen={Boolean(emojiPickerState)}
         x={emojiPickerState?.x || 0}
         y={emojiPickerState?.y || 0}
         onClose={() => setEmojiPickerState(null)}
         onSelectEmoji={(emoji) => {
-          if (emojiPickerState?.message.id) {
+          if (emojiPickerState?.isInputTarget) {
+            setInputText((prev) => prev + emoji);
+          } else if (emojiPickerState?.message?.id) {
             handleReaction(emojiPickerState.message.id, emoji);
+            setContextMenuState(null); // 完成表情反應後關閉選單
           }
         }}
       />
@@ -855,4 +1048,3 @@ export const ChatWindow: React.FC = () => {
     </div>
   );
 };
-

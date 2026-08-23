@@ -1,10 +1,10 @@
-// Context: GroupMembersModal 重構 - 支援群組頭像裁切修改、群內專屬暱稱設置與成員名片聯動
-import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
-import { Users, UserMinus, LogOut, Trash2, UserPlus, ChevronDown, Camera, Loader2, Save } from 'lucide-react';
+// Context: GroupMembersModal 升級 - 支援成員名單/媒體庫 TAB、全體可改任何人群內暱稱、群組頭像裁切與成員名片聯動
+import React, { useState, useRef, useEffect, ChangeEvent, useMemo } from 'react';
+import { Users, UserMinus, LogOut, Trash2, UserPlus, ChevronDown, Camera, Loader2, Save, FileText, Image as ImageIcon, Film, Music, Download, Edit3, X, Check } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { useChatStore } from '../stores/useChatStore';
 import { apiClient, getApiBase } from '../services/apiClient';
-import { uploadToIPFS } from '../utils/ipfs';
+import { uploadToIPFS, getIPFSGatewayUrl } from '../utils/ipfs';
 import { Group, User } from '../types';
 import { BaseModal } from './common/BaseModal';
 import { Avatar } from './common/Avatar';
@@ -20,28 +20,23 @@ interface GroupMembersModalProps {
 
 export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUserId, token, notify, onViewProfile }) => {
   const { showGroupMembersModal, setShowGroupMembersModal, showConfirmModal } = useUIStore();
-  const { activeGroup, setActiveGroup, friends, updateGroupInStore, removeGroup, setGroups } = useChatStore();
+  const { activeGroup, setActiveGroup, friends, updateGroupInStore, removeGroup, setGroups, groupMessages } = useChatStore();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [activeTab, setActiveTab] = useState<'members' | 'media'>('members');
   const [selectedFriendId, setSelectedFriendId] = useState<number | null>(null);
   const [showAddSection, setShowAddSection] = useState(false);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
 
-  // 群內專屬暱稱狀態
-  const [myNickname, setMyNickname] = useState('');
-  const [savingNickname, setSavingNickname] = useState(false);
+  // 就地修改成員群內暱稱狀態
+  const [editingMemberUserId, setEditingMemberUserId] = useState<number | null>(null);
+  const [tempNickname, setTempNickname] = useState('');
+  const [savingNicknameId, setSavingNicknameId] = useState<number | null>(null);
 
   // 群組頭像裁切狀態
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-
-  useEffect(() => {
-    if (activeGroup && currentUserId) {
-      const myMember = (activeGroup.members || []).find((m) => m.user_id === currentUserId);
-      setMyNickname(myMember?.nickname || '');
-    }
-  }, [activeGroup, currentUserId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -52,6 +47,20 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // 聚合本群所有傳送過的媒體與檔案
+  const groupMediaFiles = useMemo(() => {
+    if (!activeGroup) return [];
+    return groupMessages
+      .filter((gm) => gm.filePayload)
+      .map((gm) => ({
+        msgId: gm.id,
+        sender: gm.sender,
+        senderId: gm.sender_id,
+        timestamp: gm.timestamp,
+        payload: gm.filePayload!,
+      }));
+  }, [groupMessages, activeGroup]);
 
   if (!showGroupMembersModal || !activeGroup) return null;
 
@@ -101,14 +110,14 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
     }
   };
 
-  // 儲存群內專屬暱稱
-  const handleSaveNickname = async () => {
+  // 儲存指定成員的群內專屬暱稱 (任何人皆可修改任何人)
+  const handleSaveMemberNickname = async (targetUserId: number) => {
     if (!token) return;
-    setSavingNickname(true);
+    setSavingNicknameId(targetUserId);
     try {
       await apiClient.put(
         `/groups/${activeGroupForModal.id}/nickname`,
-        { nickname: myNickname.trim() },
+        { user_id: targetUserId, nickname: tempNickname.trim() },
         token
       );
       const [updatedGroup, updatedGroupsList] = await Promise.all([
@@ -118,11 +127,12 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
       setGroups(updatedGroupsList);
       updateGroupInStore(updatedGroup);
       setActiveGroup(updatedGroup);
-      notify?.('群內專屬暱稱已更新！', 'success');
+      setEditingMemberUserId(null);
+      notify?.('成員群內暱稱已成功更新！', 'success');
     } catch (err: any) {
-      notify?.(err.message || '更新群內暱稱失敗', 'danger');
+      notify?.(err.message || '更新暱稱失敗', 'danger');
     } finally {
-      setSavingNickname(false);
+      setSavingNicknameId(null);
     }
   };
 
@@ -134,97 +144,93 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
         { user_id: selectedFriendId },
         token
       );
-      const [updatedGroup, updatedGroupsList] = await Promise.all([
-        apiClient.get<Group>(`/groups/${activeGroupForModal.id}`, token),
-        apiClient.get<Group[]>('/groups', token),
-      ]);
-      setGroups(updatedGroupsList);
+
+      const updatedGroup = await apiClient.get<Group>(
+        `/groups/${activeGroupForModal.id}`,
+        token
+      );
       updateGroupInStore(updatedGroup);
       setActiveGroup(updatedGroup);
       setSelectedFriendId(null);
       setShowAddSection(false);
-      setIsSelectOpen(false);
-      notify?.('成功新增成員至群組', 'success');
+      notify?.('已發送群組邀請給好友', 'success');
     } catch (err: any) {
-      notify?.(err.message || '新增成員失敗', 'danger');
+      notify?.(err.message || '邀請成員失敗', 'danger');
     }
   };
 
-  const handleRemoveMemberConfirm = (memberUserId: number, memberName: string) => {
-    showConfirmModal({
-      title: '移除成員確認',
-      message: `確定要將「${memberName}」移出群組嗎？`,
-      danger: true,
-      confirmText: '確定移除',
-      onConfirm: () => handleRemoveMember(memberUserId, memberName),
-    });
-  };
-
-  const handleRemoveMember = async (memberUserId: number, memberName: string) => {
+  const handleRemoveMember = async (targetUserId: number, targetName: string) => {
     if (!token) return;
-    try {
-      await apiClient.delete(`/groups/${activeGroupForModal.id}/members/${memberUserId}`, token);
-      const [updatedGroup, updatedGroupsList] = await Promise.all([
-        apiClient.get<Group>(`/groups/${activeGroupForModal.id}`, token),
-        apiClient.get<Group[]>('/groups', token),
-      ]);
-      setGroups(updatedGroupsList);
-      updateGroupInStore(updatedGroup);
-      setActiveGroup(updatedGroup);
-      notify?.(`已將「${memberName}」移出群組`, 'info');
-    } catch (err: any) {
-      notify?.(err.message || '移除成員失敗', 'danger');
-    }
-  };
-
-  const handleLeaveGroupConfirm = () => {
     showConfirmModal({
-      title: '退出群組確認',
-      message: `確定要退出「${activeGroupForModal.name}」群組嗎？`,
+      title: '移出成員',
+      message: `確定要將「${targetName}」從群組中移出嗎？`,
+      confirmText: '確認移出',
       danger: true,
-      confirmText: '確定退出',
-      onConfirm: handleLeaveGroup,
+      onConfirm: async () => {
+        try {
+          await apiClient.delete(
+            `/groups/${activeGroupForModal.id}/members/${targetUserId}`,
+            token
+          );
+          const updatedGroup = await apiClient.get<Group>(
+            `/groups/${activeGroupForModal.id}`,
+            token
+          );
+          updateGroupInStore(updatedGroup);
+          setActiveGroup(updatedGroup);
+          notify?.(`已將「${targetName}」移出群組`, 'success');
+        } catch (err: any) {
+          notify?.(err.message || '移出成員失敗', 'danger');
+        }
+      },
     });
   };
 
   const handleLeaveGroup = async () => {
     if (!token) return;
-    try {
-      await apiClient.post(`/groups/${activeGroupForModal.id}/leave`, {}, token);
-      const updatedGroupsList = await apiClient.get<Group[]>('/groups', token);
-      setGroups(updatedGroupsList);
-      removeGroup(activeGroupForModal.id);
-      setActiveGroup(null);
-      setShowGroupMembersModal(false);
-      notify?.('已退出群組', 'info');
-    } catch (err: any) {
-      notify?.(err.message || '退出群組失敗', 'danger');
-    }
-  };
-
-  const handleDeleteGroupConfirm = () => {
     showConfirmModal({
-      title: '解散群組確認',
-      message: `確定要解散「${activeGroupForModal.name}」群組嗎？所有成員將無法繼續在此群組發送訊息。`,
+      title: '退出群組',
+      message: `確定要退出「${activeGroupForModal.name}」嗎？`,
+      confirmText: '確認退出',
       danger: true,
-      confirmText: '確定解散',
-      onConfirm: handleDeleteGroup,
+      onConfirm: async () => {
+        try {
+          await apiClient.post(
+            `/groups/${activeGroupForModal.id}/leave`,
+            {},
+            token
+          );
+          removeGroup(activeGroupForModal.id);
+          setShowGroupMembersModal(false);
+          notify?.('已成功退出群組', 'success');
+        } catch (err: any) {
+          notify?.(err.message || '退出群組失敗', 'danger');
+        }
+      },
     });
   };
 
   const handleDeleteGroup = async () => {
     if (!token) return;
-    try {
-      await apiClient.delete(`/groups/${activeGroupForModal.id}`, token);
-      const updatedGroupsList = await apiClient.get<Group[]>('/groups', token);
-      setGroups(updatedGroupsList);
-      removeGroup(activeGroupForModal.id);
-      setActiveGroup(null);
-      setShowGroupMembersModal(false);
-      notify?.('已成功解散群組', 'info');
-    } catch (err: any) {
-      notify?.(err.message || '解散群組失敗', 'danger');
-    }
+    showConfirmModal({
+      title: '解散群組',
+      message: `確定要解散「${activeGroupForModal.name}」嗎？此操作將解散群組並清除所有成員。`,
+      confirmText: '確認解散',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await apiClient.delete(
+            `/groups/${activeGroupForModal.id}`,
+            token
+          );
+          removeGroup(activeGroupForModal.id);
+          setShowGroupMembersModal(false);
+          notify?.('群組已成功解散', 'success');
+        } catch (err: any) {
+          notify?.(err.message || '解散群組失敗', 'danger');
+        }
+      },
+    });
   };
 
   return (
@@ -232,12 +238,11 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
       <BaseModal
         isOpen={showGroupMembersModal}
         onClose={() => setShowGroupMembersModal(false)}
-        title="群組詳情與成員管理"
-        icon={<Users size={20} />}
-        maxWidth="480px"
+        title={activeGroupForModal.name}
+        maxWidth="500px"
       >
-        {/* 群組資訊頂部區塊 (頭像 + 名稱) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '4px 0 16px', borderBottom: '1px solid var(--border-color)' }}>
+        {/* 群組頂部 Banner 與頭像 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
           <div
             onClick={() => fileInputRef.current?.click()}
             style={{
@@ -245,8 +250,6 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
               cursor: 'pointer',
               borderRadius: '50%',
               overflow: 'hidden',
-              width: '64px',
-              height: '64px',
               flexShrink: 0,
             }}
             title="點擊更換群組頭像"
@@ -255,7 +258,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
               src={activeGroupForModal.avatar}
               name={activeGroupForModal.name}
               fallbackSeed={activeGroupForModal.name}
-              size={64}
+              size={60}
             />
             <div
               style={{
@@ -269,7 +272,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
                 opacity: uploadingAvatar ? 1 : 0.75,
               }}
             >
-              {uploadingAvatar ? <Loader2 size={20} className="spin" /> : <Camera size={18} />}
+              {uploadingAvatar ? <Loader2 size={18} className="spin" /> : <Camera size={16} />}
             </div>
           </div>
           <input
@@ -280,7 +283,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
             onChange={handleAvatarFileChange}
           />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-word' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-word' }}>
               {activeGroupForModal.name}
             </h3>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -289,197 +292,252 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
           </div>
         </div>
 
-        {/* 群內專屬暱稱設定區塊 */}
-        <div style={{ margin: '14px 0', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-            我在本群的專屬暱稱 (僅限本群成員可見)
-          </label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              type="text"
-              className="uiInput"
-              placeholder="自訂在群內的顯示名稱..."
-              value={myNickname}
-              onChange={(e) => setMyNickname(e.target.value)}
-              maxLength={30}
-              style={{ flex: 1, height: '36px', fontSize: '0.86rem' }}
-            />
-            <button
-              type="button"
-              className="uiBtnPrimary"
-              onClick={handleSaveNickname}
-              disabled={savingNickname}
-              style={{ height: '36px', padding: '0 14px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
-            >
-              {savingNickname ? <Loader2 size={14} className="spin" /> : <Save size={14} />}
-              <span>設定</span>
-            </button>
-          </div>
+        {/* TAB 分頁切換 */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+          <button
+            type="button"
+            className={`uiBtnSecondary ${activeTab === 'members' ? 'uiBtnPrimary' : ''}`}
+            onClick={() => setActiveTab('members')}
+            style={{ flex: 1, height: '36px', fontSize: '0.86rem' }}
+          >
+            <Users size={16} />
+            <span>成員名單 ({activeGroupForModal.members?.length || 0})</span>
+          </button>
+          <button
+            type="button"
+            className={`uiBtnSecondary ${activeTab === 'media' ? 'uiBtnPrimary' : ''}`}
+            onClick={() => setActiveTab('media')}
+            style={{ flex: 1, height: '36px', fontSize: '0.86rem' }}
+          >
+            <ImageIcon size={16} />
+            <span>媒體與檔案 ({groupMediaFiles.length})</span>
+          </button>
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>
-              群組成員 ({activeGroupForModal.members?.length || 0} 人)
-            </span>
-            {isOwner && (
-              <button className={styles.inviteBtn} onClick={() => setShowAddSection(!showAddSection)}>
-                <UserPlus size={14} />
-                <span>邀請成員</span>
-              </button>
-            )}
-          </div>
+        {/* Tab 1: 成員名單 */}
+        {activeTab === 'members' && (
+          <div style={{ marginBottom: '16px' }}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionTitle}>成員名單 (點擊名字可改暱稱)</span>
+              {isOwner && (
+                <button className={styles.inviteBtn} onClick={() => setShowAddSection(!showAddSection)}>
+                  <UserPlus size={14} />
+                  <span>邀請好友</span>
+                </button>
+              )}
+            </div>
 
-          {showAddSection && isOwner && (
-            <div className={styles.addMemberBox} ref={dropdownRef}>
-              <div
-                className={styles.customSelectTrigger}
-                onClick={() => setIsSelectOpen(!isSelectOpen)}
-              >
-                {selectedFriend ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                    <Avatar
-                      src={selectedFriend.avatar}
-                      name={selectedFriend.display_name || selectedFriend.account_id}
-                      fallbackSeed={selectedFriend.display_name || selectedFriend.account_id}
-                      size={24}
-                    />
-                    <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                      {selectedFriend.display_name || selectedFriend.account_id} <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 400 }}>(@{selectedFriend.account_id})</span>
-                    </span>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                    選擇要邀請的好友...
-                  </span>
-                )}
-                <ChevronDown
-                  size={18}
-                  style={{
-                    color: 'var(--text-secondary)',
-                    transform: isSelectOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.2s ease',
-                    flexShrink: 0,
-                  }}
-                />
-              </div>
-
-              {isSelectOpen && (
-                <div className={styles.customSelectMenu}>
-                  {availableFriends.length === 0 ? (
-                    <div style={{ padding: '12px', fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                      無可邀請的好友
+            {showAddSection && isOwner && (
+              <div className={styles.addMemberBox} ref={dropdownRef}>
+                <div
+                  className={styles.customSelectTrigger}
+                  onClick={() => setIsSelectOpen(!isSelectOpen)}
+                >
+                  {selectedFriend ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                      <Avatar
+                        src={selectedFriend.avatar}
+                        name={selectedFriend.display_name || selectedFriend.account_id}
+                        fallbackSeed={selectedFriend.display_name || selectedFriend.account_id}
+                        size={24}
+                      />
+                      <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        {selectedFriend.display_name || selectedFriend.account_id}
+                      </span>
                     </div>
                   ) : (
-                    availableFriends.map((f) => (
-                      <div
-                        key={f.id}
-                        className={`${styles.customSelectOption} ${selectedFriendId === f.id ? styles.selectedOption : ''}`}
-                        onClick={() => {
-                          setSelectedFriendId(f.id);
-                          setIsSelectOpen(false);
-                        }}
-                      >
-                        <Avatar
-                          src={f.avatar}
-                          name={f.display_name || f.account_id}
-                          fallbackSeed={f.display_name || f.account_id}
-                          size={28}
-                        />
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                            {f.display_name || f.account_id}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                            @{f.account_id}
-                          </span>
-                        </div>
-                      </div>
-                    ))
+                    <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>選擇要邀請的好友...</span>
                   )}
+                  <ChevronDown size={18} />
                 </div>
-              )}
 
-              <button
-                className="uiBtnPrimary"
-                onClick={handleAddMember}
-                disabled={!selectedFriendId}
-                style={{ height: '42px', padding: '0 16px', whiteSpace: 'nowrap' }}
-              >
-                加入
-              </button>
-            </div>
-          )}
+                {isSelectOpen && (
+                  <div className={styles.customSelectMenu}>
+                    {availableFriends.length === 0 ? (
+                      <div style={{ padding: '12px', fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                        無可邀請的好友
+                      </div>
+                    ) : (
+                      availableFriends.map((f) => (
+                        <div
+                          key={f.id}
+                          className={`${styles.customSelectOption} ${selectedFriendId === f.id ? styles.selectedOption : ''}`}
+                          onClick={() => {
+                            setSelectedFriendId(f.id);
+                            setIsSelectOpen(false);
+                          }}
+                        >
+                          <Avatar src={f.avatar} name={f.display_name || f.account_id} size={28} />
+                          <span>{f.display_name || f.account_id}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
 
-          <div className={styles.memberList}>
-            {(activeGroupForModal.members || []).map((m) => {
-              const u = m.user;
-              const globalName = u?.display_name || u?.account_id || `User #${m.user_id}`;
-              const displayName = m.nickname ? `${m.nickname} (${globalName})` : globalName;
-              const isGroupOwner = m.role === 'owner' || m.user_id === activeGroupForModal.owner_id;
+                <button className="uiBtnPrimary" onClick={handleAddMember} disabled={!selectedFriendId} style={{ height: '42px' }}>
+                  加入
+                </button>
+              </div>
+            )}
 
-              return (
-                <div key={m.id} className={styles.memberItem}>
-                  <div className={styles.memberUser}>
-                    <Avatar
-                      src={u?.avatar}
-                      name={globalName}
-                      fallbackSeed={u?.display_name || u?.account_id}
-                      size={36}
-                      onClick={() => {
-                        if (u && onViewProfile) {
-                          onViewProfile(u);
-                        }
-                      }}
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {m.nickname || globalName}{' '}
-                        {isGroupOwner && (
-                          <span className={styles.ownerBadge}>
-                            群主
+            <div className={styles.memberList}>
+              {(activeGroupForModal.members || []).map((m) => {
+                const u = m.user;
+                const globalName = u?.display_name || u?.account_id || `User #${m.user_id}`;
+                const isGroupOwner = m.role === 'owner' || m.user_id === activeGroupForModal.owner_id;
+                const isEditing = editingMemberUserId === m.user_id;
+
+                return (
+                  <div key={m.id} className={styles.memberItem}>
+                    <div className={styles.memberUser}>
+                      <Avatar
+                        src={u?.avatar}
+                        name={globalName}
+                        fallbackSeed={u?.display_name || u?.account_id}
+                        size={36}
+                        onClick={() => u && onViewProfile && onViewProfile(u)}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <input
+                              type="text"
+                              className="uiInput"
+                              value={tempNickname}
+                              onChange={(e) => setTempNickname(e.target.value)}
+                              placeholder={`設定群內暱稱...`}
+                              autoFocus
+                              style={{ height: '30px', padding: '0 8px', fontSize: '0.82rem' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveMemberNickname(m.user_id)}
+                              disabled={savingNicknameId === m.user_id}
+                              style={{ color: 'var(--token-success)' }}
+                              title="儲存暱稱"
+                            >
+                              {savingNicknameId === m.user_id ? <Loader2 size={15} className="spin" /> : <Check size={16} />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingMemberUserId(null)}
+                              style={{ color: 'var(--text-muted)' }}
+                              title="取消"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                            onClick={() => {
+                              setEditingMemberUserId(m.user_id);
+                              setTempNickname(m.nickname || '');
+                            }}
+                            title="點擊修改此成員群內暱稱"
+                          >
+                            <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                              {m.nickname || globalName}
+                            </span>
+                            {isGroupOwner && <span className={styles.ownerBadge}>群主</span>}
+                            <Edit3 size={12} color="var(--text-muted)" style={{ opacity: 0.6 }} />
+                          </div>
+                        )}
+                        {!isEditing && m.nickname && (
+                          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                            原名: {globalName}
                           </span>
                         )}
-                      </span>
-                      {m.nickname && (
-                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                          原名: {globalName}
-                        </span>
+                      </div>
+                    </div>
+
+                    {isOwner && m.user_id !== currentUserId && (
+                      <button
+                        className={styles.removeMemberBtn}
+                        onClick={() => handleRemoveMember(m.user_id, m.nickname || globalName)}
+                        title="移出群組"
+                      >
+                        <UserMinus size={15} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: 媒體與檔案庫 */}
+        {activeTab === 'media' && (
+          <div style={{ minHeight: '180px', maxHeight: '320px', overflowY: 'auto' }}>
+            {groupMediaFiles.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--text-muted)', fontSize: '0.86rem' }}>
+                本群尚無傳送過之媒體或檔案
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', padding: '4px' }}>
+                {groupMediaFiles.map((item, i) => {
+                  const isImg = item.payload.mime?.startsWith('image/');
+                  const url = getIPFSGatewayUrl(item.payload.cid);
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        position: 'relative',
+                        height: '90px',
+                        borderRadius: '10px',
+                        overflow: 'hidden',
+                        background: 'rgba(0,0,0,0.3)',
+                        border: '1px solid var(--border-color)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {isImg ? (
+                        <a href={url} target="_blank" rel="noreferrer" style={{ width: '100%', height: '100%' }}>
+                          <img src={url} alt={item.payload.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </a>
+                      ) : (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: 'inherit', padding: '6px' }}
+                        >
+                          <FileText size={22} color="var(--accent-color)" />
+                          <span style={{ fontSize: '0.7rem', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.payload.name}
+                          </span>
+                        </a>
                       )}
                     </div>
-                  </div>
-
-                  {isOwner && !isGroupOwner && (
-                    <button
-                      className={styles.removeBtn}
-                      onClick={() => handleRemoveMemberConfirm(m.user_id, globalName)}
-                      title="移出群組"
-                    >
-                      <UserMinus size={16} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-          {!isOwner ? (
-            <button className="uiBtnDanger" onClick={handleLeaveGroupConfirm} style={{ width: '100%' }}>
-              <LogOut size={16} style={{ marginRight: '6px' }} />
-              退出群組
+        {/* 底部操作區 (解散/退出) */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+          {isOwner ? (
+            <button className="uiBtnDanger" onClick={handleDeleteGroup}>
+              <Trash2 size={16} />
+              <span>解散群組</span>
             </button>
           ) : (
-            <button className="uiBtnDanger" onClick={handleDeleteGroupConfirm} style={{ width: '100%' }}>
-              <Trash2 size={16} style={{ marginRight: '6px' }} />
-              解散群組
+            <button className="uiBtnDanger" onClick={handleLeaveGroup}>
+              <LogOut size={16} />
+              <span>退出群組</span>
             </button>
           )}
         </div>
       </BaseModal>
 
-      {/* 獨立群組頭像裁切彈窗 */}
+      {/* 群組頭像裁切彈窗 */}
       <AvatarCropModal
         isOpen={Boolean(cropFile)}
         imageFile={cropFile}
@@ -489,4 +547,3 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
     </>
   );
 };
-

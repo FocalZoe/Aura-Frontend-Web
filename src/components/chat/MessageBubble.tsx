@@ -24,6 +24,8 @@ interface MessageBubbleProps {
   isScreenshotMode?: boolean;
   isSelectedForScreenshot?: boolean;
   onToggleSelectScreenshot?: (msg: Message) => void;
+  highlightKeyword?: string;
+  isSearchHighlighted?: boolean;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -43,6 +45,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isScreenshotMode = false,
   isSelectedForScreenshot = false,
   onToggleSelectScreenshot,
+  highlightKeyword,
+  isSearchHighlighted = false,
 }) => {
   const isSelf = Number(msg.sender_id) === Number(currentUserId);
   const isError = msg.error === true;
@@ -53,7 +57,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   // 系統置中公告訊息 (無氣泡、小字、膠囊微光樣式)
   if (msg.is_system) {
     return (
-      <div className={styles.systemMsgRow}>
+      <div id={`message-${msg.id}`} className={styles.systemMsgRow}>
         <div className={styles.systemMsgPill}>
           {msg.content}
         </div>
@@ -78,6 +82,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     return matches ? Array.from(new Set(matches)) : [];
   };
 
+  const highlightText = (text: string) => {
+    if (!highlightKeyword || !highlightKeyword.trim()) return text;
+    const regex = new RegExp(`(${highlightKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    return parts.map((part, i) =>
+      regex.test(part) ? (
+        <mark key={i} className={styles.searchHighlightText}>
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
+
   const renderTextWithLinks = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/gi;
     const parts = text.split(urlRegex);
@@ -97,7 +116,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </a>
         );
       }
-      return part;
+      return highlightText(part);
     });
   };
 
@@ -249,6 +268,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   return (
     <div
+      id={`message-${msg.id}`}
       className={`${styles.msgRow} ${isSelf ? styles.msgRowSelf : styles.msgRowOther}`}
       style={{
         background: isScreenshotMode && isSelectedForScreenshot ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
@@ -269,7 +289,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </div>
       )}
 
-      <div className={styles.msgBubbleContainer}>
+      <div className={`${styles.msgBubbleContainer} ${isSearchHighlighted ? styles.msgHighlightGlow : ''}`}>
         {/* 群組內他人發送訊息顯示發送者名字/群內暱稱 */}
         {!isSelf && isGroup && (
           <div

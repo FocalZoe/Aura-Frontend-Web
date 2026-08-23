@@ -1,0 +1,116 @@
+/* Context: 聊天室內訊息即時搜尋列 (深色毛玻璃、上下筆切換、平滑跳轉聚焦) */
+
+.searchBarContainer {
+  position: absolute;
+  top: 60px;
+  left: 16px;
+  right: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-modal, rgba(15, 23, 42, 0.94));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+  padding: 8px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  animation: searchSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes searchSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.searchIconWrapper {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted, #94a3b8);
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #f8fafc);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.86rem;
+}
+
+.counterBadge {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.navBtnGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.navBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #94a3b8);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #ffffff);
+}
+
+.navBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.closeBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
