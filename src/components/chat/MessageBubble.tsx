@@ -23,6 +23,7 @@ interface MessageBubbleProps {
   onViewReactions?: (message: Message) => void;
   isScreenshotMode?: boolean;
   isSelectedForScreenshot?: boolean;
+  selectedPosition?: 'single' | 'first' | 'middle' | 'last';
   onToggleSelectScreenshot?: (msg: Message) => void;
   highlightKeyword?: string;
   isSearchHighlighted?: boolean;
@@ -44,6 +45,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onViewReactions,
   isScreenshotMode = false,
   isSelectedForScreenshot = false,
+  selectedPosition,
   onToggleSelectScreenshot,
   highlightKeyword,
   isSearchHighlighted = false,
@@ -268,12 +270,23 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
+  const selectedPositionClass =
+    selectedPosition === 'single'
+      ? styles.selectedSingle
+      : selectedPosition === 'first'
+      ? styles.selectedFirst
+      : selectedPosition === 'middle'
+      ? styles.selectedMiddle
+      : selectedPosition === 'last'
+      ? styles.selectedLast
+      : '';
+
   return (
     <div
       id={`message-${msg.id}`}
       className={`${styles.msgRow} ${isSelf ? styles.msgRowSelf : styles.msgRowOther} ${
         isScreenshotMode ? styles.msgRowScreenshotMode : ''
-      } ${isScreenshotMode && isSelectedForScreenshot ? styles.msgRowSelected : ''}`}
+      } ${isScreenshotMode && isSelectedForScreenshot ? styles.msgRowSelected : ''} ${selectedPositionClass}`}
       onClick={handleBubbleClick}
     >
       <div className={`${styles.msgBubbleContainer} ${isSearchHighlighted ? styles.msgHighlightGlow : ''}`}>

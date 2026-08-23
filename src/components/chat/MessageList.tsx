@@ -118,6 +118,19 @@ export const MessageList: React.FC<MessageListProps> = ({
           idx <= selectedRange.end
         );
 
+        let selectedPosition: 'single' | 'first' | 'middle' | 'last' | undefined = undefined;
+        if (selectedRange && isSelected) {
+          if (selectedRange.start === selectedRange.end) {
+            selectedPosition = 'single';
+          } else if (idx === selectedRange.start) {
+            selectedPosition = 'first';
+          } else if (idx === selectedRange.end) {
+            selectedPosition = 'last';
+          } else {
+            selectedPosition = 'middle';
+          }
+        }
+
         const memberInfo = groupMembersMap ? groupMembersMap[msg.sender_id] : undefined;
         const senderUser = memberInfo?.user || msg.sender;
         const groupNickname = memberInfo?.nickname;
@@ -140,6 +153,7 @@ export const MessageList: React.FC<MessageListProps> = ({
             onViewReactions={onViewReactions}
             isScreenshotMode={isScreenshotMode}
             isSelectedForScreenshot={isSelected}
+            selectedPosition={selectedPosition}
             onToggleSelectScreenshot={() => onToggleSelectScreenshot && onToggleSelectScreenshot(msg, idx)}
             highlightKeyword={highlightKeyword}
             isSearchHighlighted={highlightedMessageId === msg.id}
