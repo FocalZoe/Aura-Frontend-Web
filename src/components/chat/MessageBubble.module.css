@@ -249,60 +249,67 @@
   border-radius: 4px;
 }
 
-/* 訊息表情反應名單列 */
-.msgReactionsRow {
+/* 訊息表情反應名單膠囊列 (自己靠右氣泡對齊，他人靠左氣泡對齊) */
+.reactionsWrapper {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 4px;
+  z-index: 1;
 }
 
-.reactionBadge {
+.reactionsWrapperSelf {
+  justify-content: flex-end;
+  margin-right: 0;
+}
+
+.reactionsWrapperOther {
+  justify-content: flex-start;
+  margin-left: 38px; /* 避開 32px 頭像 + 6px gap，完美對齊他人氣泡左邊界 */
+}
+
+.reactionPill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 2px 7px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+  border-radius: 14px;
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary, #94a3b8);
   cursor: pointer;
   transition: all 0.18s ease;
+  line-height: 1;
+  user-select: none;
 }
 
-.reactionBadge:hover {
+.reactionPill:hover {
   background: rgba(255, 255, 255, 0.12);
-  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.04);
 }
 
-.reactionBadgeActive {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(59, 130, 246, 0.5);
-  color: #93c5fd;
-}
-
-.reactionEmoji {
-  font-size: 0.85rem;
-}
-
-.reactionCount {
-  font-weight: 600;
-  font-size: 0.75rem;
+.reactionPillActive {
+  background: rgba(59, 130, 246, 0.22) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  color: #93c5fd !important;
 }
 
 .reactionAvatars {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   margin-left: 2px;
+  cursor: pointer;
 }
 
 .reactionAvatarItem {
   margin-left: -4px;
   border-radius: 50%;
-  border: 1px solid var(--bg-modal, #0f172a);
+  border: 1px solid var(--bg-card, #0f172a);
+  display: inline-flex;
 }
 
 .reactionAvatarItem:first-child {
