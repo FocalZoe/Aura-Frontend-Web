@@ -1,5 +1,5 @@
-// Context: 待發送附件預覽條 (支援 Instagram 多圖堆疊預覽、檔案卡片與個別刪除)
-import React, { useMemo } from 'react';
+// Context: 待發送附件預覽條 (支援 Instagram 多圖堆疊預覽、檔案卡片、個別刪除與 ObjectURL 生命週期釋放)
+import React, { useMemo, useEffect } from 'react';
 import { FileText, Film, Music, X } from 'lucide-react';
 import styles from './PendingAttachmentsPreview.module.css';
 
@@ -29,6 +29,17 @@ export const PendingAttachmentsPreview: React.FC<PendingAttachmentsPreviewProps>
       return { file, index, isImage, isVideo, isAudio, url };
     });
   }, [files]);
+
+  // Context: 組件卸載或檔案清單變更時，及時釋放 ObjectURL 記憶體
+  useEffect(() => {
+    return () => {
+      fileItems.forEach((item) => {
+        if (item.url) {
+          URL.revokeObjectURL(item.url);
+        }
+      });
+    };
+  }, [fileItems]);
 
   if (files.length === 0) return null;
 

@@ -617,11 +617,14 @@ export const ChatWindow: React.FC = () => {
     // 1. 若有待發送附件，依序加密上傳並發送
     if (hasFiles) {
       setUploading(true);
+      const filesToSend = [...pendingFiles];
       try {
-        for (const file of pendingFiles) {
-          await uploadAndSendSingleFile(file);
+        while (filesToSend.length > 0) {
+          const currentFile = filesToSend[0];
+          await uploadAndSendSingleFile(currentFile);
+          filesToSend.shift();
+          setPendingFiles([...filesToSend]);
         }
-        setPendingFiles([]);
         notify({ message: '附件已成功傳送！', type: 'success' });
       } catch (err: any) {
         notify({ message: err.message || '附件傳送失敗', type: 'danger' });
