@@ -418,18 +418,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   onClick={(e) => {
                     if (isScreenshotMode) return;
                     e.stopPropagation();
-                    if (onViewReactions) {
-                      onViewReactions(msg);
-                    } else if (msg.id && onReaction) {
+                    if (msg.id && onReaction) {
                       onReaction(msg.id, emoji);
                     }
                   }}
-                  title={data.reactedByMe ? '點擊檢視反應名單 / 取消反應' : '點擊檢視反應名單'}
+                  title={data.reactedByMe ? '點擊取消反應' : '點擊送出反應'}
                 >
                   <span>{emoji}</span>
 
                   {showAvatars ? (
-                    <div className={styles.reactionAvatars}>
+                    <div
+                      className={styles.reactionAvatars}
+                      onClick={(e) => {
+                        if (isScreenshotMode) return;
+                        e.stopPropagation();
+                        if (onViewReactions) {
+                          onViewReactions(msg);
+                        }
+                      }}
+                      title="點擊檢視反應名單"
+                    >
                       {data.users.map((u) => (
                         <div key={u.id} className={styles.reactionAvatarItem}>
                           <Avatar
