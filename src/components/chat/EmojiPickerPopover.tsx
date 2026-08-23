@@ -1,6 +1,5 @@
-// Context: 獨立 Emoji / 貼圖 / 表情貼 (Custom Emoji) 浮動選取器 (支援 reaction 純表情模式 vs input 整合貼圖與創作者商店 Placeholder)
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, X, Smile, Sparkles, Image as ImageIcon, Store, ExternalLink } from 'lucide-react';
+import { Search, X, Smile, Sparkles, Image as ImageIcon, Store, ExternalLink, Palette } from 'lucide-react';
 import styles from './EmojiPickerPopover.module.css';
 
 interface EmojiPickerPopoverProps {
@@ -356,8 +355,8 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
               </div>
             </div>
 
-            <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-              <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>🎨</div>
+            <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Palette size={32} color="var(--accent-color, #38bdf8)" style={{ opacity: 0.8, marginBottom: '8px' }} />
               <div>尚未擁有貼圖包</div>
               <div style={{ fontSize: '0.74rem', marginTop: '4px', opacity: 0.8 }}>
                 未來可於貼圖商店選購或在創作者中心上架專屬貼圖
@@ -389,8 +388,8 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
               </div>
             </div>
 
-            <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-              <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>✨</div>
+            <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Sparkles size={32} color="#ec4899" style={{ opacity: 0.8, marginBottom: '8px' }} />
               <div>尚未擁有自訂表情貼</div>
               <div style={{ fontSize: '0.74rem', marginTop: '4px', opacity: 0.8 }}>
                 未來可在表情貼商店選購或在文字中穿插使用
