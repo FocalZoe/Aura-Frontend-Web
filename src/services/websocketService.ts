@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useChatStore } from '../stores/useChatStore';
 import { useUIStore } from '../stores/useUIStore';
 import { useCallStore } from '../stores/useCallStore';
+import { useGroupCallStore } from '../stores/useGroupCallStore';
 import { apiClient, getApiBase } from './apiClient';
 import { e2eeService } from './e2eeService';
 import { soundEffects } from '../utils/audio';
@@ -408,6 +409,45 @@ class WebSocketService {
         callStore.onReceiveHangup();
       } else if (data.type === 'busy_incoming_call') {
         callStore.onReceiveBusyNotification((data as any).sender_id, (data as any).content);
+      }
+    } else if (
+      data.type === 'group_call_incoming' ||
+      data.type === 'sfu_room_joined' ||
+      data.type === 'sfu_user_joined' ||
+      data.type === 'sfu_user_left' ||
+      data.type === 'sfu_offer' ||
+      data.type === 'sfu_answer' ||
+      data.type === 'sfu_candidate' ||
+      data.type === 'sfu_media_toggle' ||
+      data.type === 'group_call_ended'
+    ) {
+      // Context: [Go-Pion SFU 多人群通話信號轉發]
+      const groupCallStore = useGroupCallStore.getState();
+
+      if (data.type === 'group_call_incoming') {
+        const d = data as any;
+        groupCallStore.onGroupCallIncoming(d.group_id, d.initiator_id, d.call_type, d.participants || []);
+      } else if (data.type === 'sfu_room_joined') {
+        const d = data as any;
+        groupCallStore.onRoomJoined(d.group_id, d.call_type, d.initiator_id, d.participants || []);
+      } else if (data.type === 'sfu_user_joined') {
+        const d = data as any;
+        groupCallStore.onUserJoined(d.group_id, d.user_id, d.participants || []);
+      } else if (data.type === 'sfu_user_left') {
+        const d = data as any;
+        groupCallStore.onUserLeft(d.group_id, d.user_id, d.remaining_count, d.participants || []);
+      } else if (data.type === 'sfu_offer') {
+        groupCallStore.onReceiveOffer((data as any).sdp);
+      } else if (data.type === 'sfu_answer') {
+        groupCallStore.onReceiveAnswer((data as any).sdp);
+      } else if (data.type === 'sfu_candidate') {
+        groupCallStore.onReceiveCandidate((data as any).candidate);
+      } else if (data.type === 'sfu_media_toggle') {
+        const d = data as any;
+        groupCallStore.onReceiveMediaToggle(d.sender_id, d.content);
+      } else if (data.type === 'group_call_ended') {
+        const d = data as any;
+        groupCallStore.onGroupCallEnded(d.group_id, d.duration);
       }
     }
   }

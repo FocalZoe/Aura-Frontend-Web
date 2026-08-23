@@ -87,6 +87,28 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </button>
           )}
 
+          {onStartAudioCall && !activeGroup.is_removed && (
+            <button
+              className={sidebarStyles.themeToggleBtn}
+              onClick={onStartAudioCall}
+              title="發起群組語音通話"
+              style={{ width: '34px', height: '34px' }}
+            >
+              <Phone size={18} />
+            </button>
+          )}
+
+          {onStartVideoCall && !activeGroup.is_removed && (
+            <button
+              className={sidebarStyles.themeToggleBtn}
+              onClick={onStartVideoCall}
+              title="發起群組視訊通話"
+              style={{ width: '34px', height: '34px' }}
+            >
+              <Video size={18} />
+            </button>
+          )}
+
           <button
             className={sidebarStyles.themeToggleBtn}
             onClick={onOpenGroupModal}

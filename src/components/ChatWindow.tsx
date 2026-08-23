@@ -22,8 +22,11 @@ import { ChatScreenshotModal } from './chat/ChatScreenshotModal';
 import { MessageReactionsModal } from './chat/MessageReactionsModal';
 import { EmojiPickerPopover } from './chat/EmojiPickerPopover';
 import { ChatSearchBar } from './chat/ChatSearchBar';
+import { GroupCallBanner } from './chat/GroupCallBanner';
+import { GroupCallModal } from './Call/GroupCallModal';
 import styles from './ChatWindow.module.css';
 import { useCallStore } from '../stores/useCallStore';
+import { useGroupCallStore } from '../stores/useGroupCallStore';
 
 export const ChatWindow: React.FC = () => {
   const startCall = useCallStore((s: any) => s.startCall);
@@ -807,6 +810,8 @@ export const ChatWindow: React.FC = () => {
                   },
                   'audio'
                 )
+            : activeGroup && !activeGroup.is_removed
+            ? () => useGroupCallStore.getState().startGroupCall(activeGroup.id, activeGroup.name, 'audio')
             : undefined
         }
         onStartVideoCall={
@@ -820,6 +825,8 @@ export const ChatWindow: React.FC = () => {
                   },
                   'video'
                 )
+            : activeGroup && !activeGroup.is_removed
+            ? () => useGroupCallStore.getState().startGroupCall(activeGroup.id, activeGroup.name, 'video')
             : undefined
         }
         onSendFriendRequest={async () => {
@@ -841,6 +848,15 @@ export const ChatWindow: React.FC = () => {
           }
         }}
       />
+
+      {/* 群組通話頂部常駐 Banner */}
+      {activeGroup && (
+        <GroupCallBanner
+          groupId={activeGroup.id}
+          groupName={activeGroup.name}
+          onOpenModal={() => {}}
+        />
+      )}
 
       {/* 聊天室內即時搜尋列 */}
       {showSearch && (
@@ -1072,6 +1088,9 @@ export const ChatWindow: React.FC = () => {
         partnerUser={activeChatUser}
         groupName={activeGroup?.name}
       />
+
+      {/* Discord 級別群組 SFU 音視訊通話主視窗 */}
+      <GroupCallModal />
     </div>
   );
 };
