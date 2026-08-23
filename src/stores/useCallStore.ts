@@ -452,8 +452,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
   // Signaling Callback Implementation
   onReceiveResponse: async (content: string, _senderId: number) => {
+    callSoundSynthesizer.stopRingtone(); // Context: [音效修復] 收到回應立即停止撥號響鈴
     const { callEngine, peerUser, callType, isCaller } = get();
     if (content === 'accept') {
+      callSoundSynthesizer.playJoin();
       if (callEngine && peerUser) {
         try {
           const offer = await callEngine.createOffer();

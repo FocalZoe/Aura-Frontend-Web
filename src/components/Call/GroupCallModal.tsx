@@ -196,17 +196,65 @@ export const GroupCallModal: React.FC = () => {
       ? { isMuted, isVideoOff }
       : (participantMediaStates[pinnedMemberId] || { isMuted: false, isVideoOff: false });
 
-  // 彈出式新視窗 (Pop-out Window)
-  const handlePopout = () => {
-    const width = 800;
-    const height = 600;
-    const left = window.screen.width - width - 40;
-    const top = 80;
-    window.open(
-      window.location.href,
-      'AuraGroupCallPopout',
-      `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes`
-    );
+  const [isPopout, setIsPopout] = React.useState<boolean>(false);
+  const groupCallContentRef = useRef<HTMLDivElement | null>(null);
+  const groupHostRef = useRef<HTMLDivElement | null>(null);
+
+  // 彈出式新視窗 (Document Picture-in-Picture 獨立桌面視窗)
+  const handlePopout = async () => {
+    if ('documentPictureInPicture' in window) {
+      try {
+        const pipWin = await (window as any).documentPictureInPicture.requestWindow({
+          width: 900,
+          height: 640,
+        });
+
+        // 複製主視窗所有樣式
+        Array.from(document.styleSheets).forEach((styleSheet) => {
+          try {
+            const cssRules = Array.from(styleSheet.cssRules)
+              .map((rule) => rule.cssText)
+              .join('');
+            const style = document.createElement('style');
+            style.textContent = cssRules;
+            pipWin.document.head.appendChild(style);
+          } catch (e) {
+            const link = document.createElement('link');
+            if (styleSheet.href) {
+              link.rel = 'stylesheet';
+              link.type = styleSheet.type;
+              link.media = styleSheet.media.toString();
+              link.href = styleSheet.href;
+              pipWin.document.head.appendChild(link);
+            }
+          }
+        });
+
+        if (groupCallContentRef.current) {
+          pipWin.document.body.appendChild(groupCallContentRef.current);
+          pipWin.document.body.style.margin = '0';
+          pipWin.document.body.style.background = '#090d16';
+          pipWin.document.body.style.height = '100vh';
+          pipWin.document.body.style.display = 'flex';
+          pipWin.document.body.style.flexDirection = 'column';
+        }
+
+        setIsPopout(true);
+
+        pipWin.addEventListener('pagehide', () => {
+          if (groupCallContentRef.current && groupHostRef.current) {
+            groupHostRef.current.appendChild(groupCallContentRef.current);
+          }
+          setIsPopout(false);
+        });
+      } catch (err) {
+        console.warn('[GroupCallModal] Document PiP request failed, fallback to internal PiP:', err);
+        setMinimized(true);
+      }
+    } else {
+      // 瀏覽器不支援 Document PiP 時自動切換為內部 PiP 子母畫面
+      setMinimized(true);
+    }
   };
 
   return (
@@ -290,9 +338,10 @@ export const GroupCallModal: React.FC = () => {
         </div>
       ) : (
         /* 情況 B：正常主視窗 Modal */
-        <div className={styles.modalBackdrop}>
-          {/* 頂部標頭 */}
-          <div className={styles.modalHeader}>
+        <div ref={groupHostRef} style={{ display: isPopout ? 'none' : 'contents' }}>
+          <div ref={groupCallContentRef} className={styles.modalBackdrop}>
+            {/* 頂部標頭 */}
+            <div className={styles.modalHeader}>
             <div className={styles.groupInfo}>
               <h3 className={styles.groupTitle}>{activeGroupName || '群組通話'}</h3>
               <div className={styles.participantBadge}>
@@ -452,6 +501,7 @@ export const GroupCallModal: React.FC = () => {
             </button>
           </div>
         </div>
+      </div>
       )}
     </>
   );

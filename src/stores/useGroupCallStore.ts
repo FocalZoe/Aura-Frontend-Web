@@ -356,6 +356,11 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
       pinnedUserId: get().pinnedUserId === userId ? null : get().pinnedUserId,
       isCallActive: remainingCount > 0,
     });
+
+    // 若其他成員皆已離開 (僅剩自己一人)，自動掛斷通話
+    if (remainingCount === 0 || (participants.length <= 1 && get().isJoined)) {
+      get().leaveGroupCall();
+    }
   },
 
   onReceiveOffer: async (sdp: string) => {

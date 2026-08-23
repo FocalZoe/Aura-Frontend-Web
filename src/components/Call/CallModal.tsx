@@ -94,17 +94,66 @@ export const CallModal: React.FC = () => {
     await acceptCall();
   };
 
-  // 彈出式新視窗 (Pop-out Window)
-  const handlePopout = () => {
-    const width = 640;
-    const height = 480;
-    const left = window.screen.width - width - 40;
-    const top = 80;
-    window.open(
-      window.location.href,
-      'AuraCallPopout',
-      `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes`
-    );
+  const [isPopout, setIsPopout] = React.useState<boolean>(false);
+  const callContentRef = useRef<HTMLDivElement | null>(null);
+  const mainHostRef = useRef<HTMLDivElement | null>(null);
+
+  // 彈出式新視窗 (Document Picture-in-Picture 獨立桌面視窗)
+  const handlePopout = async () => {
+    if ('documentPictureInPicture' in window) {
+      try {
+        const pipWin = await (window as any).documentPictureInPicture.requestWindow({
+          width: callType === 'video' ? 880 : 480,
+          height: callType === 'video' ? 600 : 540,
+        });
+
+        // 複製主視窗所有樣式
+        Array.from(document.styleSheets).forEach((styleSheet) => {
+          try {
+            const cssRules = Array.from(styleSheet.cssRules)
+              .map((rule) => rule.cssText)
+              .join('');
+            const style = document.createElement('style');
+            style.textContent = cssRules;
+            pipWin.document.head.appendChild(style);
+          } catch (e) {
+            const link = document.createElement('link');
+            if (styleSheet.href) {
+              link.rel = 'stylesheet';
+              link.type = styleSheet.type;
+              link.media = styleSheet.media.toString();
+              link.href = styleSheet.href;
+              pipWin.document.head.appendChild(link);
+            }
+          }
+        });
+
+        if (callContentRef.current) {
+          pipWin.document.body.appendChild(callContentRef.current);
+          pipWin.document.body.style.margin = '0';
+          pipWin.document.body.style.background = '#090d16';
+          pipWin.document.body.style.display = 'flex';
+          pipWin.document.body.style.alignItems = 'center';
+          pipWin.document.body.style.justifyContent = 'center';
+          pipWin.document.body.style.height = '100vh';
+        }
+
+        setIsPopout(true);
+
+        pipWin.addEventListener('pagehide', () => {
+          if (callContentRef.current && mainHostRef.current) {
+            mainHostRef.current.appendChild(callContentRef.current);
+          }
+          setIsPopout(false);
+        });
+      } catch (err) {
+        console.warn('[CallModal] Document PiP request failed, fallback to internal PiP:', err);
+        setMinimized(true);
+      }
+    } else {
+      // 瀏覽器不支援 Document PiP 時自動切換為內部 PiP 子母畫面
+      setMinimized(true);
+    }
   };
 
   if (callState === 'idle') return null;
@@ -189,10 +238,13 @@ export const CallModal: React.FC = () => {
         </div>
       ) : (
         /* 情況 B：正常主視窗 Modal */
-        <div className={styles.overlay}>
+        <div ref={mainHostRef} className={styles.overlay} style={{ display: isPopout ? 'none' : 'flex' }}>
           {callState === 'connected' ? (
             /* 已通話連線 Viewport */
-            <div className={`${styles.container} ${callType === 'video' ? styles.containerVideo : ''}`}>
+            <div
+              ref={callContentRef}
+              className={`${styles.container} ${callType === 'video' ? styles.containerVideo : ''}`}
+            >
               {/* 頂部視窗控制工具列 */}
               <div className={styles.windowActionsBar}>
                 <button
