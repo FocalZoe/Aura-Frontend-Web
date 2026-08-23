@@ -3,8 +3,8 @@ import { User } from '../../types';
 import { ShieldOff, UserX } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { useUIStore } from '../../stores/useUIStore';
+import { Avatar } from '../common/Avatar';
 import styles from '../SettingsModal.module.css';
-import sidebarStyles from '../Sidebar.module.css';
 
 interface BlockedUsersTabProps {
   token: string | null;
@@ -98,9 +98,12 @@ export const BlockedUsersTab: React.FC<BlockedUsersTabProps> = ({ token, notify 
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div className={sidebarStyles.avatar} style={{ width: '32px', height: '32px', fontSize: '0.85rem' }}>
-                      {name.charAt(0).toUpperCase()}
-                    </div>
+                    <Avatar
+                      src={u.avatar}
+                      name={name}
+                      fallbackSeed={name}
+                      size={36}
+                    />
                     <div>
                       <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{name}</div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>@{u.account_id}</div>

@@ -1,10 +1,11 @@
+// Context: 聊天室頂部標頭組件 (統一 36px 圓形毛玻璃按鈕、語意色彩、功能對齊與無跨模組依賴)
+
 import React from 'react';
 import { User, Group } from '../../types';
-import { UserPlus, Users, Info, Phone, Video, ArrowLeft, Camera, Search } from 'lucide-react';
+import { UserPlus, Info, Phone, Video, ArrowLeft, Camera, Search } from 'lucide-react';
 import { Avatar } from '../common/Avatar';
 import { useChatStore } from '../../stores/useChatStore';
-import styles from '../ChatWindow.module.css';
-import sidebarStyles from '../Sidebar.module.css';
+import styles from './ChatHeader.module.css';
 
 interface ChatHeaderProps {
   activeChatUser?: User | null;
@@ -14,11 +15,11 @@ interface ChatHeaderProps {
   onSendFriendRequest?: () => void;
   onViewProfile?: () => void;
   onOpenGroupModal?: () => void;
-  onStartAudioCall?: () => void; // 語音通話觸發器
-  onStartVideoCall?: () => void; // 視訊通話觸發器
-  onStartScreenshot?: () => void; // 對話截圖觸發器
-  onToggleSearch?: () => void;   // 聊天室內搜尋開關
-  onBack?: () => void;          // 手機端返回列表回呼
+  onStartAudioCall?: () => void;
+  onStartVideoCall?: () => void;
+  onStartScreenshot?: () => void;
+  onToggleSearch?: () => void;
+  onBack?: () => void;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -37,11 +38,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 }) => {
   const { getUserDisplayName } = useChatStore();
 
+  // 1. 群組聊天標頭模式
   if (activeGroup) {
     const memberCount = activeGroup.members?.length || 0;
     return (
-      <div className={styles.chatHeader} style={{ justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+      <div className={styles.chatHeader}>
+        <div className={styles.leftSection}>
           {onBack && (
             <button
               className={styles.backBtn}
@@ -49,22 +51,21 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               title="返回列表"
               aria-label="返回列表"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
             </button>
           )}
-          <div className={styles.chatUserDetail} onClick={onOpenGroupModal} style={{ cursor: 'pointer' }}>
+          <div className={styles.chatUserDetail} onClick={onOpenGroupModal} title="點擊檢視群組詳情">
             <Avatar
               src={activeGroup.avatar}
               name={activeGroup.name}
               fallbackSeed={activeGroup.name}
               size={40}
             />
-            <div style={{ minWidth: 0 }}>
-              <h4 className={styles.userName} style={{ margin: 0 }}>{activeGroup.name}</h4>
+            <div className={styles.userInfoCol}>
+              <h4 className={styles.userName}>{activeGroup.name}</h4>
               <span
                 className={styles.userStatus}
                 style={{
-                  fontSize: '0.78rem',
                   color: activeGroup.is_removed ? '#ef4444' : 'var(--text-muted)',
                   fontWeight: activeGroup.is_removed ? 600 : 400,
                 }}
@@ -75,61 +76,81 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* 標頭右側動作按鈕群 (完全對稱標準) */}
+        <div className={styles.actionsGroup}>
+          {/* 搜尋訊息 */}
           {onToggleSearch && (
             <button
-              className={sidebarStyles.themeToggleBtn}
+              className={styles.actionBtn}
               onClick={onToggleSearch}
-              title="搜尋訊息"
-              style={{ width: '34px', height: '34px' }}
+              title="搜尋對話記錄"
+              aria-label="搜尋對話記錄"
             >
               <Search size={18} />
             </button>
           )}
 
+          {/* 對話截圖 */}
+          {onStartScreenshot && (
+            <button
+              className={styles.actionBtn}
+              onClick={onStartScreenshot}
+              title="連續對話截圖"
+              aria-label="連續對話截圖"
+            >
+              <Camera size={18} />
+            </button>
+          )}
+
+          {/* 群組語音通話 (綠色) */}
           {onStartAudioCall && !activeGroup.is_removed && (
             <button
-              className={sidebarStyles.themeToggleBtn}
+              className={`${styles.actionBtn} ${styles.actionBtnAudio}`}
               onClick={onStartAudioCall}
               title="發起群組語音通話"
-              style={{ width: '34px', height: '34px' }}
+              aria-label="發起群組語音通話"
             >
               <Phone size={18} />
             </button>
           )}
 
+          {/* 群組視訊通話 (紫色) */}
           {onStartVideoCall && !activeGroup.is_removed && (
             <button
-              className={sidebarStyles.themeToggleBtn}
+              className={`${styles.actionBtn} ${styles.actionBtnVideo}`}
               onClick={onStartVideoCall}
               title="發起群組視訊通話"
-              style={{ width: '34px', height: '34px' }}
+              aria-label="發起群組視訊通話"
             >
               <Video size={18} />
             </button>
           )}
 
-          <button
-            className={sidebarStyles.themeToggleBtn}
-            onClick={onOpenGroupModal}
-            title="檢視群組詳情"
-            style={{ width: '34px', height: '34px' }}
-          >
-            <Info size={18} />
-          </button>
+          {/* 群組詳情資訊 */}
+          {onOpenGroupModal && (
+            <button
+              className={styles.actionBtn}
+              onClick={onOpenGroupModal}
+              title="群組設定與成員"
+              aria-label="群組設定與成員"
+            >
+              <Info size={18} />
+            </button>
+          )}
         </div>
       </div>
     );
   }
 
+  // 2. 一對一私聊標頭模式
   if (!activeChatUser) return null;
 
   const displayName = getUserDisplayName(activeChatUser);
 
   return (
     <>
-      <div className={styles.chatHeader} style={{ justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+      <div className={styles.chatHeader}>
+        <div className={styles.leftSection}>
           {onBack && (
             <button
               className={styles.backBtn}
@@ -137,10 +158,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               title="返回列表"
               aria-label="返回列表"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
             </button>
           )}
-          <div className={styles.chatUserDetail} onClick={onViewProfile} style={{ cursor: 'pointer' }}>
+          <div className={styles.chatUserDetail} onClick={onViewProfile} title="點擊檢視個人名片">
             <Avatar
               src={activeChatUser.avatar}
               name={displayName}
@@ -148,16 +169,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               size={40}
               isOnline={!isStranger ? isUserOnline : undefined}
             />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h4 className={styles.userName} style={{ margin: 0 }}>{displayName}</h4>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  @{activeChatUser.account_id}
-                </span>
+            <div className={styles.userInfoCol}>
+              <div className={styles.nameRow}>
+                <h4 className={styles.userName}>{displayName}</h4>
+                <span className={styles.userHandle}>@{activeChatUser.account_id}</span>
                 {isStranger && <span className={styles.strangerTagBadge}>陌生人</span>}
               </div>
               {!isStranger && (
-                <span className={styles.userStatus} style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                <span className={styles.userStatus}>
                   {isUserOnline ? '在線上' : '離線'}
                 </span>
               )}
@@ -165,56 +184,80 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* 標頭右側動作按鈕群 (完全對稱標準) */}
+        <div className={styles.actionsGroup}>
+          {/* 搜尋訊息 */}
           {onToggleSearch && (
             <button
-              className={sidebarStyles.themeToggleBtn}
+              className={styles.actionBtn}
               onClick={onToggleSearch}
-              title="搜尋訊息"
-              style={{ width: '36px', height: '36px', borderRadius: '50%' }}
+              title="搜尋對話記錄"
+              aria-label="搜尋對話記錄"
             >
               <Search size={18} />
             </button>
           )}
 
-          {/* Context: [通話限制] 陌生訊息對話隱藏通話按鈕（手機版寬度亦由 CSS 隱藏） */}
-          {!isStranger && (
-            <div className={styles.callButtonsGroup} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {onStartAudioCall && (
-                <button
-                  className={sidebarStyles.themeToggleBtn}
-                  onClick={onStartAudioCall}
-                  title="發起語音通話"
-                  style={{ width: '36px', height: '36px', borderRadius: '50%' }}
-                >
-                  <Phone size={18} color="#10b981" />
-                </button>
-              )}
+          {/* 對話截圖 */}
+          {onStartScreenshot && (
+            <button
+              className={styles.actionBtn}
+              onClick={onStartScreenshot}
+              title="連續對話截圖"
+              aria-label="連續對話截圖"
+            >
+              <Camera size={18} />
+            </button>
+          )}
 
-              {onStartVideoCall && (
-                <button
-                  className={sidebarStyles.themeToggleBtn}
-                  onClick={onStartVideoCall}
-                  title="發起視訊通話"
-                  style={{ width: '36px', height: '36px', borderRadius: '50%' }}
-                >
-                  <Video size={18} color="#6366f1" />
-                </button>
-              )}
-            </div>
+          {/* 一對一語音通話 (綠色，非陌生人可見) */}
+          {!isStranger && onStartAudioCall && (
+            <button
+              className={`${styles.actionBtn} ${styles.actionBtnAudio}`}
+              onClick={onStartAudioCall}
+              title="發起語音通話"
+              aria-label="發起語音通話"
+            >
+              <Phone size={18} />
+            </button>
+          )}
+
+          {/* 一對一視訊通話 (紫色，非陌生人可見) */}
+          {!isStranger && onStartVideoCall && (
+            <button
+              className={`${styles.actionBtn} ${styles.actionBtnVideo}`}
+              onClick={onStartVideoCall}
+              title="發起視訊通話"
+              aria-label="發起視訊通話"
+            >
+              <Video size={18} />
+            </button>
+          )}
+
+          {/* 個人名片詳情 */}
+          {onViewProfile && (
+            <button
+              className={styles.actionBtn}
+              onClick={onViewProfile}
+              title="個人名片詳情"
+              aria-label="個人名片詳情"
+            >
+              <Info size={18} />
+            </button>
           )}
         </div>
       </div>
 
+      {/* 陌生人訊息防護提示條 */}
       {isStranger && (
         <div className={styles.strangerBanner}>
           <div className={styles.strangerBannerText}>
-            <UserPlus size={16} className="accent" />
-            <span>此使用者尚不在您的好友名單中</span>
+            <span>此用戶不在您的聯絡人名單中。</span>
           </div>
           {onSendFriendRequest && (
             <button className={styles.strangerAddBtn} onClick={onSendFriendRequest}>
-              加為好友
+              <UserPlus size={14} />
+              <span>加為聯絡人</span>
             </button>
           )}
         </div>

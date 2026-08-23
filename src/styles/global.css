@@ -322,10 +322,73 @@ button:disabled,
 .uiBtnSecondary:disabled,
 .uiBtnDanger:disabled,
 .uiBtnDangerOutline:disabled,
-.uiBtnDangerSecondary:disabled {
+.uiBtnDangerSecondary:disabled,
+.uiIconButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;
+}
+
+/* 5. 全域標準 Icon 按鈕體系 (Global Icon Button Primitives) */
+.uiIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.uiIconButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--text-primary, #f8fafc);
+}
+
+.uiIconButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.uiIconButtonSm {
+  width: 32px;
+  height: 32px;
+}
+
+.uiIconButtonAudio {
+  color: #10b981 !important;
+}
+
+.uiIconButtonAudio:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+}
+
+.uiIconButtonVideo {
+  color: #6366f1 !important;
+}
+
+.uiIconButtonVideo:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.25);
+}
+
+.uiIconButtonDanger {
+  color: #ef4444 !important;
+}
+
+.uiIconButtonDanger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.25);
 }
 
 /* 5. Core Keyframes */
