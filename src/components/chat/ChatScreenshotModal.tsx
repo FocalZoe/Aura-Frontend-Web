@@ -1,4 +1,4 @@
-// Context: [對話截圖] 高畫質對話截圖生成與預覽彈窗 (健壯 Canvas 2D 渲染、零污染沙箱、IPFS 圖片解密、網址卡片、匿名模式、複製與下載)
+// Context: [對話截圖] 高畫質對話截圖生成與預覽 (像素級對齊真實聊天室：外部時間戳記、真實頭像、純淨 Embed 卡片、自適應預覽)
 
 import React, { useEffect, useRef, useState, useContext } from 'react';
 import { BaseModal } from '../common/BaseModal';
@@ -47,10 +47,11 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
   const { getUserDisplayName, friendsMap } = useChatStore();
 
   // 帶有 2.5 秒超時保護的圖片加載器
-  const loadBlobImage = (blobUrl: string, timeoutMs = 2500): Promise<HTMLImageElement | null> => {
+  const loadImageElement = (src: string, timeoutMs = 2500): Promise<HTMLImageElement | null> => {
     return new Promise((resolve) => {
       const img = new Image();
       let timer: any = null;
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
         if (timer) clearTimeout(timer);
         resolve(img);
@@ -62,7 +63,7 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
       timer = setTimeout(() => {
         resolve(null);
       }, timeoutMs);
-      img.src = blobUrl;
+      img.src = src;
     });
   };
 
@@ -81,64 +82,96 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
 
         const width = 640;
         const padding = 24;
-        const bubbleMaxWidth = 440;
+        const bubbleMaxWidth = 420;
 
-        // 1. 預先非同步解密 IPFS 本機圖片 (同源 Blob，100% 杜絕 Tainted Canvas)
+        // 1. 預先非同步加載所有 IPFS 圖片與真實發送者頭像圖片
         const loadedImagesMap: Record<number, HTMLImageElement> = {};
+        const loadedAvatarImages: Record<number, HTMLImageElement> = {};
         const createdBlobUrls: string[] = [];
 
+        // 取得每位發送者的頭像 URL
+        const resolveSenderAvatar = (senderId: number, msgObj?: Message): string | undefined => {
+          if (groupMembersMap && groupMembersMap[senderId]?.user?.avatar) {
+            return groupMembersMap[senderId].user?.avatar;
+          }
+          if (msgObj?.sender?.avatar) {
+            return msgObj.sender.avatar;
+          }
+          if (partnerUser && partnerUser.id === senderId && partnerUser.avatar) {
+            return partnerUser.avatar;
+          }
+          if (user && user.id === senderId && user.avatar) {
+            return user.avatar;
+          }
+          return undefined;
+        };
+
         const imageLoadPromises = messages.map(async (m) => {
-          if (!m.id || !m.filePayload) return;
+          if (!m.id) return;
 
-          const mime = m.filePayload.mime || '';
-          const name = m.filePayload.name || '';
-          const isImg = mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name);
-
-          if (isImg && user) {
-            try {
-              const targetIv = m.filePayload.iv || m.iv;
-              if (!targetIv) return;
-
-              const encryptedBuffer = await fetchFromIPFS(m.filePayload.cid, API_BASE || getApiBase());
-              let decryptedBuffer: ArrayBuffer | null = null;
-
-              const targetGroupId = groupId || (m as any).group_id;
-              if (isGroup && targetGroupId) {
-                const groupKey = await e2eeService.getGroupKey(targetGroupId);
-                decryptedBuffer = await decryptFileBuffer(groupKey, encryptedBuffer, targetIv);
-              } else if (partnerUser || m.sender_id) {
-                const targetPartnerId = m.sender_id === user.id ? (partnerUser?.id || 0) : m.sender_id;
-                let partnerPubKey: string | undefined = partnerUser?.public_key || friendsMap[targetPartnerId];
-                if (!partnerPubKey && token) {
-                  partnerPubKey = await e2eeService.fetchUserPublicKey(targetPartnerId, token);
-                }
-                const privateKey = await getLocalPrivateKey(user.id);
-                if (partnerPubKey && privateKey) {
-                  const importedKey = await importPublicKey(partnerPubKey);
-                  const sharedKey = await deriveSharedKey(privateKey, importedKey);
-                  decryptedBuffer = await decryptFileBuffer(sharedKey, encryptedBuffer, targetIv);
-                }
+          // A. 頭像圖片加載 (僅未匿名時)
+          if (!isAnonymous && !loadedAvatarImages[m.sender_id]) {
+            const avatarUrl = resolveSenderAvatar(m.sender_id, m);
+            if (avatarUrl) {
+              const avatarImg = await loadImageElement(avatarUrl);
+              if (avatarImg) {
+                loadedAvatarImages[m.sender_id] = avatarImg;
               }
+            }
+          }
 
-              if (decryptedBuffer) {
-                const blob = new Blob([decryptedBuffer], { type: mime || 'image/png' });
-                const blobUrl = URL.createObjectURL(blob);
-                createdBlobUrls.push(blobUrl);
-                const imgEl = await loadBlobImage(blobUrl);
-                if (imgEl) {
-                  loadedImagesMap[m.id] = imgEl;
+          // B. IPFS 圖片解密載入 (同源 Blob)
+          if (m.filePayload) {
+            const mime = m.filePayload.mime || '';
+            const name = m.filePayload.name || '';
+            const isImg = mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name);
+
+            if (isImg && user) {
+              try {
+                const targetIv = m.filePayload.iv || m.iv;
+                if (!targetIv) return;
+
+                const encryptedBuffer = await fetchFromIPFS(m.filePayload.cid, API_BASE || getApiBase());
+                let decryptedBuffer: ArrayBuffer | null = null;
+
+                const targetGroupId = groupId || (m as any).group_id;
+                if (isGroup && targetGroupId) {
+                  const groupKey = await e2eeService.getGroupKey(targetGroupId);
+                  decryptedBuffer = await decryptFileBuffer(groupKey, encryptedBuffer, targetIv);
+                } else if (partnerUser || m.sender_id) {
+                  const targetPartnerId = m.sender_id === user.id ? (partnerUser?.id || 0) : m.sender_id;
+                  let partnerPubKey: string | undefined = partnerUser?.public_key || friendsMap[targetPartnerId];
+                  if (!partnerPubKey && token) {
+                    partnerPubKey = await e2eeService.fetchUserPublicKey(targetPartnerId, token);
+                  }
+                  const privateKey = await getLocalPrivateKey(user.id);
+                  if (partnerPubKey && privateKey) {
+                    const importedKey = await importPublicKey(partnerPubKey);
+                    const sharedKey = await deriveSharedKey(privateKey, importedKey);
+                    decryptedBuffer = await decryptFileBuffer(sharedKey, encryptedBuffer, targetIv);
+                  }
                 }
+
+                if (decryptedBuffer) {
+                  const blob = new Blob([decryptedBuffer], { type: mime || 'image/png' });
+                  const blobUrl = URL.createObjectURL(blob);
+                  createdBlobUrls.push(blobUrl);
+                  const imgEl = await loadImageElement(blobUrl);
+                  if (imgEl) {
+                    loadedImagesMap[m.id] = imgEl;
+                  }
+                }
+              } catch (e) {
+                console.warn('[Screenshot] IPFS Image load skipped:', e);
               }
-            } catch (e) {
-              console.warn('[Screenshot] IPFS Image load skipped:', e);
             }
           }
         });
 
-        // 限制所有圖片解密最長 3.5 秒，超時直接繼續渲染保證不卡死
+        // 競態計時：最多等待 3 秒，超時直接渲染
         await Promise.race([
           Promise.all(imageLoadPromises),
-          new Promise((r) => setTimeout(r, 3500)),
+          new Promise((r) => setTimeout(r, 3000)),
         ]);
 
         if (!isMounted) {
@@ -188,7 +221,7 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
           }
         });
 
-        // 3. 預計算各訊息高度與尺寸
+        // 3. 預計算各訊息高度與尺寸 (時間戳記在外面，氣泡純放內容)
         ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
         const renderedItems: {
           isSystem: boolean;
@@ -203,11 +236,13 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
           imageRenderWidth?: number;
           imageRenderHeight?: number;
           hasUrlEmbed?: boolean;
+          isPureEmbed?: boolean;
           isYouTube?: boolean;
           embedDomain?: string;
           embedUrl?: string;
           fileName?: string;
           fileSizeStr?: string;
+          timeStr: string;
         }[] = [];
 
         messages.forEach((m) => {
@@ -221,8 +256,9 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
               isSelf: false,
               senderName: '',
               lines: [text],
-              height: 32,
+              height: 28,
               pillWidth,
+              timeStr: '',
             });
             return;
           }
@@ -237,6 +273,14 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
           let imageRenderHeight = 0;
           let fileName = '';
           let fileSizeStr = '';
+
+          let timeStr = '';
+          try {
+            timeStr = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          } catch {
+            timeStr = '';
+          }
+          if (m.is_edited) timeStr += ' (已編輯)';
 
           if (m.is_recalled || text === '[RECALLED]') {
             text = isSelf ? '您已收回一則訊息' : `${senderName} 已收回一則訊息`;
@@ -258,6 +302,7 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
 
           // 檢查網址 Embed
           let hasUrlEmbed = false;
+          let isPureEmbed = false;
           let isYouTube = false;
           let embedDomain = '';
           let embedUrl = '';
@@ -275,6 +320,10 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
               } catch {
                 embedDomain = embedUrl;
               }
+              const cleaned = text.replace(embedUrl, '').trim();
+              if (!cleaned) {
+                isPureEmbed = true;
+              }
             }
           }
 
@@ -284,11 +333,9 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
             lines.push(fileSizeStr);
           } else if (!isImage) {
             ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            // 若為純網址訊息，隱藏多餘文字
             let textToWrap = text;
             if (hasUrlEmbed) {
-              const cleaned = text.replace(embedUrl, '').trim();
-              textToWrap = cleaned;
+              textToWrap = text.replace(embedUrl, '').trim();
             }
 
             if (textToWrap) {
@@ -303,7 +350,7 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
                 }
                 const testLine = currentLine + char;
                 const metrics = ctx.measureText(testLine);
-                if (metrics.width > bubbleMaxWidth - 36 && i > 0) {
+                if (metrics.width > bubbleMaxWidth - 32 && i > 0) {
                   lines.push(currentLine);
                   currentLine = char;
                 } else {
@@ -318,13 +365,15 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
           let contentHeight = 0;
 
           if (isImage) {
-            contentHeight = imageRenderHeight + 14;
+            contentHeight = imageRenderHeight;
           } else if (isFile) {
             contentHeight = 48;
+          } else if (isPureEmbed) {
+            contentHeight = 48;
           } else {
-            const textHeight = lines.length > 0 ? Math.max(lines.length * 20, 20) : 0;
+            const textHeight = Math.max(lines.length * 20, 20);
             const embedExtraHeight = hasUrlEmbed ? 54 : 0;
-            contentHeight = textHeight + embedExtraHeight + (lines.length > 0 && hasUrlEmbed ? 16 : 10);
+            contentHeight = textHeight + embedExtraHeight + 16;
           }
 
           const bubbleHeight = contentHeight + nameHeight;
@@ -341,15 +390,17 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
             imageRenderWidth,
             imageRenderHeight,
             hasUrlEmbed,
+            isPureEmbed,
             isYouTube,
             embedDomain,
             embedUrl,
             fileName,
             fileSizeStr,
+            timeStr,
           });
         });
 
-        const totalMessagesHeight = renderedItems.reduce((acc, item) => acc + item.height + 12, 0);
+        const totalMessagesHeight = renderedItems.reduce((acc, item) => acc + item.height + 10, 0);
         const totalHeight = padding * 2 + totalMessagesHeight;
 
         // 4. 設置 Retina 畫質縮放
@@ -358,14 +409,14 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
         canvas.height = totalHeight * scale;
         ctx.scale(scale, scale);
 
-        // 5. 繪製深色暗夜漸層背景
+        // 5. 繪製深色極致暗夜背景
         const bgGrad = ctx.createLinearGradient(0, 0, width, totalHeight);
         bgGrad.addColorStop(0, '#0b0f19');
         bgGrad.addColorStop(1, '#070a12');
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, width, totalHeight);
 
-        // 6. 逐筆繪製訊息內容
+        // 6. 逐筆繪製訊息內容 (像素級對齊圖一)
         let currentY = padding;
 
         renderedItems.forEach((item, idx) => {
@@ -374,15 +425,15 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
           // 系統公告訊息 (置中膠囊)
           if (item.isSystem) {
             const pillWidth = item.pillWidth || 200;
-            const pillHeight = 26;
+            const pillHeight = 24;
             const pillX = (width - pillWidth) / 2;
 
             ctx.save();
             ctx.beginPath();
-            ctx.roundRect(pillX, currentY + 3, pillWidth, pillHeight, 13);
+            ctx.roundRect(pillX, currentY + 2, pillWidth, pillHeight, 12);
             ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
             ctx.fill();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
             ctx.stroke();
             ctx.restore();
 
@@ -390,11 +441,11 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
             ctx.fillStyle = '#94a3b8';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(item.lines[0], width / 2, currentY + 16);
+            ctx.fillText(item.lines[0], width / 2, currentY + 14);
             ctx.textAlign = 'left';
             ctx.textBaseline = 'alphabetic';
 
-            currentY += item.height + 12;
+            currentY += item.height + 10;
             return;
           }
 
@@ -411,15 +462,19 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
 
           if (item.isImage) {
             maxLineWidth = item.imageRenderWidth || 240;
+          } else if (item.isPureEmbed) {
+            maxLineWidth = 300;
           } else if (item.hasUrlEmbed) {
-            maxLineWidth = Math.max(maxLineWidth, 240);
+            maxLineWidth = Math.max(maxLineWidth, 260);
           } else if (item.isFile) {
             maxLineWidth = Math.max(maxLineWidth, 220);
           }
 
           const bubbleWidth = item.isImage
-            ? (item.imageRenderWidth || 240) + 16
-            : Math.min(Math.max(maxLineWidth + 34, 88), bubbleMaxWidth);
+            ? (item.imageRenderWidth || 240)
+            : item.isPureEmbed
+            ? 320
+            : Math.min(Math.max(maxLineWidth + 28, 48), bubbleMaxWidth);
 
           const bubbleX = isSelf ? width - padding - bubbleWidth : padding + 40;
           const bubbleY = currentY + (!isSelf && !isAnonymous ? 18 : 0);
@@ -427,163 +482,219 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
 
           // 繪製他人頭像與上方名字
           if (!isSelf) {
-            // 上方姓名
+            // 上方姓名 (精準左對齊氣泡)
             if (!isAnonymous) {
               ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
               ctx.fillStyle = '#94a3b8';
               ctx.fillText(item.senderName, bubbleX, currentY + 12);
             }
 
-            // 左側圓形頭像 (底部對齊氣泡底部)
-            const avatarY = bubbleY + actualBubbleHeight - 16;
+            // 左側頭像 (底部對齊氣泡底部，32px 圓形)
+            const avatarCenterY = bubbleY + actualBubbleHeight - 16;
+            const avatarCenterX = padding + 16;
+            const avatarRadius = 16;
+
+            const avatarImg = loadedAvatarImages[msg.sender_id];
+            if (!isAnonymous && avatarImg) {
+              // 繪製真實頭像圖片 (圓形剪裁)
+              ctx.save();
+              ctx.beginPath();
+              ctx.arc(avatarCenterX, avatarCenterY, avatarRadius, 0, Math.PI * 2);
+              ctx.clip();
+              ctx.drawImage(avatarImg, avatarCenterX - avatarRadius, avatarCenterY - avatarRadius, avatarRadius * 2, avatarRadius * 2);
+              ctx.restore();
+            } else {
+              // 繪製彩色圓圈首字
+              ctx.beginPath();
+              ctx.arc(avatarCenterX, avatarCenterY, avatarRadius, 0, Math.PI * 2);
+              ctx.fillStyle = meta.color;
+              ctx.fill();
+
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 12px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              const avatarLetter = isAnonymous ? meta.num : (item.senderName.charAt(0) || '友');
+              ctx.fillText(avatarLetter, avatarCenterX, avatarCenterY);
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'alphabetic';
+            }
+          }
+
+          // 繪製氣泡圓角矩形 (純 Embed/圖片不套外層大氣泡，由卡片自身呈現)
+          if (!item.isImage && !item.isPureEmbed) {
+            ctx.save();
             ctx.beginPath();
-            ctx.arc(padding + 16, avatarY, 15, 0, Math.PI * 2);
-            ctx.fillStyle = meta.color;
-            ctx.fill();
+            const r = 14;
+            ctx.roundRect(bubbleX, bubbleY, bubbleWidth, actualBubbleHeight, r);
 
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            const avatarLetter = isAnonymous ? meta.num : (item.senderName.charAt(0) || '友');
-            ctx.fillText(avatarLetter, padding + 16, avatarY);
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'alphabetic';
+            if (msg.is_recalled) {
+              ctx.fillStyle = 'rgba(148, 163, 184, 0.1)';
+              ctx.fill();
+              ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+              ctx.stroke();
+            } else if (isSelf) {
+              const selfGrad = ctx.createLinearGradient(bubbleX, bubbleY, bubbleX + bubbleWidth, bubbleY + actualBubbleHeight);
+              selfGrad.addColorStop(0, '#2563eb');
+              selfGrad.addColorStop(1, '#3b82f6');
+              ctx.fillStyle = selfGrad;
+              ctx.fill();
+            } else {
+              ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
+              ctx.fill();
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+              ctx.stroke();
+            }
+            ctx.restore();
           }
-
-          // 繪製氣泡圓角矩形
-          ctx.save();
-          ctx.beginPath();
-          const r = 14;
-          ctx.roundRect(bubbleX, bubbleY, bubbleWidth, actualBubbleHeight, r);
-
-          if (msg.is_recalled) {
-            ctx.fillStyle = 'rgba(148, 163, 184, 0.1)';
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
-            ctx.stroke();
-          } else if (isSelf) {
-            const selfGrad = ctx.createLinearGradient(bubbleX, bubbleY, bubbleX + bubbleWidth, bubbleY + actualBubbleHeight);
-            selfGrad.addColorStop(0, '#2563eb');
-            selfGrad.addColorStop(1, '#3b82f6');
-            ctx.fillStyle = selfGrad;
-            ctx.fill();
-          } else {
-            ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.stroke();
-          }
-          ctx.restore();
 
           // 繪製內容：圖片 / 檔案卡片 / 網址 Embed / 純文字
           if (item.isImage && item.imageElement) {
             const imgW = item.imageRenderWidth || 240;
             const imgH = item.imageRenderHeight || 160;
-            const imgX = bubbleX + (bubbleWidth - imgW) / 2;
-            const imgY = bubbleY + 8;
 
             ctx.save();
             ctx.beginPath();
-            ctx.roundRect(imgX, imgY, imgW, imgH, 10);
+            ctx.roundRect(bubbleX, bubbleY, imgW, imgH, 12);
             ctx.clip();
-            ctx.drawImage(item.imageElement, imgX, imgY, imgW, imgH);
+            ctx.drawImage(item.imageElement, bubbleX, bubbleY, imgW, imgH);
             ctx.restore();
           } else if (item.isFile) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(bubbleX, bubbleY, bubbleWidth, actualBubbleHeight, 12);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.stroke();
+            ctx.restore();
+
+            // 檔案圖示
             ctx.font = '18px sans-serif';
-            ctx.fillText('📄', bubbleX + 14, bubbleY + 28);
+            ctx.fillText('📄', bubbleX + 12, bubbleY + 30);
 
+            // 檔名
             ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.fillStyle = isSelf ? '#ffffff' : '#f8fafc';
+            ctx.fillStyle = '#f8fafc';
             const truncatedName = item.fileName && item.fileName.length > 22 ? `${item.fileName.substring(0, 20)}...` : (item.fileName || '');
-            ctx.fillText(truncatedName, bubbleX + 40, bubbleY + 24);
+            ctx.fillText(truncatedName, bubbleX + 38, bubbleY + 22);
 
+            // 檔案大小與 E2EE 標籤
             ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.fillStyle = isSelf ? 'rgba(255, 255, 255, 0.75)' : '#94a3b8';
-            ctx.fillText(`${item.fileSizeStr} · E2EE 加密傳輸`, bubbleX + 40, bubbleY + 40);
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText(`${item.fileSizeStr} · E2EE 加密傳輸`, bubbleX + 38, bubbleY + 38);
+          } else if (item.isPureEmbed) {
+            // 純 Embed 卡片 (對齊圖一，深色玻璃擬態卡片本體)
+            const cardW = bubbleWidth;
+            const cardH = actualBubbleHeight;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(bubbleX, bubbleY, cardW, cardH, 12);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.stroke();
+
+            if (item.isYouTube) {
+              // YouTube 徽章
+              ctx.beginPath();
+              ctx.roundRect(bubbleX + 12, bubbleY + 14, 52, 20, 4);
+              ctx.fillStyle = '#ef4444';
+              ctx.fill();
+
+              ctx.font = 'bold 10px sans-serif';
+              ctx.fillStyle = '#ffffff';
+              ctx.textAlign = 'center';
+              ctx.fillText('YouTube', bubbleX + 38, bubbleY + 28);
+              ctx.textAlign = 'left';
+
+              ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+              ctx.fillStyle = '#ffffff';
+              ctx.fillText('YouTube 影片', bubbleX + 72, bubbleY + 22);
+
+              ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+              ctx.fillStyle = '#94a3b8';
+              const truncUrl = item.embedUrl && item.embedUrl.length > 28 ? `${item.embedUrl.substring(0, 26)}...` : item.embedUrl;
+              ctx.fillText(truncUrl || '', bubbleX + 72, bubbleY + 38);
+            } else {
+              // 一般網站 Favicon 卡片
+              ctx.font = '16px sans-serif';
+              ctx.fillText('🔗', bubbleX + 14, bubbleY + 30);
+
+              ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+              ctx.fillStyle = '#ffffff';
+              ctx.fillText(item.embedDomain || '外部連結', bubbleX + 38, bubbleY + 22);
+
+              ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+              ctx.fillStyle = '#94a3b8';
+              const truncUrl = item.embedUrl && item.embedUrl.length > 32 ? `${item.embedUrl.substring(0, 30)}...` : item.embedUrl;
+              ctx.fillText(truncUrl || '', bubbleX + 38, bubbleY + 38);
+            }
+            ctx.restore();
           } else {
-            // 文字內容
+            // 一般文字內容
             if (item.lines.length > 0) {
               ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
               ctx.fillStyle = msg.is_recalled ? '#94a3b8' : (isSelf ? '#ffffff' : '#f8fafc');
 
               item.lines.forEach((line, lineIdx) => {
-                ctx.fillText(line, bubbleX + 14, bubbleY + 20 + lineIdx * 20);
+                ctx.fillText(line, bubbleX + 14, bubbleY + 18 + lineIdx * 20);
               });
             }
 
-            // 網址預覽 Embed 卡片 (100% 零跨域安全渲染)
+            // 附帶文字的 Embed 卡片
             if (item.hasUrlEmbed) {
-              const textOffset = item.lines.length > 0 ? item.lines.length * 20 + 8 : 6;
+              const textOffset = item.lines.length * 20 + 4;
               const embedY = bubbleY + textOffset;
               const embedW = bubbleWidth - 24;
-              const embedH = 46;
+              const embedH = 44;
 
               ctx.save();
               ctx.beginPath();
               ctx.roundRect(bubbleX + 12, embedY, embedW, embedH, 8);
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
               ctx.fill();
-              ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
               ctx.stroke();
 
-              if (item.isYouTube) {
-                // YouTube 專屬徽章與標題
-                ctx.beginPath();
-                ctx.roundRect(bubbleX + 20, embedY + 12, 54, 22, 4);
-                ctx.fillStyle = '#ef4444';
-                ctx.fill();
+              ctx.font = '14px sans-serif';
+              ctx.fillText(item.isYouTube ? '▶️' : '🔗', bubbleX + 20, embedY + 27);
 
-                ctx.font = 'bold 11px sans-serif';
-                ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'center';
-                ctx.fillText('YouTube', bubbleX + 47, embedY + 27);
-                ctx.textAlign = 'left';
+              ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+              ctx.fillStyle = '#ffffff';
+              ctx.fillText(item.embedDomain || '外部連結', bubbleX + 42, embedY + 18);
 
-                ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-                ctx.fillStyle = '#ffffff';
-                ctx.fillText('YouTube 影片', bubbleX + 82, embedY + 22);
-
-                ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-                ctx.fillStyle = '#93c5fd';
-                const truncUrl = item.embedUrl && item.embedUrl.length > 28 ? `${item.embedUrl.substring(0, 26)}...` : item.embedUrl;
-                ctx.fillText(truncUrl || '', bubbleX + 82, embedY + 38);
-              } else {
-                // 一般網站預覽
-                ctx.font = '16px sans-serif';
-                ctx.fillText('🔗', bubbleX + 20, embedY + 28);
-
-                ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-                ctx.fillStyle = '#ffffff';
-                ctx.fillText(item.embedDomain || '外部連結', bubbleX + 46, embedY + 20);
-
-                ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-                ctx.fillStyle = '#93c5fd';
-                const truncUrl = item.embedUrl && item.embedUrl.length > 32 ? `${item.embedUrl.substring(0, 30)}...` : item.embedUrl;
-                ctx.fillText(truncUrl || '', bubbleX + 46, embedY + 36);
-              }
+              ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+              ctx.fillStyle = '#93c5fd';
+              const truncUrl = item.embedUrl && item.embedUrl.length > 30 ? `${item.embedUrl.substring(0, 28)}...` : item.embedUrl;
+              ctx.fillText(truncUrl || '', bubbleX + 42, embedY + 34);
               ctx.restore();
             }
           }
 
-          // 時間戳記
-          if (!item.isImage) {
-            ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.fillStyle = isSelf ? 'rgba(255, 255, 255, 0.7)' : '#94a3b8';
-            let timeStr = '';
-            try {
-              timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            } catch {
-              timeStr = '';
-            }
-            if (msg.is_edited) timeStr += ' (已編輯)';
+          // 7. 繪製時間戳記 (100% 像素級對齊圖一：永遠繪製在氣泡外部，底部切齊！)
+          if (item.timeStr) {
+            ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
 
-            ctx.textAlign = 'right';
-            ctx.fillText(timeStr, bubbleX + bubbleWidth - 10, bubbleY + actualBubbleHeight - 6);
-            ctx.textAlign = 'left';
+            if (isSelf) {
+              // 自己發送：時間在氣泡左邊外面 (靠右對齊，貼齊氣泡底部)
+              const timeX = bubbleX - 8;
+              const timeY = bubbleY + actualBubbleHeight - 4;
+              ctx.textAlign = 'right';
+              ctx.fillText(item.timeStr, timeX, timeY);
+              ctx.textAlign = 'left';
+            } else {
+              // 他人發送：時間在氣泡右邊外面 (靠左對齊，貼齊氣泡底部)
+              const timeX = bubbleX + bubbleWidth + 8;
+              const timeY = bubbleY + actualBubbleHeight - 4;
+              ctx.textAlign = 'left';
+              ctx.fillText(item.timeStr, timeX, timeY);
+            }
           }
 
-          currentY += item.height + 12;
+          currentY += item.height + 10;
         });
 
         const generatedDataUrl = canvas.toDataURL('image/png');
@@ -639,19 +750,19 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
   };
 
   return (
-    <BaseModal isOpen={isOpen} onClose={onClose} title="對話截圖預覽" maxWidth="680px">
+    <BaseModal isOpen={isOpen} onClose={onClose} title="對話截圖預覽" maxWidth="720px">
       <div className={styles.modalContent}>
         {/* 隱藏的 Canvas 渲染節點 */}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-        {/* 截圖預覽展示視窗 */}
+        {/* 截圖預覽展示視窗 (自適應等比縮放，一覽全部訊息) */}
         <div className={styles.previewContainer}>
           {!isRendering && dataUrl ? (
             <img src={dataUrl} alt="Chat Screenshot Preview" className={styles.previewImage} />
           ) : (
             <div className={styles.generatingState}>
               <Sparkles size={24} className="spin" />
-              <span>正在解密與生成高畫質對話截圖...</span>
+              <span>正在生成像素級高畫質對話截圖...</span>
             </div>
           )}
         </div>
