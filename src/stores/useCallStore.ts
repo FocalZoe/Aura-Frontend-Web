@@ -1,4 +1,4 @@
-﻿// Context: Zustand 全域通話狀態管理與 Signaling / 發起時間戳與統一紀錄 (Zero Tech Debt Architecture)
+// Context: Zustand 全域通話狀態管理與 Signaling / 發起時間戳與統一紀錄 (Zero Tech Debt Architecture)
 import { create } from 'zustand';
 import { ICallEngine, PeerToPeerCallEngine } from '../services/webrtcService';
 import { websocketService } from '../services/websocketService';
@@ -7,6 +7,7 @@ import { useChatStore } from './useChatStore';
 import { Message } from '../types';
 import { e2eeService } from '../services/e2eeService';
 import { getLocalPrivateKey, importPublicKey, deriveSharedKey, encryptMessage } from '../utils/crypto';
+import { callSoundSynthesizer } from '../utils/CallSoundSynthesizer';
 
 export type CallState = 'idle' | 'calling' | 'incoming' | 'connected' | 'ended';
 export type CallType = 'audio' | 'video';
@@ -21,6 +22,7 @@ interface CallStore {
   callState: CallState;
   callType: CallType;
   isCaller: boolean;
+  isMinimized: boolean;
   callStartTime: string | null;
   peerUser: PeerUser | null;
   isMuted: boolean;
@@ -40,6 +42,7 @@ interface CallStore {
   endCall: () => void;
   toggleAudio: () => void;
   toggleVideo: () => void;
+  setMinimized: (minimized: boolean) => void;
   setBusyNotification: (msg: string | null) => void;
 
   // WebRTC Signal Event Handlers
@@ -153,6 +156,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
   callState: 'idle',
   callType: 'audio',
   isCaller: false,
+  isMinimized: false,
   callStartTime: null,
   peerUser: null,
   isMuted: false,
@@ -164,7 +168,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
   busyNotification: null,
   callEngine: null,
 
+  setMinimized: (minimized: boolean) => set({ isMinimized: minimized }),
+
   startCall: async (targetUser: PeerUser, type: CallType) => {
+    callSoundSynthesizer.startRingtone();
     // Context: [手機限制] 手機網頁版僅能傳訊息，阻斷主動發起音視訊通話
     if (isMobileClient()) {
       set({ busyNotification: '手機網頁版僅支援文字訊息，音視訊通話請使用電腦版' });
@@ -278,6 +285,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
       callState: 'incoming',
       callType: type,
       isCaller: false,
+      isMinimized: false,
       callStartTime: new Date().toISOString(),
       peerUser: caller,
       isMuted: false,
@@ -287,9 +295,11 @@ export const useCallStore = create<CallStore>((set, get) => ({
       remoteStream: null,
       duration: 0,
     });
+    callSoundSynthesizer.startRingtone();
   },
 
   acceptCall: async () => {
+    callSoundSynthesizer.stopRingtone();
     const { peerUser, callType, callEngine } = get();
     if (!peerUser) return;
     if (callEngine) callEngine.close();
@@ -331,6 +341,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
         set((state) => ({ duration: state.duration + 1 }));
       }, 1000);
 
+      callSoundSynthesizer.playJoin();
       set({ callState: 'connected' });
     } catch (err) {
       console.error('[CallStore] Accept call media error:', err);
@@ -345,6 +356,8 @@ export const useCallStore = create<CallStore>((set, get) => ({
   },
 
   rejectCall: () => {
+    callSoundSynthesizer.stopRingtone();
+    callSoundSynthesizer.playLeave();
     const { peerUser, callEngine } = get();
     if (peerUser) {
       websocketService.send({
@@ -362,6 +375,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     set({
       callState: 'idle',
       isCaller: false,
+      isMinimized: false,
       callStartTime: null,
       peerUser: null,
       localStream: null,
@@ -371,6 +385,8 @@ export const useCallStore = create<CallStore>((set, get) => ({
   },
 
   endCall: () => {
+    callSoundSynthesizer.stopRingtone();
+    callSoundSynthesizer.playLeave();
     const { peerUser, callType, duration, callEngine, callState, isCaller } = get();
     if (peerUser) {
       websocketService.send({
@@ -403,7 +419,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
     });
 
     setTimeout(() => {
-      set({ callState: 'idle', isCaller: false, callStartTime: null, peerUser: null });
+      set({ callState: 'idle', isCaller: false, isMinimized: false, callStartTime: null, peerUser: null });
     }, 1200);
   },
 
@@ -411,7 +427,9 @@ export const useCallStore = create<CallStore>((set, get) => ({
     const { callEngine, isMuted } = get();
     if (!callEngine) return;
     const isAudioEnabled = callEngine.toggleAudio(isMuted);
-    set({ isMuted: !isAudioEnabled });
+    const newMuted = !isAudioEnabled;
+    callSoundSynthesizer.playMuteToggle(newMuted); // 僅自身本地揚聲器聽到
+    set({ isMuted: newMuted });
   },
 
   toggleVideo: () => {

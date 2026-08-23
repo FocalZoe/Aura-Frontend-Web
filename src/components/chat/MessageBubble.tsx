@@ -3,7 +3,9 @@ import React, { useMemo } from 'react';
 import { Message, User } from '../../types';
 import { Avatar } from '../common/Avatar';
 import { useChatStore } from '../../stores/useChatStore';
+import { useCallStore } from '../../stores/useCallStore';
 import { LinkEmbed, isSafeUrl } from './LinkEmbed';
+import { CallRecordCard } from './CallRecordCard';
 import { AlertCircle, Phone, PhoneOff, CheckCircle2, Circle } from 'lucide-react';
 import styles from './MessageBubble.module.css';
 
@@ -164,53 +166,38 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   }, [msg.content, msg.filePayload, msg.is_recalled]);
 
   const renderMessageContent = (content: string) => {
+    // 現代化通話紀錄卡片判定 (一對一與群組通話)
     if (
       content.includes('📞 通話') ||
       content.includes('📹 視訊通話') ||
-      content.includes('📞 語音通話')
-    ) {
-      const parts = content.split('\n');
-      let durationStr = '';
-      if (parts.length >= 2) {
-        durationStr = parts[1].trim();
-      } else {
-        const match = content.match(/\((.*?)\)/);
-        if (match) durationStr = match[1];
-      }
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-            <Phone size={16} />
-            <span>{parts[0]}</span>
-          </div>
-          {durationStr && (
-            <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>
-              通話時長: {durationStr}
-            </span>
-          )}
-        </div>
-      );
-    } else if (
+      content.includes('📞 語音通話') ||
       content.includes('未接來電') ||
-      content.includes('未接語音來電') ||
-      content.includes('未接視訊來電')
+      content.includes('未接語音') ||
+      content.includes('未接視訊') ||
+      content.includes('已拒絕') ||
+      content.includes('對方忙線') ||
+      content.includes('已取消通話') ||
+      content.includes('📞 群組')
     ) {
+      const isVideo = content.includes('視訊');
       return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: '#f87171' }}>
-          <PhoneOff size={16} />
-          <span>未接來電</span>
-        </div>
-      );
-    } else if (
-      content.includes('已拒絕來電') ||
-      content.includes('已拒絕語音通話') ||
-      content.includes('已拒絕視訊通話')
-    ) {
-      return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: '#f87171' }}>
-          <PhoneOff size={16} />
-          <span>已拒絕來電</span>
-        </div>
+        <CallRecordCard
+          content={content}
+          isSelf={isSelf}
+          onCallback={
+            !isGroup && partnerUser
+              ? () =>
+                  useCallStore.getState().startCall(
+                    {
+                      id: Number(partnerUser.id),
+                      name: partnerUser.display_name || partnerUser.account_id || '聯絡人',
+                      avatar: partnerUser.avatar,
+                    },
+                    isVideo ? 'video' : 'audio'
+                  )
+              : undefined
+          }
+        />
       );
     }
 

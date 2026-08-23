@@ -1,0 +1,132 @@
+/* Context: 現代化通話紀錄深色毛玻璃卡片 (時長膠囊、主題發光圖示、回撥互動與全站風格一致) */
+
+.callCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  min-width: 220px;
+  max-width: 320px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.callCardClickable {
+  cursor: pointer;
+}
+
+.callCardClickable:hover {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* 左側圓形主題發光圖示容器 */
+.iconWrapper {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.callCardClickable:hover .iconWrapper {
+  transform: scale(1.06);
+}
+
+/* 語音通話 (綠色) */
+.iconSuccess {
+  background: rgba(16, 185, 129, 0.16);
+  color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+}
+
+/* 視訊通話 (紫色) */
+.iconVideo {
+  background: rgba(168, 85, 247, 0.16);
+  color: #a855f7;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
+}
+
+/* 未接來電 (紅色) */
+.iconMissed {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ef4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+}
+
+/* 取消/拒絕 (灰色) */
+.iconCancelled {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
+/* 中間資訊區域 */
+.infoCol {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.callTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.titleMissed {
+  color: #f87171;
+}
+
+/* 時長膠囊標籤 */
+.durationBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary, #94a3b8);
+  width: fit-content;
+}
+
+.callSubtitle {
+  font-size: 0.76rem;
+  color: var(--text-muted, #64748b);
+}
+
+/* 右側回撥操作圖示 */
+.callbackAction {
+  opacity: 0;
+  transform: translateX(-4px);
+  color: var(--accent-color, #38bdf8);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.callCardClickable:hover .callbackAction {
+  opacity: 1;
+  transform: translateX(0);
+}

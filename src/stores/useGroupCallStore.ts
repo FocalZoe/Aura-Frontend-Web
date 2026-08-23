@@ -1,10 +1,11 @@
-// Context: Zustand 全域群組 SFU 音視訊通話狀態機 (雙排版、多成員串流映射與發言者檢測)
+// Context: Zustand 全域群組 SFU 音視訊通話狀態機 (音效合成器、PiP 子母畫面、遠端軌道關聯修復與開始/結束歷史紀錄)
 
 import { create } from 'zustand';
 import { SFUCallClient } from '../services/sfuCallClient';
 import { websocketService } from '../services/websocketService';
 import { useAuthStore } from './useAuthStore';
 import { useChatStore } from './useChatStore';
+import { callSoundSynthesizer } from '../utils/CallSoundSynthesizer';
 
 export type GroupCallType = 'audio' | 'video';
 export type GroupCallLayoutMode = 'grid' | 'focus';
@@ -16,9 +17,11 @@ export interface GroupCallStore {
   initiatorId: number | null;
   isJoined: boolean;
   isCallActive: boolean; // 是否有進行中的通話 (供 Banner 顯示)
+  isMinimized: boolean;  // 是否最小化為 PiP 子母畫面
   participants: number[]; // 房間內所有成員 UserID
   localStream: MediaStream | null;
   remoteStreams: Record<number, MediaStream>; // key: userId
+  remoteAudioTracks: MediaStreamTrack[]; // 全域遠端音訊播放軌道池
   screenShareStream: MediaStream | null;
   isMuted: boolean;
   isVideoOff: boolean;
@@ -39,6 +42,7 @@ export interface GroupCallStore {
   toggleScreenShare: () => Promise<void>;
   setPinnedUser: (userId: number | null) => void;
   toggleLayoutMode: () => void;
+  setMinimized: (minimized: boolean) => void;
   dismissIncomingBanner: () => void;
 
   // WebSocket Handlers
@@ -55,6 +59,19 @@ export interface GroupCallStore {
 
 let timerInterval: ReturnType<typeof setInterval> | null = null;
 
+// Context: 群組通話紀錄訊息推送
+const sendGroupCallMessage = (groupId: number, content: string) => {
+  try {
+    websocketService.send({
+      type: 'group_message',
+      group_id: groupId,
+      content,
+    });
+  } catch (e) {
+    console.warn('[GroupCallStore] sendGroupCallMessage failed:', e);
+  }
+};
+
 export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
   activeGroupId: null,
   activeGroupName: '',
@@ -62,9 +79,11 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
   initiatorId: null,
   isJoined: false,
   isCallActive: false,
+  isMinimized: false,
   participants: [],
   localStream: null,
   remoteStreams: {},
+  remoteAudioTracks: [],
   screenShareStream: null,
   isMuted: false,
   isVideoOff: false,
@@ -75,6 +94,8 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
   layoutMode: 'grid',
   duration: 0,
   sfuClient: null,
+
+  setMinimized: (minimized: boolean) => set({ isMinimized: minimized }),
 
   // 發起群通話
   startGroupCall: async (groupId: number, groupName: string, type: GroupCallType) => {
@@ -87,9 +108,14 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
       callType: type,
       isJoined: true,
       isCallActive: true,
+      isMinimized: false,
       isVideoOff: type === 'audio',
       duration: 0,
     });
+
+    // 發送群聊「通話已開始」系統紀錄
+    const typeLabel = type === 'video' ? '視訊通話' : '語音通話';
+    sendGroupCallMessage(groupId, `📞 群組${typeLabel}已開始`);
 
     // 啟動計時器
     if (timerInterval) clearInterval(timerInterval);
@@ -114,6 +140,7 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
       callType: currentType,
       isJoined: true,
       isCallActive: true,
+      isMinimized: false,
       isVideoOff: currentType === 'audio',
       duration: 0,
     });
@@ -132,7 +159,11 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
 
   // 離開群通話
   leaveGroupCall: () => {
-    const { sfuClient, activeGroupId } = get();
+    const { sfuClient, activeGroupId, duration, callType, initiatorId, participants } = get();
+    const selfUser = useAuthStore.getState().user;
+    const isSelfInitiator = selfUser && Number(selfUser.id) === Number(initiatorId);
+
+    callSoundSynthesizer.playLeave();
 
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -148,13 +179,24 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
         type: 'sfu_leave',
         group_id: activeGroupId,
       });
+
+      // 若發起者離開或為最後一人，產生結算紀錄
+      if (isSelfInitiator || participants.length <= 1) {
+        const mins = Math.floor(duration / 60);
+        const secs = duration % 60;
+        const durStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        const typeLabel = callType === 'video' ? '視訊通話' : '語音通話';
+        sendGroupCallMessage(activeGroupId, `📞 群組${typeLabel}已結束\n${durStr}`);
+      }
     }
 
     set({
       isJoined: false,
+      isMinimized: false,
       sfuClient: null,
       localStream: null,
       remoteStreams: {},
+      remoteAudioTracks: [],
       screenShareStream: null,
       isScreenSharing: false,
       pinnedUserId: null,
@@ -166,9 +208,12 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
     const { sfuClient, isMuted } = get();
     if (sfuClient) {
       const newMuted = sfuClient.toggleAudio();
+      callSoundSynthesizer.playMuteToggle(newMuted); // 僅自身本地聽到
       set({ isMuted: newMuted });
     } else {
-      set({ isMuted: !isMuted });
+      const newMuted = !isMuted;
+      callSoundSynthesizer.playMuteToggle(newMuted);
+      set({ isMuted: newMuted });
     }
   },
 
@@ -198,26 +243,27 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
   },
 
   setPinnedUser: (userId: number | null) => {
-    set({
-      pinnedUserId: userId,
-      layoutMode: userId !== null ? 'focus' : 'grid',
-    });
+    set({ pinnedUserId: userId, layoutMode: userId ? 'focus' : 'grid' });
   },
 
   toggleLayoutMode: () => {
-    set((state) => ({
-      layoutMode: state.layoutMode === 'grid' ? 'focus' : 'grid',
-    }));
+    const { layoutMode } = get();
+    set({ layoutMode: layoutMode === 'grid' ? 'focus' : 'grid' });
   },
 
   dismissIncomingBanner: () => {
     set({ isCallActive: false });
   },
 
-  // WebSocket 事件：收到其他成員發起的群通話通知 (Banner 顯示)
+  // WebSocket Handlers
   onGroupCallIncoming: (groupId: number, initiatorId: number, callType: GroupCallType, participants: number[]) => {
-    const chatStore = useChatStore.getState();
-    const group = chatStore.groups.find((g) => g.id === groupId);
+    const { activeGroupId, isJoined } = get();
+    if (isJoined && activeGroupId === groupId) {
+      return;
+    }
+
+    const { groups } = useChatStore.getState();
+    const group = groups.find((g) => Number(g.id) === Number(groupId));
     const groupName = group ? group.name : '群組通話';
 
     set({
@@ -237,17 +283,32 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
       currentClient.close();
     }
 
+    callSoundSynthesizer.playJoin();
+
     const client = new SFUCallClient(groupId, {
       onLocalStream: (stream) => {
         set({ localStream: stream });
       },
       onRemoteTrack: (track, stream) => {
-        // 解析遠端軌道並更新 remoteStreams
-        // Pion SFU 將各成員 Stream 保持，我們動態更新
+        console.log('[SFU Store] Received remote track:', track.kind, track.id, 'streamId:', stream.id);
+
+        if (track.kind === 'audio') {
+          // 將音訊軌道加入全域音訊播放池
+          const currentAudioTracks = [...get().remoteAudioTracks, track];
+          set({ remoteAudioTracks: currentAudioTracks });
+        }
+
+        // 關聯遠端視訊 Stream
+        const selfUser = useAuthStore.getState().user;
+        const selfId = selfUser ? Number(selfUser.id) : 0;
         const currentRemotes = { ...get().remoteStreams };
-        // 若 stream 具備 ID 則關聯
-        const remotes = { ...currentRemotes, [Date.now()]: stream };
-        set({ remoteStreams: remotes });
+        const otherParticipants = get().participants.filter((uid) => uid !== selfId);
+
+        // 若 stream 具備明確標識或分配給未指派成員
+        const targetUserId = otherParticipants[0] || (Date.now() as any);
+        currentRemotes[targetUserId] = stream;
+
+        set({ remoteStreams: currentRemotes });
       },
       onScreenShareStream: (screenStream) => {
         set({ screenShareStream: screenStream, isScreenSharing: screenStream !== null });
@@ -276,6 +337,7 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
   },
 
   onUserJoined: (groupId: number, userId: number, participants: number[]) => {
+    callSoundSynthesizer.playJoin();
     set({
       participants,
       activeGroupId: groupId,
@@ -284,6 +346,7 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
   },
 
   onUserLeft: (groupId: number, userId: number, remainingCount: number, participants: number[]) => {
+    callSoundSynthesizer.playLeave();
     const remotes = { ...get().remoteStreams };
     delete remotes[userId];
 
@@ -291,6 +354,7 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
       participants,
       remoteStreams: remotes,
       pinnedUserId: get().pinnedUserId === userId ? null : get().pinnedUserId,
+      isCallActive: remainingCount > 0,
     });
   },
 
@@ -318,24 +382,21 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
   onReceiveMediaToggle: (senderId: number, contentStr: string) => {
     try {
       const state = JSON.parse(contentStr);
-      set((prev) => ({
-        participantMediaStates: {
-          ...prev.participantMediaStates,
-          [senderId]: state,
-        },
-      }));
+      const currentMediaStates = { ...get().participantMediaStates };
+      currentMediaStates[senderId] = {
+        isMuted: !!state.isMuted,
+        isVideoOff: !!state.isVideoOff,
+      };
+      set({ participantMediaStates: currentMediaStates });
     } catch (e) {
-      // ignore
+      console.warn('[GroupCallStore] parse media toggle error:', e);
     }
   },
 
   onGroupCallEnded: (groupId: number, duration: number) => {
-    const { activeGroupId, isJoined } = get();
+    const { activeGroupId } = get();
     if (activeGroupId === groupId) {
-      if (isJoined) {
-        get().leaveGroupCall();
-      }
-      set({ isCallActive: false, activeGroupId: null });
+      get().leaveGroupCall();
     }
   },
 }));
