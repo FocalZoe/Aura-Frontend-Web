@@ -182,6 +182,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
         group_id: Number(message.group_id) || message.group_id,
       };
 
+      // Context: 防禦性自動解析 IPFS Payload
+      if (normalizedMsg.content && normalizedMsg.content.startsWith('[IPFS_FILE]') && !normalizedMsg.filePayload) {
+        try {
+          const jsonStr = normalizedMsg.content.substring('[IPFS_FILE]'.length);
+          normalizedMsg.filePayload = JSON.parse(jsonStr);
+        } catch (e) {
+          console.error('IPFS payload 解析失敗:', e);
+        }
+      }
+
       // 1. 若為正式 DB ID 訊息
       if (normalizedMsg.id && !isOptimisticId(normalizedMsg.id)) {
         const dbIdIndex = state.groupMessages.findIndex(
@@ -237,6 +247,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
         receiver_id: message.receiver_id ? Number(message.receiver_id) : message.receiver_id,
         to: message.to ? Number(message.to) : message.to,
       };
+
+      // Context: 防禦性自動解析 IPFS Payload
+      if (normalizedMsg.content && normalizedMsg.content.startsWith('[IPFS_FILE]') && !normalizedMsg.filePayload) {
+        try {
+          const jsonStr = normalizedMsg.content.substring('[IPFS_FILE]'.length);
+          normalizedMsg.filePayload = JSON.parse(jsonStr);
+        } catch (e) {
+          console.error('IPFS payload 解析失敗:', e);
+        }
+      }
 
       if (normalizedMsg.id && !isOptimisticId(normalizedMsg.id)) {
         const dbIdIndex = state.messages.findIndex(

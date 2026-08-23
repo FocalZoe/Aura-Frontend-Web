@@ -24,6 +24,7 @@ export const IPFSFileCard: React.FC<IPFSFileCardProps> = ({
   payload,
   iv,
   senderId,
+  partnerId,
   partnerPublicKeyBase64,
   groupId,
 }) => {
@@ -62,13 +63,12 @@ export const IPFSFileCard: React.FC<IPFSFileCardProps> = ({
         const groupKey = await e2eeService.getGroupKey(groupId);
         decryptedBuffer = await decryptFileBuffer(groupKey, encryptedBuffer, targetIv);
       } else {
-        const privateKey = await getLocalPrivateKey(user.id);
-        if (!privateKey || !partnerPublicKeyBase64) {
-          notify({ message: '無法開啟檔案，請先確認設定', type: 'warning' });
+        const authToken = localStorage.getItem('token') || '';
+        const sharedKey = await e2eeService.getSharedKey(partnerId, user.id, authToken);
+        if (!sharedKey) {
+          notify({ message: '無法開啟檔案，通訊金鑰初始化中', type: 'warning' });
           return;
         }
-        const partnerPublicKey = await importPublicKey(partnerPublicKeyBase64);
-        const sharedKey = await deriveSharedKey(privateKey, partnerPublicKey);
         decryptedBuffer = await decryptFileBuffer(sharedKey, encryptedBuffer, targetIv);
       }
 

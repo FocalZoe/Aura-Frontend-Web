@@ -480,15 +480,20 @@ export const ChatWindow: React.FC = () => {
     }
   };
 
-  // 一對一直接傳訊
-  const sendDirectMessage = async (toUserId: number, partnerPublicKeyBase64: string | undefined, content: string) => {
+  // 一對一直接傳訊 (支援文字與檔案 Payload)
+  const sendDirectMessage = async (
+    toUserId: number,
+    partnerPublicKeyBase64: string | undefined,
+    content: string,
+    filePayload?: IPFSFilePayload
+  ) => {
     if (!user || !token) return;
-    let partnerPubKey: string | undefined = partnerPublicKeyBase64 || friendsMap[toUserId];
+    let partnerPubKey: string | null | undefined = partnerPublicKeyBase64 || friendsMap[toUserId];
     if (!partnerPubKey) {
       partnerPubKey = await e2eeService.fetchUserPublicKey(toUserId, token);
     }
     if (!partnerPubKey) {
-      throw new Error('對方尚未完成設定，暫時無法傳送訊息');
+      throw new Error('對方尚未完成金鑰設定，暫時無法傳送加密訊息');
     }
 
     const privateKey = await getLocalPrivateKey(user.id);
@@ -496,8 +501,7 @@ export const ChatWindow: React.FC = () => {
       throw new Error('請先輸入 PIN 碼解鎖對話');
     }
 
-    const targetPubKey: string = partnerPubKey;
-    const importedPubKey = await importPublicKey(targetPubKey);
+    const importedPubKey = await importPublicKey(partnerPubKey);
     const sharedKey = await deriveSharedKey(privateKey, importedPubKey);
     const { ciphertext, iv } = await encryptMessage(sharedKey, content);
 
@@ -509,7 +513,7 @@ export const ChatWindow: React.FC = () => {
     });
 
     addMessage({
-      id: Date.now(),
+      id: Date.now() + Math.floor(Math.random() * 1000),
       sender_id: user.id,
       receiver_id: toUserId,
       to: toUserId,
@@ -517,6 +521,7 @@ export const ChatWindow: React.FC = () => {
       iv,
       timestamp: new Date().toISOString(),
       decrypted: true,
+      filePayload,
     });
 
     if (!isFriend && activeChatUser) {
@@ -562,17 +567,26 @@ export const ChatWindow: React.FC = () => {
         timestamp: new Date().toISOString(),
         decrypted: true,
         sender: user,
+        filePayload: payload,
       });
       return;
     }
 
     if (activeChatUser) {
       const privateKey = await getLocalPrivateKey(user.id);
-      if (!privateKey || !activeChatUser.public_key) {
-        throw new Error('請先解鎖通訊金鑰');
+      if (!privateKey) {
+        throw new Error('請先輸入 PIN 碼解鎖通訊金鑰');
       }
 
-      const partnerPublicKey = await importPublicKey(activeChatUser.public_key);
+      let partnerPubKey: string | null | undefined = activeChatUser.public_key || friendsMap[activeChatUser.id];
+      if (!partnerPubKey) {
+        partnerPubKey = await e2eeService.fetchUserPublicKey(activeChatUser.id, token);
+      }
+      if (!partnerPubKey) {
+        throw new Error('對方尚未完成金鑰初始化，無法傳送加密檔案');
+      }
+
+      const partnerPublicKey = await importPublicKey(partnerPubKey);
       const sharedKey = await deriveSharedKey(privateKey, partnerPublicKey);
 
       const { encryptedData, iv } = await encryptFileBuffer(sharedKey, arrayBuffer);
@@ -588,7 +602,7 @@ export const ChatWindow: React.FC = () => {
       };
 
       const ipfsMessageContent = `[IPFS_FILE]${JSON.stringify(payload)}`;
-      await sendDirectMessage(activeChatUser.id, activeChatUser.public_key, ipfsMessageContent);
+      await sendDirectMessage(activeChatUser.id, partnerPubKey, ipfsMessageContent, payload);
     }
   };
 

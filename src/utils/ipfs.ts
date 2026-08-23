@@ -9,7 +9,7 @@ export const getIPFSGatewayUrl = (cid: string, apiBaseUrl?: string): string => {
   if (!cid) return '';
   if (apiBaseUrl) {
     const cleanBase = apiBaseUrl.replace(/\/$/, '');
-    return `${cleanBase}/ipfs/${cid}`;
+    return `${cleanBase}/ipfs/gateway/${cid}`;
   }
   return `https://ipfs.io/ipfs/${cid}`;
 };

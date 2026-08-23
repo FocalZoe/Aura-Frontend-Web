@@ -109,6 +109,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   type="button"
                   className={styles.plusMenuItem}
                   onClick={() => {
+                    setShowPlusMenu(false);
                     fileInputRef.current?.click();
                   }}
                 >

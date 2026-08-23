@@ -10,7 +10,7 @@ import {
 import { apiClient } from './apiClient';
 import { useChatStore } from '../stores/useChatStore';
 
-const parseIPFSMessage = (msg: Message): Message => {
+const parseIPFSMessage = <T extends Message | GroupMessage>(msg: T): T => {
   if (msg.content && msg.content.startsWith('[IPFS_FILE]')) {
     try {
       const jsonStr = msg.content.substring('[IPFS_FILE]'.length);
@@ -84,7 +84,7 @@ class E2EEService {
     try {
       const groupKey = await this.getGroupKey(groupId, epoch);
       const plaintext = await decryptMessage(groupKey, msg.content, msg.iv);
-      return { ...msg, content: plaintext, decrypted: true };
+      return parseIPFSMessage({ ...msg, content: plaintext, decrypted: true });
     } catch (err) {
       console.error('群組訊息解密失敗:', err);
       return { ...msg, content: '[無法解密此群組訊息]', error: true };
@@ -98,7 +98,7 @@ class E2EEService {
         if (!m.iv || m.is_system) return m;
         try {
           const plaintext = await decryptMessage(groupKey, m.content, m.iv);
-          return { ...m, content: plaintext, decrypted: true };
+          return parseIPFSMessage({ ...m, content: plaintext, decrypted: true });
         } catch (e) {
           return { ...m, content: '[無法解密此群組訊息]', error: true };
         }
