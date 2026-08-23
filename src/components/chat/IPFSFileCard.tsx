@@ -9,7 +9,7 @@ import { fetchFromIPFS } from '../../utils/ipfs';
 import { getApiBase } from '../../services/apiClient';
 import { AudioPlayerCard } from './AudioPlayerCard';
 import { VideoPlayerCard } from './VideoPlayerCard';
-import styles from '../ChatWindow.module.css';
+import styles from './IPFSFileCard.module.css';
 
 export interface IPFSFileCardProps {
   payload: IPFSFilePayload;

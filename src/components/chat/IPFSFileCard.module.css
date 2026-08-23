@@ -1,0 +1,110 @@
+/* Context: IPFSFileCard 專屬獨立樣式模組 */
+
+.ipfsFileCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.ipfsFileIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--accent-light, rgba(59, 130, 246, 0.15));
+  color: var(--accent-color, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ipfsFileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.ipfsFileName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.ipfsFileSize {
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.imageContainer {
+  cursor: pointer;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.imagePreview {
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 10px;
+  display: block;
+}
+
+.imageLoading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.lightboxOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.lightboxContent {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.lightboxCloseBtn {
+  position: absolute;
+  top: -36px;
+  right: 0;
+  color: #fff;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.lightboxImage {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 8px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

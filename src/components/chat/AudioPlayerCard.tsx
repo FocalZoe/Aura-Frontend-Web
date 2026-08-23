@@ -1,7 +1,7 @@
 // Context: [音訊播放器] 客製化深色玻璃質感 IPFS 音訊播放器，支援播放/暫停、動態波形動畫與進度控制
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Music, Download, Loader2 } from 'lucide-react';
-import styles from '../ChatWindow.module.css';
+import styles from './AudioPlayerCard.module.css';
 
 interface AudioPlayerCardProps {
   src: string;

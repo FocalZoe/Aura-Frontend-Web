@@ -1,0 +1,158 @@
+/* Context: LinkEmbed 專屬樣式模組 (支援 YouTube 影片嵌入卡片與一般網站 Favicon 預覽卡片) */
+
+.youtubeEmbedCard {
+  margin-top: 6px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  max-width: 380px;
+}
+
+.youtubeIframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: none;
+  display: block;
+}
+
+.youtubeThumbBox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.youtubeThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.youtubeThumbBox:hover .youtubeThumbImg {
+  transform: scale(1.03);
+}
+
+.youtubePlayOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  transition: background 0.2s ease;
+}
+
+.youtubeThumbBox:hover .youtubePlayOverlay {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.youtubeInfoRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.youtubeBadge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.youtubeUrlText {
+  flex: 1;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkExternalBtn {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.linkExternalBtn:hover {
+  color: var(--text-primary);
+}
+
+.linkEmbedCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  text-decoration: none;
+  max-width: 380px;
+  transition: all 0.2s ease;
+}
+
+.linkEmbedCard:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.linkFaviconBox {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.linkFaviconImg {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.linkGlobeIcon {
+  color: var(--text-muted);
+}
+
+.linkEmbedContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.linkDomainName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkFullUrl {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkExternalIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}

@@ -4,7 +4,7 @@ import React, { FormEvent, ChangeEvent, useState, useRef, useEffect } from 'reac
 import { Send, Loader2, Plus, Paperclip, Mic, Smile, Camera } from 'lucide-react';
 import { VoiceRecorder } from './VoiceRecorder';
 import { PendingAttachmentsPreview } from './PendingAttachmentsPreview';
-import styles from '../ChatWindow.module.css';
+import styles from './ChatInput.module.css';
 
 interface ChatInputProps {
   inputText: string;

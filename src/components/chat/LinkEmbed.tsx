@@ -1,7 +1,7 @@
 // Context: [網址 Embed] 網址訊息預覽卡片，支援 YouTube 影片卡片與一般網站 Favicon/域名預覽
 import React, { useState } from 'react';
 import { ExternalLink, Globe, PlayCircle } from 'lucide-react';
-import styles from '../ChatWindow.module.css';
+import styles from './LinkEmbed.module.css';
 
 interface LinkEmbedProps {
   url: string;

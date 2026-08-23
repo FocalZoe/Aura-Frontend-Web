@@ -1,0 +1,296 @@
+/* Context: MessageBubble 專屬獨立樣式模組 (氣泡、頭像切齊、狀態徽章、Emoji 反應列與右側 Checkbox) */
+
+.msgRow {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  position: relative;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.msgRowSelf {
+  justify-content: flex-end;
+}
+
+.msgRowOther {
+  justify-content: flex-start;
+}
+
+/* 截圖模式專屬行樣式 */
+.msgRowScreenshotMode {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.msgRowScreenshotMode:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.msgRowSelected {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%) !important;
+}
+
+.screenshotCheckboxRight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 12px;
+  padding-right: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.checkboxChecked {
+  color: var(--accent-color, #3b82f6) !important;
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.45));
+}
+
+.checkboxUnchecked {
+  color: var(--text-muted, #64748b) !important;
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+
+.msgRowScreenshotMode:hover .checkboxUnchecked {
+  opacity: 0.8;
+}
+
+.msgBubbleContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.msgHighlightGlow {
+  animation: pulseGlow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 16px;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    transform: scale(0.98);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    transform: scale(1);
+  }
+}
+
+.msgSenderName {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+  margin-left: 40px;
+  font-weight: 500;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.msgSenderName:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
+.msgBubbleRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.msgAvatarWrapper {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.msgAvatarWrapper:hover {
+  transform: scale(1.06);
+}
+
+.msgMetaOutsideLeft,
+.msgMetaOutsideRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  opacity: 0.85;
+  margin-bottom: 3px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.msgEditedBadge {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.msgBubble {
+  width: fit-content;
+  min-width: auto;
+  max-width: 100%;
+  padding: 10px 15px;
+  border-radius: 18px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  position: relative;
+  word-break: break-word;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease;
+}
+
+.msgBubbleSelf {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.msgBubbleOther {
+  background: rgba(30, 41, 59, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-primary, #f8fafc);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+.msgBubbleSelected {
+  box-shadow: 0 0 0 2px var(--accent-color, #3b82f6), 0 4px 20px rgba(59, 130, 246, 0.38) !important;
+}
+
+.msgBubbleImage {
+  padding: 6px;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.msgBubbleError {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recalledBubble {
+  background: rgba(148, 163, 184, 0.08) !important;
+  border: 1px dashed var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  font-style: italic;
+  font-size: 0.84rem !important;
+  padding: 6px 12px !important;
+  box-shadow: none !important;
+  user-select: none;
+}
+
+.searchHighlightText {
+  background: rgba(245, 158, 11, 0.35);
+  color: #fef08a;
+  padding: 1px 3px;
+  border-radius: 4px;
+}
+
+/* 訊息表情反應名單列 */
+.msgReactionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.reactionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 2px 7px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.reactionBadge:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.05);
+}
+
+.reactionBadgeActive {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+.reactionEmoji {
+  font-size: 0.85rem;
+}
+
+.reactionCount {
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.reactionAvatars {
+  display: flex;
+  align-items: center;
+  margin-left: 2px;
+}
+
+.reactionAvatarItem {
+  margin-left: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--bg-modal, #0f172a);
+}
+
+.reactionAvatarItem:first-child {
+  margin-left: 0;
+}
+
+.linkEmbedList {
+  margin-top: 6px;
+  width: 100%;
+}
+
+/* 置中系統廣播通知 */
+.systemMsgRow {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 6px 0;
+}
+
+.systemMsgPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 4px 14px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.78rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}

@@ -1,7 +1,7 @@
 // Context: [影片播放器] 現代深色毛玻璃 IPFS 影片播放器，支援自適應容器、全螢幕燈箱檢視與一鍵下載
 import React, { useState, useRef } from 'react';
 import { Film, Download, Maximize2, X, PlayCircle, Loader2 } from 'lucide-react';
-import styles from '../ChatWindow.module.css';
+import styles from './VideoPlayerCard.module.css';
 
 interface VideoPlayerCardProps {
   src: string;

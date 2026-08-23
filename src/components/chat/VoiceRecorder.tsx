@@ -1,7 +1,7 @@
 // Context: [語音訊息] 桌面端專屬語音錄製器，支援 MediaRecorder 錄音、波形動畫與計時
 import React, { useState, useEffect, useRef } from 'react';
 import { Trash2, Send, Mic, Loader2 } from 'lucide-react';
-import styles from '../ChatWindow.module.css';
+import styles from './VoiceRecorder.module.css';
 
 interface VoiceRecorderProps {
   onSendVoice: (audioBlob: Blob) => void;

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Message, User } from '../../types';
 import { MessageBubble } from './MessageBubble';
-import styles from '../ChatWindow.module.css';
+import styles from './MessageList.module.css';
 
 interface MessageListProps {
   messages: Message[];

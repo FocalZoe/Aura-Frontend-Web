@@ -1,0 +1,194 @@
+/* Context: ChatInput 專屬獨立樣式模組 (多行自適應 Textarea、Plus 旋轉按鈕、Plus 彈出選單、Emoji 按鈕與發送按鈕) */
+
+.chatInputArea {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.chatForm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Plus 整合操作按鈕與旋轉動畫 */
+.plusActionWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.plusBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.plusBtn:hover:not(:disabled) {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  background: var(--accent-light);
+}
+
+.plusBtnActive {
+  background: var(--accent-light);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.plusIconRotatable {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.plusIconRotated {
+  transform: rotate(45deg);
+}
+
+/* Plus 向上彈出操作選單 */
+.plusMenuPopover {
+  position: absolute;
+  bottom: 52px;
+  left: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 170px;
+  background: var(--bg-modal, rgba(21, 28, 44, 0.96));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  animation: plusMenuFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes plusMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.plusMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: var(--text-primary, #f8fafc);
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.plusMenuItem:hover {
+  background: var(--accent-light, rgba(59, 130, 246, 0.15));
+  color: var(--accent-color, #3b82f6);
+}
+
+/* 多行自適應 Textarea 輸入框 */
+.chatTextarea {
+  flex: 1;
+  min-height: 42px;
+  max-height: 156px;
+  padding: 10px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  font-family: inherit;
+  resize: none;
+  overflow-y: hidden;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chatTextarea:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.chatTextarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* 輸入框右側 Emoji 按鈕 */
+.chatEmojiBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chatEmojiBtn:hover:not(:disabled) {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  background: var(--accent-light);
+  transform: translateY(-1px);
+}
+
+.chatSendBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: var(--accent-color);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chatSendBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.chatSendBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}

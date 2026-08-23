@@ -1,11 +1,11 @@
 // Context: 訊息氣泡組件 (包含右鍵選單觸發、連續截圖勾選、收回提示、Emoji 膠囊、通話卡片與 Avatar 名片)
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Message, User } from '../../types';
 import { AlertCircle, Phone, PhoneOff, CheckCircle2, Circle } from 'lucide-react';
 import { LinkEmbed } from './LinkEmbed';
 import { Avatar } from '../common/Avatar';
 import { useChatStore } from '../../stores/useChatStore';
-import styles from '../ChatWindow.module.css';
+import styles from './MessageBubble.module.css';
 
 interface MessageBubbleProps {
   msg: Message;
@@ -204,48 +204,50 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     fallbackSeed: string;
   }
 
-  const reactionMap = (msg.reactions || []).reduce<
-    Record<string, { count: number; users: ReactionUserDetail[]; reactedByMe: boolean }>
-  >((acc, r) => {
-    if (!acc[r.emoji]) {
-      acc[r.emoji] = { count: 0, users: [], reactedByMe: false };
-    }
-    acc[r.emoji].count += 1;
-    if (Number(r.user_id) === Number(currentUserId)) {
-      acc[r.emoji].reactedByMe = true;
-    }
-
-    let avatar = r.user?.avatar;
-    let displayName = r.user?.display_name || r.user?.account_id || `User_${r.user_id}`;
-    let fallbackSeed = r.user?.display_name || r.user?.account_id || `User_${r.user_id}`;
-
-    if (groupMembersMap && groupMembersMap[r.user_id]) {
-      const gm = groupMembersMap[r.user_id];
-      if (gm.user?.avatar) avatar = gm.user.avatar;
-      if (gm.nickname) displayName = gm.nickname;
-      else if (gm.user?.display_name) displayName = gm.user.display_name;
-      if (gm.user?.display_name || gm.user?.account_id) {
-        fallbackSeed = gm.user.display_name || gm.user.account_id;
+  const reactionMap = useMemo(() => {
+    return (msg.reactions || []).reduce<
+      Record<string, { count: number; users: ReactionUserDetail[]; reactedByMe: boolean }>
+    >((acc, r) => {
+      if (!acc[r.emoji]) {
+        acc[r.emoji] = { count: 0, users: [], reactedByMe: false };
       }
-    } else if (currentUser && Number(r.user_id) === Number(currentUser.id)) {
-      avatar = currentUser.avatar;
-      displayName = getUserDisplayName(currentUser);
-      fallbackSeed = currentUser.display_name || currentUser.account_id || `User_${currentUser.id}`;
-    } else if (partnerUser && Number(r.user_id) === Number(partnerUser.id)) {
-      avatar = partnerUser.avatar;
-      displayName = getUserDisplayName(partnerUser);
-      fallbackSeed = partnerUser.display_name || partnerUser.account_id;
-    }
+      acc[r.emoji].count += 1;
+      if (Number(r.user_id) === Number(currentUserId)) {
+        acc[r.emoji].reactedByMe = true;
+      }
 
-    acc[r.emoji].users.push({
-      id: r.user_id,
-      avatar,
-      displayName,
-      fallbackSeed,
-    });
+      let avatar = r.user?.avatar;
+      let displayName = r.user?.display_name || r.user?.account_id || `User_${r.user_id}`;
+      let fallbackSeed = r.user?.display_name || r.user?.account_id || `User_${r.user_id}`;
 
-    return acc;
-  }, {});
+      if (groupMembersMap && groupMembersMap[r.user_id]) {
+        const gm = groupMembersMap[r.user_id];
+        if (gm.user?.avatar) avatar = gm.user.avatar;
+        if (gm.nickname) displayName = gm.nickname;
+        else if (gm.user?.display_name) displayName = gm.user.display_name;
+        if (gm.user?.display_name || gm.user?.account_id) {
+          fallbackSeed = gm.user.display_name || gm.user.account_id;
+        }
+      } else if (currentUser && Number(r.user_id) === Number(currentUser.id)) {
+        avatar = currentUser.avatar;
+        displayName = getUserDisplayName(currentUser);
+        fallbackSeed = currentUser.display_name || currentUser.account_id || `User_${currentUser.id}`;
+      } else if (partnerUser && Number(r.user_id) === Number(partnerUser.id)) {
+        avatar = partnerUser.avatar;
+        displayName = getUserDisplayName(partnerUser);
+        fallbackSeed = partnerUser.display_name || partnerUser.account_id;
+      }
+
+      acc[r.emoji].users.push({
+        id: r.user_id,
+        avatar,
+        displayName,
+        fallbackSeed,
+      });
+
+      return acc;
+    }, {});
+  }, [msg.reactions, currentUserId, groupMembersMap, currentUser, partnerUser, getUserDisplayName]);
 
   const displayUser = senderUser || partnerUser || msg.sender;
   const finalDisplayName = groupNickname || (displayUser ? getUserDisplayName(displayUser) : `用戶 #${msg.sender_id}`);
