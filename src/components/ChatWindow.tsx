@@ -122,14 +122,15 @@ export const ChatWindow: React.FC = () => {
     return map;
   }, [activeGroup?.members]);
 
-  // 搜尋關鍵字匹配
+  // 搜尋關鍵字匹配 (排除檔案/語音訊息，僅搜尋純文字)
   const matchedMessageIds = useMemo(() => {
     const q = searchKeyword.trim().toLowerCase();
     if (!q) return [];
     return currentMessages
       .filter((m) => {
+        // 排除檔案、語音與 IPFS Payload
+        if (m.filePayload || (m.content && m.content.startsWith('[IPFS_FILE]'))) return false;
         if (m.content && m.content.toLowerCase().includes(q)) return true;
-        if (m.filePayload?.name && m.filePayload.name.toLowerCase().includes(q)) return true;
         return false;
       })
       .map((m) => m.id!)
@@ -151,7 +152,7 @@ export const ChatWindow: React.FC = () => {
 
     setTimeout(() => {
       setHighlightedMessageId((prev) => (prev === targetId ? null : prev));
-    }, 1800);
+    }, 800);
   };
 
   useEffect(() => {
