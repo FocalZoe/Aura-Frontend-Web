@@ -4,7 +4,8 @@
   position: fixed;
   z-index: 1050;
   width: 340px;
-  max-height: 440px;
+  height: 420px;
+  max-height: 420px;
   background: var(--bg-modal, rgba(21, 28, 44, 0.96));
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -134,15 +135,15 @@
   box-shadow: 0 0 0 1px var(--accent-color, #3b82f6);
 }
 
-/* 網格滾動主體 */
+/* 網格滾動主體 (填滿固定高度容器剩餘空間) */
 .emojiGridBody {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 290px;
 }
 
 .categoryGroup {
