@@ -90,9 +90,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {isScreenshotMode && (
           <div className={styles.screenshotCheckboxRight}>
             {isSelectedForScreenshot ? (
-              <CheckCircle2 size={18} className={styles.checkboxChecked} />
+              <CheckCircle2 size={20} className={styles.checkboxChecked} />
             ) : (
-              <Circle size={18} className={styles.checkboxUnchecked} />
+              <Circle size={20} className={styles.checkboxUnchecked} />
             )}
           </div>
         )}

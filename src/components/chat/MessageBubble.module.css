@@ -322,10 +322,16 @@
   width: 100%;
   margin: 4px 0;
   position: relative;
+  box-sizing: border-box;
 }
 
 .systemMsgRow.msgRowScreenshotMode {
-  padding: 2px 8px;
+  margin: 0 !important;
+  padding: 4px 10px;
+}
+
+.systemMsgRow.msgRowScreenshotMode .screenshotCheckboxRight {
+  margin-left: auto;
 }
 
 .systemMsgRow .systemMsgPill {
