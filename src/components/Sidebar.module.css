@@ -84,13 +84,12 @@
   color: var(--text-primary);
   border-color: var(--accent-color);
   background: var(--accent-light);
-  transform: translateY(-1px);
 }
 
 .pendingBadge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -2px;
+  right: -2px;
   background: var(--token-danger);
   color: #ffffff;
   font-size: 0.68rem;
@@ -100,6 +99,7 @@
   min-width: 16px;
   text-align: center;
   line-height: 1.2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Sidebar Nav Tabs & Search Bar */

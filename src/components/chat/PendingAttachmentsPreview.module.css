@@ -1,52 +1,44 @@
-/* Context: 待發送附件預覽欄 (透明無縫融合、精緻浮凸移除徽章與極致微陰影) */
+/* Context: 待發送附件預覽欄 (無縫內嵌、內部右上角圓形移除徽章、100% 杜絕任何溢出裁切) */
 
 .previewContainer {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 2px 10px 2px;
+  gap: 10px;
+  padding: 4px 2px 10px 2px;
   background: transparent;
   overflow-x: auto;
-  animation: previewSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: hidden;
   scrollbar-width: thin;
   width: 100%;
+  animation: previewFadeIn 0.15s ease-out;
 }
 
-@keyframes previewSlideUp {
+@keyframes previewFadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
-/* Instagram 多圖堆疊預覽卡片 */
+/* Instagram 多圖堆疊預覽卡片 (內部圓角與內置 X 按鈕) */
 .imageCard {
   position: relative;
   width: 62px;
   height: 62px;
   border-radius: 12px;
-  overflow: visible;
+  overflow: hidden;
   flex-shrink: 0;
-  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  background: var(--bg-input, rgba(0, 0, 0, 0.08));
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .imageCard:hover {
-  transform: translateY(-2px);
-}
-
-.imageInner {
-  width: 100%;
-  height: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1.5px solid var(--border-color, rgba(255, 255, 255, 0.15));
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-  background: var(--bg-input, rgba(0, 0, 0, 0.06));
-  position: relative;
+  border-color: var(--accent-color, #3b82f6);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
 
 .imageThumb {
@@ -60,7 +52,7 @@
   position: absolute;
   bottom: 3px;
   left: 4px;
-  background: rgba(0, 0, 0, 0.68);
+  background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   color: #ffffff;
@@ -69,6 +61,7 @@
   padding: 1px 5px;
   border-radius: 4px;
   letter-spacing: 0.3px;
+  pointer-events: none;
 }
 
 /* 一般文件檔案預覽卡片 */
@@ -82,15 +75,16 @@
   background: var(--bg-input, rgba(0, 0, 0, 0.05));
   border: 1.5px solid var(--border-color, rgba(255, 255, 255, 0.12));
   border-radius: 12px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
   max-width: 220px;
-  overflow: visible;
-  transition: transform 0.18s ease;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .fileCard:hover {
-  transform: translateY(-2px);
+  border-color: var(--accent-color, #3b82f6);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
 }
 
 .fileIconWrapper {
@@ -127,30 +121,31 @@
   margin-top: 1px;
 }
 
-/* 精緻浮凸移除 X 按鈕 */
+/* 內置右上角精緻移除 X 按鈕 */
 .removeBtn {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  width: 19px;
-  height: 19px;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: rgba(30, 41, 59, 0.95);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  border: 1.5px solid var(--bg-primary, #ffffff);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease;
   z-index: 2;
   padding: 0;
 }
 
 .removeBtn:hover {
   background: #ef4444;
-  transform: scale(1.15);
+  border-color: #ef4444;
+  transform: scale(1.1);
 }

@@ -323,7 +323,7 @@
 
 .reactionPill:hover {
   border-color: var(--accent-color);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .reactionPillActive {
@@ -624,7 +624,7 @@
 
 .chatSendBtn:hover:not(:disabled) {
   background: var(--accent-hover);
-  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
 .chatSendBtn:disabled {

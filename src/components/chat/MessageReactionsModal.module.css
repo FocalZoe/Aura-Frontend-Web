@@ -36,7 +36,7 @@
 .tabBtn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary, #f8fafc);
-  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .tabBtnActive {
@@ -51,7 +51,7 @@
   gap: 8px;
   max-height: 320px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 2px 4px 2px 2px;
 }
 
 .userItem {
@@ -68,8 +68,7 @@
 
 .userItem:hover {
   background: var(--bg-hover, rgba(255, 255, 255, 0.08));
-  border-color: rgba(255, 255, 255, 0.15);
-  transform: translateX(2px);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .userInfo {
