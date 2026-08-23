@@ -1,51 +1,55 @@
-// Context: 通話 Modal 組件 (Avatar 破圖徹底修復、PiP 懸浮子母畫面、Pop-out 獨立新視窗與全站一致深色毛玻璃美學)
+// Context: [一對一通話主視窗] 玻璃擬態 P2P WebRTC 呼叫視窗 (Avatar 核心元件、VAD 說話綠框發光、PiP 子母畫面、Document PiP 獨立視窗與無多餘X按鈕)
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Phone,
   PhoneOff,
   Mic,
   MicOff,
   Video,
   VideoOff,
-  PhoneIncoming,
-  AlertCircle,
-  Minimize2,
   Maximize2,
+  Minimize2,
   ExternalLink,
-  X,
 } from 'lucide-react';
 import { useCallStore } from '../../stores/useCallStore';
-import { useChatStore } from '../../stores/useChatStore';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useChatStore } from '../../stores/useChatStore';
 import { Avatar } from '../common/Avatar';
+import { VoiceActivityDetector } from '../../utils/VoiceActivityDetector';
 import styles from './CallModal.module.css';
 
 export const CallModal: React.FC = () => {
   const {
     callState,
     callType,
-    peerUser,
+    isCaller,
     isMuted,
     isVideoOff,
     isRemoteVideoOff,
+    peerUser,
+    duration,
     localStream,
     remoteStream,
-    duration,
     busyNotification,
     isMinimized,
     acceptCall,
-    rejectCall,
     endCall,
     toggleAudio,
     toggleVideo,
-    setMinimized,
     setBusyNotification,
+    setMinimized,
   } = useCallStore();
 
-  const localVideoRef = useRef<HTMLVideoElement | null>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
-  const pipVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const pipVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+
+  const [isPopout, setIsPopout] = useState<boolean>(false);
+  const [isRemoteSpeaking, setIsRemoteSpeaking] = useState<boolean>(false);
+  const callContentRef = useRef<HTMLDivElement | null>(null);
+  const mainHostRef = useRef<HTMLDivElement | null>(null);
 
   // 本地使用者資訊
   const myUser = useAuthStore((s: any) => s.user);
@@ -83,6 +87,18 @@ export const CallModal: React.FC = () => {
     }
   }, [callState, localStream, remoteStream, isRemoteVideoActive, isMinimized]);
 
+  // 監聽遠端音波 (VAD) 驅動說話綠光
+  useEffect(() => {
+    if (callState === 'connected' && remoteStream && remoteStream.getAudioTracks().length > 0) {
+      const vad = new VoiceActivityDetector(remoteStream, (speaking) => {
+        setIsRemoteSpeaking(speaking);
+      });
+      return () => {
+        vad.destroy();
+      };
+    }
+  }, [callState, remoteStream]);
+
   // 格式化通話時間
   const formatDuration = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -93,10 +109,6 @@ export const CallModal: React.FC = () => {
   const handleAcceptCall = async () => {
     await acceptCall();
   };
-
-  const [isPopout, setIsPopout] = React.useState<boolean>(false);
-  const callContentRef = useRef<HTMLDivElement | null>(null);
-  const mainHostRef = useRef<HTMLDivElement | null>(null);
 
   // 彈出式新視窗 (Document Picture-in-Picture 獨立桌面視窗)
   const handlePopout = async () => {
@@ -169,49 +181,47 @@ export const CallModal: React.FC = () => {
           <div className={styles.container} onClick={(e) => e.stopPropagation()}>
             <div className={styles.header}>
               <h3 className={styles.title}>通話提示</h3>
-              <div className={styles.status}>
-                <AlertCircle size={16} color="#f59e0b" />
-                <span>{busyNotification}</span>
-              </div>
-            </div>
-            <div className={styles.avatarSection}>
-              <Avatar src={displayAvatar} name={displayName} size={88} />
+              <p className={styles.status}>{busyNotification}</p>
             </div>
             <div className={styles.controls}>
-              <button className={styles.btnReject} onClick={() => setBusyNotification(null)} title="確認">
-                <X size={26} />
+              <button
+                className={styles.btnHangup}
+                onClick={() => setBusyNotification(null)}
+                title="確認關閉"
+              >
+                關閉
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 情況 A：已最小化為 PiP 子母畫面懸浮窗 */}
+      {/* 情況 A：已最小化為 PiP 子母畫面懸浮卡片 */}
       {isMinimized && callState === 'connected' ? (
         <div className={styles.pipFloatingContainer}>
-          {/* PiP 標頭 */}
+          {/* 頂部控制 */}
           <div className={styles.pipHeader}>
-            <div className={styles.pipTitleGroup}>
+            <div className={styles.pipInfo}>
               <span className={styles.pipName}>{displayName}</span>
-              <span className={styles.pipTimerBadge}>{formatDuration(duration)}</span>
+              <span className={styles.pipDuration}>{formatDuration(duration)}</span>
             </div>
-            <div className={styles.pipActionsGroup}>
-              <button
-                className={styles.pipBtnIcon}
-                onClick={() => setMinimized(false)}
-                title="最大化回到通話視窗"
-              >
-                <Maximize2 size={14} />
-              </button>
-            </div>
+            <button
+              className={styles.pipMaximizeBtn}
+              onClick={() => setMinimized(false)}
+              title="最大化回到通話主視窗"
+            >
+              <Maximize2 size={14} />
+            </button>
           </div>
 
-          {/* PiP 影像主體 */}
+          {/* 視訊畫面或 Avatar */}
           <div className={styles.pipBody} onClick={() => setMinimized(false)} style={{ cursor: 'pointer' }}>
             {isRemoteVideoActive ? (
               <video ref={pipVideoRef} autoPlay playsInline className={styles.pipVideoElement} />
             ) : (
-              <Avatar src={displayAvatar} name={displayName} size={64} />
+              <div className={isRemoteSpeaking ? styles.speakingGlowAvatar : ''}>
+                <Avatar src={displayAvatar} name={displayName} size={64} />
+              </div>
             )}
           </div>
 
@@ -245,7 +255,7 @@ export const CallModal: React.FC = () => {
               ref={callContentRef}
               className={`${styles.container} ${callType === 'video' ? styles.containerVideo : ''}`}
             >
-              {/* 頂部視窗控制工具列 */}
+              {/* 頂部視窗控制工具列 (僅保留最小化與獨立視窗，0 多餘X按鈕) */}
               <div className={styles.windowActionsBar}>
                 <button
                   className={styles.windowActionBtn}
@@ -271,122 +281,93 @@ export const CallModal: React.FC = () => {
                   <div className={styles.header}>
                     <h3 className={styles.title}>{displayName}</h3>
                     <div className={styles.status}>
-                      <span className={styles.statusDot} />
+                      <span className={styles.statusDotConnected} />
                       <span>通話中 · {formatDuration(duration)}</span>
                     </div>
                   </div>
 
                   <div className={styles.avatarSection}>
-                    <div className={styles.avatarRing} />
-                    <div className={`${styles.avatarRing} ${styles.avatarRing2}`} />
-                    <Avatar src={displayAvatar} name={displayName} size={110} />
+                    <div className={`${styles.avatarRing} ${isRemoteSpeaking ? styles.avatarRingSpeaking : ''}`} />
+                    <div className={`${styles.avatarRing} ${styles.avatarRing2} ${isRemoteSpeaking ? styles.avatarRingSpeaking : ''}`} />
+                    <div className={isRemoteSpeaking ? styles.speakingGlowAvatar : ''}>
+                      <Avatar src={displayAvatar} name={displayName} size={96} />
+                    </div>
                   </div>
 
                   <div className={styles.controls}>
                     <button
-                      className={`${styles.btnControl} ${isMuted ? styles.btnControlActive : ''}`}
+                      className={`${styles.btnControl} ${isMuted ? styles.btnControlMuted : ''}`}
                       onClick={toggleAudio}
                       title={isMuted ? '取消靜音' : '靜音'}
                     >
                       {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
                     </button>
-
-                    <button
-                      className={`${styles.btnControl} ${isVideoOff ? styles.btnControlActive : ''}`}
-                      onClick={toggleVideo}
-                      title={isVideoOff ? '開啟鏡頭' : '關閉鏡頭'}
-                    >
-                      {isVideoOff ? <VideoOff size={22} /> : <Video size={22} />}
-                    </button>
-
-                    <button className={styles.btnReject} onClick={() => endCall()} title="掛斷">
-                      <PhoneOff size={28} />
+                    <button className={styles.btnHangup} onClick={endCall} title="結束通話">
+                      <PhoneOff size={24} />
                     </button>
                   </div>
                 </>
               ) : (
                 /* 視訊通話佈局 */
-                <div className={styles.videoViewport}>
-                  {/* 遠端主視訊畫面 */}
-                  <video
-                    ref={remoteVideoRef}
-                    autoPlay
-                    playsInline
-                    className={styles.remoteVideo}
-                    style={{ display: isRemoteVideoActive ? 'block' : 'none' }}
-                  />
-
-                  {/* 遠端關閉鏡頭時呈現 Avatar */}
-                  {!isRemoteVideoActive && (
-                    <div className={styles.remoteVideoOff}>
-                      <Avatar src={displayAvatar} name={displayName} size={110} />
-                      <div className={styles.remoteVideoOffTip}>
-                        <VideoOff size={16} />
-                        <span>對方已關閉鏡頭</span>
+                <div className={styles.videoStage}>
+                  {isRemoteVideoActive ? (
+                    <video ref={remoteVideoRef} autoPlay playsInline className={styles.remoteVideo} />
+                  ) : (
+                    <div className={styles.videoPlaceholder}>
+                      <div className={isRemoteSpeaking ? styles.speakingGlowAvatar : ''}>
+                        <Avatar src={displayAvatar} name={displayName} size={88} />
                       </div>
+                      <span className={styles.videoPlaceholderText}>{displayName} 已關閉鏡頭</span>
                     </div>
                   )}
 
-                  {/* 本地畫中畫 (PiP)：鏡頭開啟或顯示個人 Avatar */}
-                  <video
-                    ref={localVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className={styles.localVideoPip}
-                    style={{ display: !isVideoOff ? 'block' : 'none' }}
-                  />
-                  {isVideoOff && (
-                    <div className={`${styles.localVideoPip} ${styles.localVideoPipOff}`}>
-                      <Avatar src={myAvatar} name={myName} size={54} />
+                  {!isVideoOff && (
+                    <div className={styles.localVideoWrapper}>
+                      <video ref={localVideoRef} autoPlay playsInline muted className={styles.localVideo} />
+                      <span className={styles.localVideoBadge}>{myName} (您)</span>
                     </div>
                   )}
 
-                  {/* 頂部資訊覆籤 */}
-                  <div className={styles.videoOverlayHeader}>
-                    <span className={styles.title}>{displayName}</span>
-                    <div className={styles.status}>
-                      <span className={styles.statusDot} />
-                      <span>{formatDuration(duration)}</span>
-                    </div>
+                  <div className={styles.videoOverlayInfo}>
+                    <span className={styles.videoPeerName}>{displayName}</span>
+                    <span className={styles.videoTimerBadge}>{formatDuration(duration)}</span>
                   </div>
 
-                  {/* 底部浮動控制列 */}
-                  <div className={`${styles.controls} ${styles.videoControlsOverlay}`}>
+                  <div className={styles.videoControls}>
                     <button
-                      className={`${styles.btnControl} ${isMuted ? styles.btnControlActive : ''}`}
+                      className={`${styles.btnControl} ${isMuted ? styles.btnControlMuted : ''}`}
                       onClick={toggleAudio}
                       title={isMuted ? '取消靜音' : '靜音'}
                     >
-                      {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
+                      {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
                     </button>
 
                     <button
-                      className={`${styles.btnControl} ${isVideoOff ? styles.btnControlActive : ''}`}
+                      className={`${styles.btnControl} ${isVideoOff ? styles.btnControlMuted : ''}`}
                       onClick={toggleVideo}
                       title={isVideoOff ? '開啟鏡頭' : '關閉鏡頭'}
                     >
-                      {isVideoOff ? <VideoOff size={22} /> : <Video size={22} />}
+                      {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
                     </button>
 
-                    <button className={styles.btnReject} onClick={() => endCall()} title="掛斷">
-                      <PhoneOff size={28} />
+                    <button className={styles.btnHangup} onClick={endCall} title="結束通話">
+                      <PhoneOff size={22} />
                     </button>
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            /* 撥號中 / 來電響鈴 Viewport */
+            /* 撥號中 (calling) 或 來電中 (incoming) Viewport */
             <div className={styles.container}>
               <div className={styles.header}>
                 <h3 className={styles.title}>{displayName}</h3>
                 <div className={styles.status}>
-                  <span className={`${styles.statusDot} ${styles.statusDotCalling}`} />
+                  <span className={styles.statusDotCalling} />
                   <span>
-                    {callState === 'calling' && '正在撥號連線中...'}
-                    {callState === 'incoming' && `來電中 (${callType === 'video' ? '視訊通話' : '語音通話'})`}
-                    {callState === 'ended' && '通話已結束'}
+                    {callState === 'calling'
+                      ? `正在等待對方接聽 (${callType === 'video' ? '視訊' : '語音'})...`
+                      : `邀請您進行 ${callType === 'video' ? '視訊' : '語音'} 通話...`}
                   </span>
                 </div>
               </div>
@@ -394,24 +375,18 @@ export const CallModal: React.FC = () => {
               <div className={styles.avatarSection}>
                 <div className={styles.avatarRing} />
                 <div className={`${styles.avatarRing} ${styles.avatarRing2}`} />
-                <Avatar src={displayAvatar} name={displayName} size={110} />
+                <Avatar src={displayAvatar} name={displayName} size={96} />
               </div>
 
               <div className={styles.controls}>
-                {callState === 'incoming' ? (
-                  <>
-                    <button className={styles.btnAccept} onClick={handleAcceptCall} title="接聽">
-                      <PhoneIncoming size={30} />
-                    </button>
-                    <button className={styles.btnReject} onClick={rejectCall} title="拒絕">
-                      <PhoneOff size={30} />
-                    </button>
-                  </>
-                ) : (
-                  <button className={styles.btnReject} onClick={() => endCall()} title="掛斷">
-                    <PhoneOff size={28} />
+                {callState === 'incoming' && (
+                  <button className={styles.btnAccept} onClick={handleAcceptCall} title="接聽通話">
+                    <Phone size={24} />
                   </button>
                 )}
+                <button className={styles.btnHangup} onClick={endCall} title="拒絕 / 掛斷通話">
+                  <PhoneOff size={24} />
+                </button>
               </div>
             </div>
           )}

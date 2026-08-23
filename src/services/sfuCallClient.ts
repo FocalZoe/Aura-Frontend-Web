@@ -4,7 +4,7 @@ import { websocketService } from './websocketService';
 
 export interface SFUClientEvents {
   onLocalStream?: (stream: MediaStream) => void;
-  onRemoteTrack?: (track: MediaStreamTrack, stream: MediaStream) => void;
+  onRemoteTrack?: (track: MediaStreamTrack, stream: MediaStream, ownerUserId?: number) => void;
   onScreenShareStream?: (stream: MediaStream | null) => void;
   onSpeakingStateChange?: (speakingUserIds: number[]) => void;
   onError?: (error: Error) => void;
@@ -102,10 +102,17 @@ export class SFUCallClient {
 
     // 接收 SFU 轉發過來的遠端軌道 (Subscribe)
     this.peerConnection.ontrack = (event) => {
-      console.log('[SFU Client] Received remote track:', event.track.kind, event.track.id);
       const stream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream([event.track]);
+      let ownerUserId: number | undefined = undefined;
+      if (stream.id) {
+        const match = stream.id.match(/^user_(\d+)$/);
+        if (match) {
+          ownerUserId = Number(match[1]);
+        }
+      }
+      console.log('[SFU Client] Received remote track:', event.track.kind, 'streamId:', stream.id, 'ownerUserId:', ownerUserId);
       if (this.events.onRemoteTrack) {
-        this.events.onRemoteTrack(event.track, stream);
+        this.events.onRemoteTrack(event.track, stream, ownerUserId);
       }
     };
 

@@ -1,4 +1,4 @@
-// Context: Zustand 全域群組 SFU 音視訊通話狀態機 (音效合成器、PiP 子母畫面、遠端軌道關聯修復與開始/結束歷史紀錄)
+// Context: Zustand 全域群組 SFU 音視訊通話狀態機 (音效合成器、PiP 子母畫面、VAD 說話者綠色發光邊框檢測、精準屬主映射與歷史紀錄)
 
 import { create } from 'zustand';
 import { SFUCallClient } from '../services/sfuCallClient';
@@ -6,6 +6,7 @@ import { websocketService } from '../services/websocketService';
 import { useAuthStore } from './useAuthStore';
 import { useChatStore } from './useChatStore';
 import { callSoundSynthesizer } from '../utils/CallSoundSynthesizer';
+import { VoiceActivityDetector } from '../utils/VoiceActivityDetector';
 
 export type GroupCallType = 'audio' | 'video';
 export type GroupCallLayoutMode = 'grid' | 'focus';
@@ -58,6 +59,13 @@ export interface GroupCallStore {
 }
 
 let timerInterval: ReturnType<typeof setInterval> | null = null;
+const vadInstances: Map<number, VoiceActivityDetector> = new Map();
+
+// Context: 清理所有 VAD 語音監聽器
+const destroyAllVAD = () => {
+  vadInstances.forEach((vad) => vad.destroy());
+  vadInstances.clear();
+};
 
 // Context: 群組通話紀錄訊息推送
 const sendGroupCallMessage = (groupId: number, content: string) => {
@@ -164,6 +172,7 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
     const isSelfInitiator = selfUser && Number(selfUser.id) === Number(initiatorId);
 
     callSoundSynthesizer.playLeave();
+    destroyAllVAD();
 
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -199,6 +208,7 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
       remoteAudioTracks: [],
       screenShareStream: null,
       isScreenSharing: false,
+      speakingUserIds: [],
       pinnedUserId: null,
       duration: 0,
     });
@@ -282,32 +292,56 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
     if (currentClient) {
       currentClient.close();
     }
+    destroyAllVAD();
 
     callSoundSynthesizer.playJoin();
 
     const client = new SFUCallClient(groupId, {
       onLocalStream: (stream) => {
         set({ localStream: stream });
+
+        // 啟動本機語音活動檢測 (VAD)
+        const selfUser = useAuthStore.getState().user;
+        const selfId = selfUser ? Number(selfUser.id) : 0;
+        if (selfId && !vadInstances.has(selfId)) {
+          const vad = new VoiceActivityDetector(stream, (speaking) => {
+            const current = new Set(get().speakingUserIds);
+            if (speaking) current.add(selfId);
+            else current.delete(selfId);
+            set({ speakingUserIds: Array.from(current) });
+          });
+          vadInstances.set(selfId, vad);
+        }
       },
-      onRemoteTrack: (track, stream) => {
-        console.log('[SFU Store] Received remote track:', track.kind, track.id, 'streamId:', stream.id);
+      onRemoteTrack: (track, stream, ownerUserId) => {
+        console.log('[SFU Store] Received remote track:', track.kind, track.id, 'streamId:', stream.id, 'ownerUserId:', ownerUserId);
+
+        const selfUser = useAuthStore.getState().user;
+        const selfId = selfUser ? Number(selfUser.id) : 0;
+        const otherParticipants = get().participants.filter((uid) => uid !== selfId);
+        const targetUserId = ownerUserId || otherParticipants[0] || (Date.now() as any);
 
         if (track.kind === 'audio') {
           // 將音訊軌道加入全域音訊播放池
           const currentAudioTracks = [...get().remoteAudioTracks, track];
           set({ remoteAudioTracks: currentAudioTracks });
+
+          // 啟動遠端語音活動檢測 (VAD) 驅動說話者翡翠綠邊框
+          if (targetUserId && !vadInstances.has(targetUserId)) {
+            const audioStream = new MediaStream([track]);
+            const vad = new VoiceActivityDetector(audioStream, (speaking) => {
+              const current = new Set(get().speakingUserIds);
+              if (speaking) current.add(targetUserId);
+              else current.delete(targetUserId);
+              set({ speakingUserIds: Array.from(current) });
+            });
+            vadInstances.set(targetUserId, vad);
+          }
         }
 
         // 關聯遠端視訊 Stream
-        const selfUser = useAuthStore.getState().user;
-        const selfId = selfUser ? Number(selfUser.id) : 0;
         const currentRemotes = { ...get().remoteStreams };
-        const otherParticipants = get().participants.filter((uid) => uid !== selfId);
-
-        // 若 stream 具備明確標識或分配給未指派成員
-        const targetUserId = otherParticipants[0] || (Date.now() as any);
         currentRemotes[targetUserId] = stream;
-
         set({ remoteStreams: currentRemotes });
       },
       onScreenShareStream: (screenStream) => {
@@ -347,12 +381,22 @@ export const useGroupCallStore = create<GroupCallStore>((set, get) => ({
 
   onUserLeft: (groupId: number, userId: number, remainingCount: number, participants: number[]) => {
     callSoundSynthesizer.playLeave();
+
+    // 清理該使用者的 VAD 實例
+    if (vadInstances.has(userId)) {
+      vadInstances.get(userId)?.destroy();
+      vadInstances.delete(userId);
+    }
+
     const remotes = { ...get().remoteStreams };
     delete remotes[userId];
+
+    const currentSpeaking = get().speakingUserIds.filter((id) => id !== userId);
 
     set({
       participants,
       remoteStreams: remotes,
+      speakingUserIds: currentSpeaking,
       pinnedUserId: get().pinnedUserId === userId ? null : get().pinnedUserId,
       isCallActive: remainingCount > 0,
     });

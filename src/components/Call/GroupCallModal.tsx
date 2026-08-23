@@ -1,4 +1,4 @@
-// Context: Discord 級別群組 SFU 音視訊通話主視窗 (全域音訊播放池、Avatar 破圖徹底修復、PiP 懸浮子母畫面、Pop-out 獨立新視窗與全站一致深色毛玻璃)
+// Context: Discord 級別群組 SFU 音視訊通話主視窗 (全域音訊播放池、VAD 說話者綠色發光邊框、Avatar 核心元件、16:9 防抖動網格、PiP 懸浮子母畫面、Document PiP 獨立新視窗與無多餘X按鈕)
 
 import React, { useEffect, useRef } from 'react';
 import {
@@ -15,7 +15,6 @@ import {
   PhoneOff,
   Pin,
   Users,
-  X,
 } from 'lucide-react';
 import { useGroupCallStore } from '../../stores/useGroupCallStore';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -38,7 +37,7 @@ const RemoteAudioPlayer: React.FC<{ track: MediaStreamTrack }> = ({ track }) => 
   return <audio ref={audioRef} autoPlay playsInline style={{ display: 'none' }} />;
 };
 
-// 單個視訊/音訊串流卡片組件
+// 單個視訊/音訊串流卡片組件 (16:9 固定長寬比防抖動)
 interface StreamCardProps {
   userId: number;
   isSelf: boolean;
@@ -81,15 +80,18 @@ const ParticipantCard: React.FC<StreamCardProps> = ({
       onClick={onClick}
       style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
-      {hasVideo ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted={isSelf} // 自己的聲音靜音避免本機回音
-          className={styles.videoElement}
-        />
-      ) : (
+      {/* 視訊畫面 (解碼渲染) */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={isSelf} // 自己的聲音靜音避免本機回音
+        className={styles.videoElement}
+        style={{ display: hasVideo ? 'block' : 'none' }}
+      />
+
+      {/* 鏡頭關閉或無視訊時呈現 Avatar */}
+      {!hasVideo && (
         <div className={styles.avatarWrapper}>
           <Avatar src={avatar} name={name} fallbackSeed={name} size={68} />
         </div>
@@ -152,7 +154,7 @@ export const GroupCallModal: React.FC = () => {
   const { user } = useAuthStore();
   const { friends, getUserDisplayName } = useChatStore();
 
-  // 若未在通話中則不渲染
+  // 若未在通話中則不渲染 (遵守 Rules of Hooks 放在 Hooks 宣告之後)
   if (!isJoined) {
     return null;
   }
@@ -302,7 +304,12 @@ export const GroupCallModal: React.FC = () => {
           >
             {allParticipantIds.slice(0, 4).map((uid) => {
               const info = getMemberInfo(uid);
-              return <Avatar key={uid} src={info.avatar} name={info.name} size={42} />;
+              const isSpeaking = speakingUserIds.includes(uid);
+              return (
+                <div key={uid} className={isSpeaking ? styles.speakingGlow : ''} style={{ borderRadius: '50%' }}>
+                  <Avatar src={info.avatar} name={info.name} size={42} />
+                </div>
+              );
             })}
             {allParticipantIds.length > 4 && (
               <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>+{allParticipantIds.length - 4}</span>
@@ -340,168 +347,160 @@ export const GroupCallModal: React.FC = () => {
         /* 情況 B：正常主視窗 Modal */
         <div ref={groupHostRef} style={{ display: isPopout ? 'none' : 'contents' }}>
           <div ref={groupCallContentRef} className={styles.modalBackdrop}>
-            {/* 頂部標頭 */}
+            {/* 頂部標頭 (僅保留最小化與獨立視窗，0 多餘X按鈕) */}
             <div className={styles.modalHeader}>
-            <div className={styles.groupInfo}>
-              <h3 className={styles.groupTitle}>{activeGroupName || '群組通話'}</h3>
-              <div className={styles.participantBadge}>
-                <Users size={14} />
-                <span>{allParticipantIds.length} 人在線</span>
+              <div className={styles.groupInfo}>
+                <h3 className={styles.groupTitle}>{activeGroupName || '群組通話'}</h3>
+                <div className={styles.participantBadge}>
+                  <Users size={14} />
+                  <span>{allParticipantIds.length} 人在線</span>
+                </div>
+                <span className={styles.timer}>{formatTime(duration)}</span>
               </div>
-              <span className={styles.timer}>{formatTime(duration)}</span>
+
+              <div className={styles.headerActions}>
+                <button
+                  className={styles.headerActionBtn}
+                  onClick={() => setMinimized(true)}
+                  title="最小化至子母畫面 (PiP)"
+                  aria-label="最小化至子母畫面"
+                >
+                  <Minimize2 size={16} />
+                </button>
+                <button
+                  className={styles.headerActionBtn}
+                  onClick={handlePopout}
+                  title="彈出獨立新視窗"
+                  aria-label="彈出獨立新視窗"
+                >
+                  <ExternalLink size={16} />
+                </button>
+              </div>
             </div>
 
-            <div className={styles.headerActions}>
-              <button
-                className={styles.headerActionBtn}
-                onClick={() => setMinimized(true)}
-                title="最小化至子母畫面 (PiP)"
-                aria-label="最小化至子母畫面"
-              >
-                <Minimize2 size={16} />
-              </button>
-              <button
-                className={styles.headerActionBtn}
-                onClick={handlePopout}
-                title="彈出獨立新視窗"
-                aria-label="彈出獨立新視窗"
-              >
-                <ExternalLink size={16} />
-              </button>
-              <button
-                className={styles.headerActionBtn}
-                onClick={leaveGroupCall}
-                title="離開通話"
-                aria-label="離開通話"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-
-          {/* 中間舞台視圖 */}
-          <div className={styles.stageContainer}>
-            {layoutMode === 'focus' && allParticipantIds.length > 1 ? (
-              /* 焦點主舞台排版 (Focus Mode) */
-              <div className={styles.focusLayout}>
-                <div className={styles.mainStage}>
-                  <ParticipantCard
-                    userId={pinnedMemberId}
-                    isSelf={pinnedMemberId === selfId}
-                    stream={pinnedStream}
-                    name={pinnedMember.name}
-                    avatar={pinnedMember.avatar}
-                    isMuted={pinnedMediaState.isMuted}
-                    isVideoOff={pinnedMediaState.isVideoOff}
-                    isPinned={true}
-                    isSpeaking={speakingUserIds.includes(pinnedMemberId)}
-                    onPinToggle={() => setPinnedUser(null)}
-                  />
-                </div>
-
-                {/* 底部成員橫排縮圖列 (Filmstrip) */}
-                <div className={styles.filmstrip}>
-                  {allParticipantIds
-                    .filter((uid) => uid !== pinnedMemberId)
-                    .map((uid) => {
-                      const info = getMemberInfo(uid);
-                      const stream = uid === selfId ? localStream : remoteStreams[uid];
-                      const media =
-                        uid === selfId
-                          ? { isMuted, isVideoOff }
-                          : (participantMediaStates[uid] || { isMuted: false, isVideoOff: false });
-
-                      return (
-                        <div key={uid} className={styles.filmstripCard}>
-                          <ParticipantCard
-                            userId={uid}
-                            isSelf={uid === selfId}
-                            stream={stream}
-                            name={info.name}
-                            avatar={info.avatar}
-                            isMuted={media.isMuted}
-                            isVideoOff={media.isVideoOff}
-                            isPinned={false}
-                            isSpeaking={speakingUserIds.includes(uid)}
-                            onPinToggle={() => setPinnedUser(uid)}
-                            onClick={() => setPinnedUser(uid)}
-                          />
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            ) : (
-              /* 均分網格排版 (Grid Mode) */
-              <div className={`${styles.gridLayout} ${getGridClass(allParticipantIds.length)}`}>
-                {allParticipantIds.map((uid) => {
-                  const info = getMemberInfo(uid);
-                  const stream = uid === selfId ? (screenShareStream || localStream) : remoteStreams[uid];
-                  const media =
-                    uid === selfId
-                      ? { isMuted, isVideoOff }
-                      : (participantMediaStates[uid] || { isMuted: false, isVideoOff: false });
-
-                  return (
+            {/* 中間舞台視圖 */}
+            <div className={styles.stageContainer}>
+              {layoutMode === 'focus' && allParticipantIds.length > 1 ? (
+                /* 焦點主舞台排版 (Focus Mode) */
+                <div className={styles.focusLayout}>
+                  <div className={styles.mainStage}>
                     <ParticipantCard
-                      key={uid}
-                      userId={uid}
-                      isSelf={uid === selfId}
-                      stream={stream}
-                      name={info.name}
-                      avatar={info.avatar}
-                      isMuted={media.isMuted}
-                      isVideoOff={media.isVideoOff}
-                      isPinned={false}
-                      isSpeaking={speakingUserIds.includes(uid)}
-                      onPinToggle={() => setPinnedUser(uid)}
+                      userId={pinnedMemberId}
+                      isSelf={pinnedMemberId === selfId}
+                      stream={pinnedStream}
+                      name={pinnedMember.name}
+                      avatar={pinnedMember.avatar}
+                      isMuted={pinnedMediaState.isMuted}
+                      isVideoOff={pinnedMediaState.isVideoOff}
+                      isPinned={true}
+                      isSpeaking={speakingUserIds.includes(pinnedMemberId)}
+                      onPinToggle={() => setPinnedUser(null)}
                     />
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                  </div>
 
-          {/* 底部浮動控制列 */}
-          <div className={styles.controlsBar}>
-            <button
-              className={`${styles.btnAction} ${isMuted ? styles.btnActionActive : ''}`}
-              onClick={toggleAudio}
-              title={isMuted ? '取消靜音' : '靜音'}
-            >
-              {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
-            </button>
+                  {/* 底部成員橫排縮圖列 (Filmstrip) */}
+                  <div className={styles.filmstrip}>
+                    {allParticipantIds
+                      .filter((uid) => uid !== pinnedMemberId)
+                      .map((uid) => {
+                        const info = getMemberInfo(uid);
+                        const stream = uid === selfId ? localStream : remoteStreams[uid];
+                        const media =
+                          uid === selfId
+                            ? { isMuted, isVideoOff }
+                            : (participantMediaStates[uid] || { isMuted: false, isVideoOff: false });
 
-            <button
-              className={`${styles.btnAction} ${isVideoOff ? styles.btnActionActive : ''}`}
-              onClick={toggleVideo}
-              title={isVideoOff ? '開啟鏡頭' : '關閉鏡頭'}
-            >
-              {isVideoOff ? <VideoOff size={20} /> : <VideoIcon size={20} />}
-            </button>
+                        return (
+                          <div key={uid} className={styles.filmstripCard}>
+                            <ParticipantCard
+                              userId={uid}
+                              isSelf={uid === selfId}
+                              stream={stream}
+                              name={info.name}
+                              avatar={info.avatar}
+                              isMuted={media.isMuted}
+                              isVideoOff={media.isVideoOff}
+                              isPinned={false}
+                              isSpeaking={speakingUserIds.includes(uid)}
+                              onPinToggle={() => setPinnedUser(uid)}
+                              onClick={() => setPinnedUser(uid)}
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              ) : (
+                /* 均分網格排版 (Grid Mode) */
+                <div className={`${styles.gridLayout} ${getGridClass(allParticipantIds.length)}`}>
+                  {allParticipantIds.map((uid) => {
+                    const info = getMemberInfo(uid);
+                    const stream = uid === selfId ? (screenShareStream || localStream) : remoteStreams[uid];
+                    const media =
+                      uid === selfId
+                        ? { isMuted, isVideoOff }
+                        : (participantMediaStates[uid] || { isMuted: false, isVideoOff: false });
 
-            <button
-              className={`${styles.btnAction} ${isScreenSharing ? styles.btnActionActiveScreen : ''}`}
-              onClick={toggleScreenShare}
-              title={isScreenSharing ? '停止螢幕分享' : '螢幕分享'}
-            >
-              {isScreenSharing ? <MonitorOff size={20} /> : <Monitor size={20} />}
-            </button>
+                    return (
+                      <ParticipantCard
+                        key={uid}
+                        userId={uid}
+                        isSelf={uid === selfId}
+                        stream={stream}
+                        name={info.name}
+                        avatar={info.avatar}
+                        isMuted={media.isMuted}
+                        isVideoOff={media.isVideoOff}
+                        isPinned={false}
+                        isSpeaking={speakingUserIds.includes(uid)}
+                        onPinToggle={() => setPinnedUser(uid)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
-            <button
-              className={styles.btnAction}
-              onClick={toggleLayoutMode}
-              title={layoutMode === 'grid' ? '切換至焦點排版' : '切換至網格排版'}
-            >
-              <LayoutGrid size={20} />
-            </button>
+            {/* 底部浮動控制列 */}
+            <div className={styles.controlsBar}>
+              <button
+                className={`${styles.btnAction} ${isMuted ? styles.btnActionActive : ''}`}
+                onClick={toggleAudio}
+                title={isMuted ? '取消靜音' : '靜音'}
+              >
+                {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+              </button>
 
-            <button className={styles.btnLeave} onClick={leaveGroupCall} title="離開通話">
-              <PhoneOff size={20} />
-            </button>
+              <button
+                className={`${styles.btnAction} ${isVideoOff ? styles.btnActionActive : ''}`}
+                onClick={toggleVideo}
+                title={isVideoOff ? '開啟鏡頭' : '關閉鏡頭'}
+              >
+                {isVideoOff ? <VideoOff size={20} /> : <VideoIcon size={20} />}
+              </button>
+
+              <button
+                className={`${styles.btnAction} ${isScreenSharing ? styles.btnActionActiveScreen : ''}`}
+                onClick={toggleScreenShare}
+                title={isScreenSharing ? '停止螢幕分享' : '螢幕分享'}
+              >
+                {isScreenSharing ? <MonitorOff size={20} /> : <Monitor size={20} />}
+              </button>
+
+              <button
+                className={styles.btnAction}
+                onClick={toggleLayoutMode}
+                title={layoutMode === 'grid' ? '切換至焦點排版' : '切換至網格排版'}
+              >
+                <LayoutGrid size={20} />
+              </button>
+
+              <button className={styles.btnLeave} onClick={leaveGroupCall} title="離開通話">
+                <PhoneOff size={20} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
       )}
     </>
   );
