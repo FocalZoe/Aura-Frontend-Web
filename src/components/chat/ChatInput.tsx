@@ -52,12 +52,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     return () => window.removeEventListener('mousedown', handleClickOutside);
   }, [showPlusMenu]);
 
-  // 監聽 inputText 變更自動調整 textarea 高度 (42px ~ 140px)
+  // 監聽 inputText 變更自動調整 textarea 高度，滿 6 行（含）以上才顯示 scrollbar
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.max(42, Math.min(scrollHeight, 140))}px`;
+      // 6 行高度約為 156px (單行約 24px + padding 20px)
+      const maxHeight = 156;
+      if (scrollHeight > maxHeight) {
+        textareaRef.current.style.height = `${maxHeight}px`;
+        textareaRef.current.style.overflowY = 'auto';
+      } else {
+        textareaRef.current.style.height = `${Math.max(42, scrollHeight)}px`;
+        textareaRef.current.style.overflowY = 'hidden';
+      }
     }
   }, [inputText]);
 

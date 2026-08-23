@@ -669,7 +669,7 @@
 .chatInput {
   flex: 1;
   min-height: 42px;
-  max-height: 140px;
+  max-height: 156px;
   padding: 10px 16px;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
@@ -679,7 +679,7 @@
   line-height: 1.45;
   font-family: inherit;
   resize: none;
-  overflow-y: auto;
+  overflow-y: hidden;
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
