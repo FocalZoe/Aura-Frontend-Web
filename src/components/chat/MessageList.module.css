@@ -9,6 +9,16 @@
   gap: 6px;
 }
 
+/* 截圖模式專屬容器：gap 設為 0，徹底消除高亮連貫縫隙 */
+.chatMessagesScreenshotMode {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0 !important;
+}
+
 /* 現代深色玻璃擬態骨架屏 (Shimmer 流光動畫) */
 .chatSkeletonList {
   flex: 1;

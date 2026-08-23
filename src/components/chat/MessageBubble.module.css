@@ -16,10 +16,10 @@
   justify-content: flex-start;
 }
 
-/* 截圖模式專屬行樣式：極致緊湊行間距，永遠以整行寬度對齊最右側勾選框 */
+/* 截圖模式專屬行樣式：固定 padding 徹底消除重排抖動，右側訊息完美靠右 */
 .msgRowScreenshotMode {
   cursor: pointer;
-  padding: 2px 8px;
+  padding: 4px 10px;
   display: flex;
   align-items: center;
   width: 100%;
@@ -30,53 +30,52 @@
   margin-left: auto;
 }
 
+.msgRowScreenshotMode.msgRowOther .screenshotCheckboxRight {
+  margin-left: auto;
+}
+
+.msgRowScreenshotMode.msgRowSelf .screenshotCheckboxRight {
+  margin-left: 12px;
+}
+
 .msgRowScreenshotMode:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 
-/* 連貫一體化高亮背景 (緊湊無縫銜接) */
+/* 連貫一體化高亮背景 (在 gap: 0 下無縫相連且 0 抖動) */
 .msgRowSelected {
-  background: rgba(59, 130, 246, 0.12) !important;
+  background: rgba(59, 130, 246, 0.15) !important;
   z-index: 2;
 }
 
 .selectedSingle {
-  border-radius: 8px !important;
+  border-radius: 10px !important;
 }
 
 .selectedFirst {
-  border-top-left-radius: 8px !important;
-  border-top-right-radius: 8px !important;
+  border-top-left-radius: 10px !important;
+  border-top-right-radius: 10px !important;
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
-  margin-bottom: -1px !important;
-  padding-bottom: 3px !important;
 }
 
 .selectedMiddle {
   border-radius: 0 !important;
-  margin-top: -1px !important;
-  margin-bottom: -1px !important;
-  padding-top: 3px !important;
-  padding-bottom: 3px !important;
 }
 
 .selectedLast {
-  border-bottom-left-radius: 8px !important;
-  border-bottom-right-radius: 8px !important;
+  border-bottom-left-radius: 10px !important;
+  border-bottom-right-radius: 10px !important;
   border-top-left-radius: 0 !important;
   border-top-right-radius: 0 !important;
-  margin-top: -1px !important;
-  padding-top: 3px !important;
 }
 
-/* 截圖模式 Checkbox：永遠釘死在聊天室最右側邊界 */
+/* 截圖模式 Checkbox：釘死在整行最右側 */
 .screenshotCheckboxRight {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: auto;
-  padding-left: 16px;
+  padding-left: 8px;
   padding-right: 4px;
   flex-shrink: 0;
   cursor: pointer;

@@ -65,8 +65,8 @@ export const LinkEmbed: React.FC<LinkEmbedProps> = ({ url }) => {
     }
 
     return (
-      <div className={styles.youtubeCardPreview} onClick={() => setShowIframe(true)}>
-        <div className={styles.youtubeThumbWrapper}>
+      <div className={styles.youtubeEmbedCard} onClick={() => setShowIframe(true)}>
+        <div className={styles.youtubeThumbBox}>
           <img src={thumbnailUrl} alt="YouTube Video Thumbnail" className={styles.youtubeThumbImg} />
           <div className={styles.youtubePlayOverlay}>
             <PlayCircle size={36} />

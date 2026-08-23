@@ -211,8 +211,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     return (
       <div className={styles.msgContentWrapper}>
         <div className={styles.msgTextBody}>{renderTextWithLinks(content)}</div>
-        {detectedUrls.length > 0 && !isSelf && (
-          <div className={styles.msgEmbedsContainer}>
+        {detectedUrls.length > 0 && !isRecalled && (
+          <div className={styles.linkEmbedList}>
             {detectedUrls.map((url, i) => (
               <LinkEmbed key={i} url={url} />
             ))}

@@ -107,7 +107,11 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <div ref={containerRef} onScroll={handleScroll} className={styles.chatMessages}>
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className={isScreenshotMode ? styles.chatMessagesScreenshotMode : styles.chatMessages}
+    >
       {/* 頂部向上加載指示器 */}
       {loadingMore && (
         <div style={{ textAlign: 'center', padding: '8px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>

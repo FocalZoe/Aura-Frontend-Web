@@ -581,6 +581,9 @@ export const ChatWindow: React.FC = () => {
           currentUserId={user?.id || 0}
           partnerUser={activeChatUser}
           groupName={activeGroup?.name}
+          groupId={activeGroup?.id}
+          isGroup={!!activeGroup}
+          groupMembersMap={groupMembersMap}
           isAnonymous={isAnonymousScreenshot}
           onClose={() => {
             setShowScreenshotModal(false);
