@@ -605,17 +605,24 @@ export const ChatWindow: React.FC = () => {
         />
       )}
 
-      {/* Emoji 表情選擇器彈窗 */}
+      {/* Emoji 表情選擇器彈窗 (支援表情 Emoji / 貼圖 Stickers / 表情貼 Custom 三大系統) */}
       {emojiPickerState && (
         <EmojiPickerPopover
           x={emojiPickerState.x}
           y={emojiPickerState.y}
           isOpen={!!emojiPickerState}
+          mode={emojiPickerState.isInputTarget ? 'input' : 'reaction'}
           onSelectEmoji={(emoji) => {
             if (emojiPickerState.isInputTarget) {
               setInputText((prev) => prev + emoji);
             } else if (emojiPickerState.message?.id) {
               handleReaction(emojiPickerState.message.id, emoji);
+            }
+            setEmojiPickerState(null);
+          }}
+          onSelectSticker={(sticker) => {
+            if (emojiPickerState.isInputTarget) {
+              setInputText((prev) => prev + sticker.emoji);
             }
             setEmojiPickerState(null);
           }}

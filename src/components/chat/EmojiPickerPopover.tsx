@@ -149,7 +149,7 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
   x,
   y,
   isOpen,
-  mode = 'reaction',
+  mode = 'input',
   onClose,
   onSelectEmoji,
   onSelectSticker,
