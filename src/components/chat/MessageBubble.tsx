@@ -1,10 +1,10 @@
 // Context: 訊息氣泡組件 (包含右鍵選單觸發、連續截圖勾選、收回提示、Emoji 膠囊、通話卡片與 Avatar 名片)
 import React, { useMemo } from 'react';
 import { Message, User } from '../../types';
-import { AlertCircle, Phone, PhoneOff, CheckCircle2, Circle } from 'lucide-react';
-import { LinkEmbed } from './LinkEmbed';
 import { Avatar } from '../common/Avatar';
 import { useChatStore } from '../../stores/useChatStore';
+import { LinkEmbed, isSafeUrl, isRichMediaUrl } from './LinkEmbed';
+import { AlertCircle, Phone, PhoneOff, CheckCircle2, Circle } from 'lucide-react';
 import styles from './MessageBubble.module.css';
 
 interface MessageBubbleProps {
@@ -110,13 +110,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
-  const extractUrls = (text: string): string[] => {
-    if (!text) return [];
-    const urlRegex = /(https?:\/\/[^\s]+)/gi;
-    const matches = text.match(urlRegex);
-    return matches ? Array.from(new Set(matches)) : [];
-  };
-
   const highlightText = (text: string) => {
     if (!highlightKeyword || !highlightKeyword.trim()) return text;
     const regex = new RegExp(`(${highlightKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
@@ -137,13 +130,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     const parts = text.split(urlRegex);
 
     return parts.map((part, index) => {
-      if (part.match(urlRegex)) {
+      if (part.match(urlRegex) && isSafeUrl(part)) {
         return (
           <a
             key={index}
             href={part}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener noreferrer nofollow"
             className={styles.msgInlineLink}
             onClick={(e) => e.stopPropagation()}
           >
@@ -154,6 +147,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       return highlightText(part);
     });
   };
+
+  const isPureRichMedia = useMemo(() => {
+    if (!msg.content || msg.filePayload || msg.is_recalled) return false;
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const matches = msg.content.match(urlRegex) || [];
+    if (matches.length === 0) return false;
+    const richUrls = matches.filter((u) => isRichMediaUrl(u));
+    if (richUrls.length === 0) return false;
+
+    let textWithout = msg.content;
+    richUrls.forEach((u) => {
+      textWithout = textWithout.replace(u, '');
+    });
+    return textWithout.trim() === '';
+  }, [msg.content, msg.filePayload, msg.is_recalled]);
 
   const renderMessageContent = (content: string) => {
     if (
@@ -206,14 +214,25 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       );
     }
 
-    const detectedUrls = extractUrls(content);
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const allUrls = content.match(urlRegex) || [];
+    const richMediaUrls = Array.from(new Set(allUrls.filter((u) => isRichMediaUrl(u))));
+
+    // 若包含 Rich Media Embed，隱藏該網址的生硬文字
+    let textToDisplay = content;
+    richMediaUrls.forEach((u) => {
+      textToDisplay = textToDisplay.replace(u, '');
+    });
+    textToDisplay = textToDisplay.trim();
 
     return (
       <div className={styles.msgContentWrapper}>
-        <div className={styles.msgTextBody}>{renderTextWithLinks(content)}</div>
-        {detectedUrls.length > 0 && !isRecalled && (
+        {textToDisplay ? (
+          <div className={styles.msgTextBody}>{renderTextWithLinks(textToDisplay)}</div>
+        ) : null}
+        {richMediaUrls.length > 0 && !isRecalled && (
           <div className={styles.linkEmbedList}>
-            {detectedUrls.map((url, i) => (
+            {richMediaUrls.map((url, i) => (
               <LinkEmbed key={i} url={url} />
             ))}
           </div>
@@ -225,7 +244,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const bubbleClasses = [
     styles.msgBubble,
     isSelf ? styles.msgBubbleSelf : styles.msgBubbleOther,
-    isIPFSPayload ? styles.msgBubbleImage : '',
+    (isIPFSPayload || isPureRichMedia) ? styles.msgBubbleImage : '',
     isError ? styles.msgBubbleError : '',
     isRecalled ? styles.recalledBubble : '',
   ]

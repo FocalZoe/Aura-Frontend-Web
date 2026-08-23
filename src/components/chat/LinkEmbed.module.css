@@ -1,17 +1,33 @@
-/* Context: LinkEmbed 專屬樣式模組 (支援 YouTube 影片嵌入卡片與一般網站 Favicon 預覽卡片) */
+/* Context: LinkEmbed 專屬樣式模組 (對齊 IPFS 卡片等級之深色玻璃擬態、微邊框與流暢動畫) */
 
 .youtubeEmbedCard {
-  margin-top: 6px;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  max-width: 380px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.youtubeEmbedCard:hover {
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.youtubeIframeWrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
 }
 
 .youtubeIframe {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 100%;
   border: none;
   display: block;
 }
@@ -22,6 +38,7 @@
   aspect-ratio: 16 / 9;
   cursor: pointer;
   overflow: hidden;
+  background: #090d16;
 }
 
 .youtubeThumbImg {
@@ -33,7 +50,7 @@
 }
 
 .youtubeThumbBox:hover .youtubeThumbImg {
-  transform: scale(1.03);
+  transform: scale(1.04);
 }
 
 .youtubePlayOverlay {
@@ -42,117 +59,62 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.3);
   color: #ffffff;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .youtubeThumbBox:hover .youtubePlayOverlay {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.playIcon {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+  transition: transform 0.2s ease;
+}
+
+.youtubeThumbBox:hover .playIcon {
+  transform: scale(1.1);
+  color: #ef4444;
 }
 
 .youtubeInfoRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .youtubeBadge {
   background: #ef4444;
-  color: #fff;
+  color: #ffffff;
   font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 4px;
+  letter-spacing: 0.5px;
 }
 
-.youtubeUrlText {
+.youtubeHintText {
   flex: 1;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
 }
 
 .linkExternalBtn {
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  padding: 2px;
-}
-
-.linkExternalBtn:hover {
-  color: var(--text-primary);
-}
-
-.linkEmbedCard {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 6px;
-  padding: 8px 12px;
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  text-decoration: none;
-  max-width: 380px;
-  transition: all 0.2s ease;
-}
-
-.linkEmbedCard:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
-}
-
-.linkFaviconBox {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #94a3b8);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
-.linkFaviconImg {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
-
-.linkGlobeIcon {
-  color: var(--text-muted);
-}
-
-.linkEmbedContent {
-  flex: 1;
-  min-width: 0;
-}
-
-.linkDomainName {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.linkFullUrl {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.linkExternalIcon {
-  color: var(--text-muted);
-  flex-shrink: 0;
+.linkExternalBtn:hover {
+  color: var(--text-primary, #ffffff);
+  background: rgba(255, 255, 255, 0.1);
 }
