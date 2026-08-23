@@ -44,19 +44,21 @@ export const PendingAttachmentsPreview: React.FC<PendingAttachmentsPreviewProps>
         if (item.isImage) {
           return (
             <div key={item.index} className={styles.imageCard}>
-              <img src={item.url} alt={item.file.name} className={styles.imageThumb} />
-              {files.length > 1 && (
-                <span className={styles.imageBadge}>
-                  {item.index + 1}/{files.length}
-                </span>
-              )}
+              <div className={styles.imageInner}>
+                <img src={item.url} alt={item.file.name} className={styles.imageThumb} />
+                {files.length > 1 && (
+                  <span className={styles.imageBadge}>
+                    {item.index + 1}/{files.length}
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 className={styles.removeBtn}
                 onClick={() => onRemoveFile(item.index)}
                 title="移除此圖片"
               >
-                <X size={12} />
+                <X size={11} strokeWidth={2.5} />
               </button>
             </div>
           );
