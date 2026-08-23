@@ -61,8 +61,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      onFilesSelected(e.target.files);
+    const rawFiles = e.target.files;
+    if (rawFiles && rawFiles.length > 0) {
+      const fileList = Array.from(rawFiles);
+      onFilesSelected(fileList as any);
     }
     e.target.value = '';
     setShowPlusMenu(false);

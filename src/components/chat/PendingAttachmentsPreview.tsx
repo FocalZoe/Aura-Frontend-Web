@@ -15,12 +15,16 @@ export const PendingAttachmentsPreview: React.FC<PendingAttachmentsPreviewProps>
   // 快取圖片 Object URL
   const fileItems = useMemo(() => {
     return files.map((file, index) => {
-      const isImage = file.type.startsWith('image/');
-      const isVideo = file.type.startsWith('video/');
-      const isAudio = file.type.startsWith('audio/');
+      const isImage = (file.type && file.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i.test(file.name);
+      const isVideo = (file.type && file.type.startsWith('video/')) || /\.(mp4|webm|mov|mkv|ogg)$/i.test(file.name);
+      const isAudio = (file.type && file.type.startsWith('audio/')) || /\.(mp3|wav|ogg|m4a|aac|flac|webm|opus)$/i.test(file.name);
       let url = '';
       if (isImage) {
-        url = URL.createObjectURL(file);
+        try {
+          url = URL.createObjectURL(file);
+        } catch (e) {
+          console.error('建立預覽 URL 失敗:', e);
+        }
       }
       return { file, index, isImage, isVideo, isAudio, url };
     });

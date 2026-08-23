@@ -981,7 +981,10 @@ export const ChatWindow: React.FC = () => {
               setInputText={setInputText}
               pendingFiles={pendingFiles}
               onRemovePendingFile={(idx) => setPendingFiles((prev) => prev.filter((_, i) => i !== idx))}
-              onFilesSelected={(files) => setPendingFiles((prev) => [...prev, ...Array.from(files)])}
+              onFilesSelected={(files) => {
+                const newFiles = Array.isArray(files) ? files : Array.from(files);
+                setPendingFiles((prev) => [...prev, ...newFiles]);
+              }}
               onSendMessage={(e) => {
                 if (editingMessage) {
                   e.preventDefault();
