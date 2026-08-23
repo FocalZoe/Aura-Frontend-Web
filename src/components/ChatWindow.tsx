@@ -1,18 +1,16 @@
-// Context: 核心聊天室視窗 (解耦為 useMessageSender, useChatSearch, useChatScreenshot 領域 Hooks)
+// Context: 核心聊天室視窗 (包含歷史訊息自動載入、E2EE 解密、搜尋、截圖與即時通訊)
 
-import React, { useContext, useState, useMemo } from 'react';
+import React, { useContext, useState, useEffect, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useChatStore } from '../stores/useChatStore';
 import { useUIStore } from '../stores/useUIStore';
 import { useCallStore } from '../stores/useCallStore';
-import { useGroupCallStore } from '../stores/useGroupCallStore';
 import { websocketService } from '../services/websocketService';
 import { e2eeService } from '../services/e2eeService';
 import { apiClient } from '../services/apiClient';
-import { MessageSquare, AlertCircle, Edit2, X } from 'lucide-react';
-import { IPFSFilePayload, Message, User } from '../types';
-import { getLocalPrivateKey, importPublicKey, deriveSharedKey, decryptMessage } from '../utils/crypto';
+import { MessageSquare, AlertCircle, Edit2, X, Loader2 } from 'lucide-react';
+import { Message, User } from '../types';
 
 import { useMessageSender } from '../hooks/useMessageSender';
 import { useChatSearch } from '../hooks/useChatSearch';
@@ -43,9 +41,12 @@ export const ChatWindow: React.FC = () => {
     groupMessages,
     blockedUsers,
     onlineUsers,
+    friends,
     friendsMap,
     setMessages,
     setGroupMessages,
+    updateGroupInStore,
+    removeGroup,
     recallMessageInStore,
     deleteMessageFromStore,
   } = useChatStore();
@@ -54,7 +55,12 @@ export const ChatWindow: React.FC = () => {
 
   const { setShowGroupMembersModal, setActiveGroupForModal, setSelectedProfileUser, showConfirmModal } = useUIStore();
   const { notify } = useNotification();
-  const [isFriend] = useState<boolean>(true);
+
+  // Context: 好友關係判定
+  const isFriend = useMemo(() => {
+    if (!activeChatUser) return true;
+    return friends.some((f) => Number(f.id) === Number(activeChatUser.id));
+  }, [activeChatUser, friends]);
 
   // Context: [訊息右鍵選單狀態]
   const [contextMenuState, setContextMenuState] = useState<{ x: number; y: number; message: Message } | null>(null);
@@ -63,9 +69,56 @@ export const ChatWindow: React.FC = () => {
   const [selectedReactionMessage, setSelectedReactionMessage] = useState<Message | null>(null);
   const [emojiPickerState, setEmojiPickerState] = useState<{ x: number; y: number; message?: Message; isInputTarget?: boolean } | null>(null);
 
-  // Context: [歷史訊息分頁與無感向上加載]
+  // Context: [訊息載入狀態與分頁]
+  const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
   const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(false);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState<boolean>(false);
+
+  // Context: [群組歷史訊息自動載入與 E2EE 解密]
+  useEffect(() => {
+    const fetchGroupMessages = async () => {
+      if (activeGroup && token) {
+        setLoadingMessages(true);
+        try {
+          const rawMsgs = await apiClient.get<any[]>(`/groups/${activeGroup.id}/messages?limit=50`, token);
+          if (Array.isArray(rawMsgs)) {
+            const decryptedList = await e2eeService.decryptGroupMessages(rawMsgs, activeGroup.id);
+            setGroupMessages(decryptedList);
+            setHasMoreMessages(rawMsgs.length >= 50);
+          }
+        } catch (err) {
+          console.error('獲取群組歷史訊息失敗:', err);
+        } finally {
+          setLoadingMessages(false);
+        }
+      }
+    };
+
+    fetchGroupMessages();
+  }, [activeGroup?.id, token]);
+
+  // Context: [私聊歷史訊息自動載入與 E2EE 解密]
+  useEffect(() => {
+    const fetchDirectMessages = async () => {
+      if (activeChatUser && token && user) {
+        setLoadingMessages(true);
+        try {
+          const rawMsgs = await apiClient.get<Message[]>(`/messages/${activeChatUser.id}?limit=50`, token);
+          if (Array.isArray(rawMsgs)) {
+            const decryptedList = await e2eeService.decryptHistoryMessages(rawMsgs, user.id, activeChatUser.id, token);
+            setMessages(decryptedList);
+            setHasMoreMessages(rawMsgs.length >= 50);
+          }
+        } catch (err) {
+          console.error('獲取私聊歷史訊息失敗:', err);
+        } finally {
+          setLoadingMessages(false);
+        }
+      }
+    };
+
+    fetchDirectMessages();
+  }, [activeChatUser?.id, token, user?.id]);
 
   // Context: 統一在頂部計算當前對話訊息列表與群成員對應表
   const currentMessages: Message[] = useMemo(() => {
@@ -241,7 +294,7 @@ export const ChatWindow: React.FC = () => {
       confirmText: '刪除',
       onConfirm: async () => {
         try {
-          await apiClient.delete(`/messages/${msgId}`, token);
+          await apiClient.delete(`/messages/single/${msgId}`, token);
           deleteMessageFromStore(msgId, !!activeGroup);
           notify({ message: '已為您清除此訊息', type: 'info' });
         } catch (err: any) {
@@ -257,86 +310,77 @@ export const ChatWindow: React.FC = () => {
     return blockedUsers.some((u) => u.id === activeChatUser.id);
   }, [activeChatUser, blockedUsers]);
 
+  // 群組邀請狀態判定
+  const isPendingGroupInvite = useMemo(() => {
+    if (!activeGroup || !user) return false;
+    const myMembership = activeGroup.members?.find((m) => Number(m.user_id) === Number(user.id));
+    return myMembership?.status === 'pending';
+  }, [activeGroup, user]);
+
   // 群組被踢出檢查
   const isRemovedFromGroup = useMemo(() => {
     if (!activeGroup || !user) return false;
-    const myMembership = activeGroup.members?.find((m) => m.user_id === user.id);
+    const myMembership = activeGroup.members?.find((m) => Number(m.user_id) === Number(user.id));
     return myMembership?.status === 'removed';
   }, [activeGroup, user]);
 
+  // 接受群組邀請
+  const handleAcceptInvite = async () => {
+    if (!activeGroup || !token) return;
+    try {
+      await apiClient.post(`/groups/${activeGroup.id}/accept`, {}, token);
+      if (activeGroup.members && user) {
+        const updatedMembers = activeGroup.members.map((m) =>
+          Number(m.user_id) === Number(user.id) ? { ...m, status: 'accepted' as const } : m
+        );
+        updateGroupInStore(activeGroup.id, { ...activeGroup, members: updatedMembers });
+      }
+      notify({ message: '已成功加入群組！', type: 'success' });
+    } catch (err: any) {
+      notify({ message: err.message || '接受邀請失敗', type: 'danger' });
+    }
+  };
+
+  // 拒絕群組邀請
+  const handleRejectInvite = async () => {
+    if (!activeGroup || !token) return;
+    try {
+      await apiClient.post(`/groups/${activeGroup.id}/reject`, {}, token);
+      removeGroup(activeGroup.id);
+      notify({ message: '已拒絕群組邀請', type: 'info' });
+    } catch (err: any) {
+      notify({ message: err.message || '拒絕邀請失敗', type: 'danger' });
+    }
+  };
+
   // 歷史訊息向上載入分頁
   const handleLoadMoreMessages = async () => {
-    if (loadingMoreMessages || !hasMoreMessages || !token || currentMessages.length === 0) return;
-    const oldestMessageId = currentMessages[0]?.id;
-    if (!oldestMessageId) return;
+    if (loadingMoreMessages || !hasMoreMessages || !token || !user || currentMessages.length === 0) return;
+    const earliestMsgId = currentMessages[0]?.id;
+    if (!earliestMsgId) return;
 
     setLoadingMoreMessages(true);
     try {
       if (activeGroup) {
-        const res = await apiClient.get<{ messages: any[] }>(
-          `/groups/${activeGroup.id}/messages?limit=50&before_id=${oldestMessageId}`,
+        const rawMsgs = await apiClient.get<any[]>(
+          `/groups/${activeGroup.id}/messages?limit=50&before_id=${earliestMsgId}`,
           token
         );
-        const olderMsgs: any[] = res.messages || [];
-        setHasMoreMessages(olderMsgs.length === 50);
-
-        if (olderMsgs.length > 0) {
-          const groupKey = await e2eeService.getGroupKey(activeGroup.id);
-          const decryptedOlder = await Promise.all(
-            olderMsgs.map(async (gm) => {
-              try {
-                const plain = await e2eeService.decryptAESGCM(gm.content, gm.iv, groupKey);
-                let filePayload: IPFSFilePayload | undefined;
-                if (plain.startsWith('[IPFS_FILE]')) {
-                  try {
-                    filePayload = JSON.parse(plain.replace('[IPFS_FILE]', ''));
-                  } catch (e) {}
-                }
-                return { ...gm, content: plain, decrypted: true, filePayload };
-              } catch (e) {
-                return { ...gm, decrypted: false, error: true };
-              }
-            })
-          );
-          setGroupMessages([...decryptedOlder, ...groupMessages]);
+        if (Array.isArray(rawMsgs) && rawMsgs.length > 0) {
+          const decryptedList = await e2eeService.decryptGroupMessages(rawMsgs, activeGroup.id);
+          setGroupMessages([...decryptedList, ...groupMessages]);
         }
-      } else if (activeChatUser && user) {
-        const res = await apiClient.get<{ messages: any[] }>(
-          `/messages/${activeChatUser.id}?limit=50&before_id=${oldestMessageId}`,
+        setHasMoreMessages(rawMsgs.length >= 50);
+      } else if (activeChatUser) {
+        const rawMsgs = await apiClient.get<Message[]>(
+          `/messages/${activeChatUser.id}?limit=50&before_id=${earliestMsgId}`,
           token
         );
-        const olderMsgs: any[] = res.messages || [];
-        setHasMoreMessages(olderMsgs.length === 50);
-
-        if (olderMsgs.length > 0) {
-          const privateKey = await getLocalPrivateKey(user.id);
-          let sharedKey: CryptoKey | null = null;
-          if (privateKey && activeChatUser.public_key) {
-            const partnerPublicKey = await importPublicKey(activeChatUser.public_key);
-            sharedKey = await deriveSharedKey(privateKey, partnerPublicKey);
-          }
-
-          const decryptedOlder = await Promise.all(
-            olderMsgs.map(async (m) => {
-              if (sharedKey && m.content && m.iv) {
-                try {
-                  const plain = await decryptMessage(sharedKey, m.content, m.iv);
-                  let filePayload: IPFSFilePayload | undefined;
-                  if (plain.startsWith('[IPFS_FILE]')) {
-                    try {
-                      filePayload = JSON.parse(plain.replace('[IPFS_FILE]', ''));
-                    } catch (e) {}
-                  }
-                  return { ...m, content: plain, decrypted: true, filePayload };
-                } catch (e) {
-                  return { ...m, decrypted: false, error: true };
-                }
-              }
-              return { ...m, decrypted: false };
-            })
-          );
-          setMessages([...decryptedOlder, ...messages]);
+        if (Array.isArray(rawMsgs) && rawMsgs.length > 0) {
+          const decryptedList = await e2eeService.decryptHistoryMessages(rawMsgs, user.id, activeChatUser.id, token);
+          setMessages([...decryptedList, ...messages]);
         }
+        setHasMoreMessages(rawMsgs.length >= 50);
       }
     } catch (err) {
       console.error('[ChatWindow] Load more history error:', err);
@@ -427,6 +471,7 @@ export const ChatWindow: React.FC = () => {
         partnerUser={activeChatUser || undefined}
         isGroup={!!activeGroup}
         groupMembersMap={groupMembersMap}
+        loading={loadingMessages}
         renderIPFSFileCard={renderIPFSFileCard}
         onReaction={handleReaction}
         onViewProfile={(targetUser) => setSelectedProfileUser(targetUser)}
@@ -472,6 +517,27 @@ export const ChatWindow: React.FC = () => {
         <div className={styles.blockedBanner}>
           <AlertCircle size={18} />
           <span>您已封鎖此用戶，無法傳送訊息</span>
+        </div>
+      ) : isPendingGroupInvite ? (
+        <div style={{
+          padding: '16px',
+          background: 'var(--bg-secondary)',
+          borderTop: '1px solid var(--border-color)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '12px',
+          color: 'var(--text-primary)',
+        }}>
+          <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>您已被邀請加入此群組，同意邀請後方可進行聊天</span>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button className="uiBtnPrimary" onClick={handleAcceptInvite} style={{ padding: '6px 20px' }}>
+              同意邀請
+            </button>
+            <button className="uiBtnSecondary" onClick={handleRejectInvite} style={{ padding: '6px 20px' }}>
+              拒絕邀請
+            </button>
+          </div>
         </div>
       ) : isRemovedFromGroup ? (
         <div className={styles.groupRemovedBanner}>
