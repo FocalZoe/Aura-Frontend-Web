@@ -145,6 +145,10 @@ export const GroupCallModal: React.FC = () => {
     setMinimized,
   } = useGroupCallStore();
 
+  const [isPopout, setIsPopout] = React.useState<boolean>(false);
+  const groupCallContentRef = useRef<HTMLDivElement | null>(null);
+  const groupHostRef = useRef<HTMLDivElement | null>(null);
+
   const { user } = useAuthStore();
   const { friends, getUserDisplayName } = useChatStore();
 
@@ -195,10 +199,6 @@ export const GroupCallModal: React.FC = () => {
     pinnedMemberId === selfId
       ? { isMuted, isVideoOff }
       : (participantMediaStates[pinnedMemberId] || { isMuted: false, isVideoOff: false });
-
-  const [isPopout, setIsPopout] = React.useState<boolean>(false);
-  const groupCallContentRef = useRef<HTMLDivElement | null>(null);
-  const groupHostRef = useRef<HTMLDivElement | null>(null);
 
   // 彈出式新視窗 (Document Picture-in-Picture 獨立桌面視窗)
   const handlePopout = async () => {

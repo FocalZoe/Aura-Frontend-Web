@@ -266,10 +266,9 @@ export const useCallStore = create<CallStore>((set, get) => ({
       return;
     }
 
-    // Context: [通話限制] 陌生訊息/非好友來電自動拒絕
-    const { friends } = useChatStore.getState();
-    const isFriend = friends.some((f) => Number(f.id) === Number(caller.id));
-    if (!isFriend) {
+    const { callState } = get();
+    if (callState !== 'idle') {
+      // 正在通話中才回覆忙線
       websocketService.send({
         type: 'call_response',
         to: caller.id,
@@ -277,9 +276,6 @@ export const useCallStore = create<CallStore>((set, get) => ({
       });
       return;
     }
-
-    const { callState } = get();
-    if (callState !== 'idle') return;
 
     set({
       callState: 'incoming',
