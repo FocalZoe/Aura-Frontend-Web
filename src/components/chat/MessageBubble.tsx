@@ -269,26 +269,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   return (
     <div
       id={`message-${msg.id}`}
-      className={`${styles.msgRow} ${isSelf ? styles.msgRowSelf : styles.msgRowOther}`}
-      style={{
-        background: isScreenshotMode && isSelectedForScreenshot ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
-        borderRadius: '8px',
-        transition: 'background 0.15s ease',
-        cursor: isScreenshotMode ? 'pointer' : 'default',
-      }}
+      className={`${styles.msgRow} ${isSelf ? styles.msgRowSelf : styles.msgRowOther} ${
+        isScreenshotMode ? styles.msgRowScreenshotMode : ''
+      } ${isScreenshotMode && isSelectedForScreenshot ? styles.msgRowSelected : ''}`}
       onClick={handleBubbleClick}
     >
-      {/* 截圖模式 Checkbox */}
-      {isScreenshotMode && (
-        <div style={{ display: 'flex', alignItems: 'center', padding: '0 8px' }}>
-          {isSelectedForScreenshot ? (
-            <CheckCircle2 size={20} color="var(--accent-color)" />
-          ) : (
-            <Circle size={20} color="var(--text-secondary)" style={{ opacity: 0.5 }} />
-          )}
-        </div>
-      )}
-
       <div className={`${styles.msgBubbleContainer} ${isSearchHighlighted ? styles.msgHighlightGlow : ''}`}>
         {/* 群組內他人發送訊息顯示發送者名字/群內暱稱 */}
         {!isSelf && isGroup && (
@@ -405,6 +390,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         )}
       </div>
+
+      {/* 截圖模式 Checkbox：永遠釘死在聊天室最右側 */}
+      {isScreenshotMode && (
+        <div className={styles.screenshotCheckboxRight}>
+          {isSelectedForScreenshot ? (
+            <CheckCircle2 size={20} className={styles.checkboxChecked} />
+          ) : (
+            <Circle size={20} className={styles.checkboxUnchecked} />
+          )}
+        </div>
+      )}
     </div>
   );
 };

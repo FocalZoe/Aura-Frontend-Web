@@ -1,6 +1,7 @@
-// Context: 聊天室輸入區 (整合 Plus 旋轉選單、待發送附件 IG 預覽、右側 Emoji 觸發與語音錄製)
+// Context: 聊天室輸入區 (支援多行自適應 Textarea 斷行、Shift+Enter 換行、Enter 發送、Plus 選單對話截圖與 Emoji 彈窗)
+
 import React, { FormEvent, ChangeEvent, useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Plus, Paperclip, Mic, Smile } from 'lucide-react';
+import { Send, Loader2, Plus, Paperclip, Mic, Smile, Camera } from 'lucide-react';
 import { VoiceRecorder } from './VoiceRecorder';
 import { PendingAttachmentsPreview } from './PendingAttachmentsPreview';
 import styles from '../ChatWindow.module.css';
@@ -13,6 +14,7 @@ interface ChatInputProps {
   onFilesSelected: (files: FileList) => void;
   onSendMessage: (e: FormEvent) => void;
   onSendVoice?: (audioBlob: Blob) => void;
+  onStartScreenshot?: () => void;
   onOpenEmojiPicker: (x: number, y: number) => void;
   isUploadingIPFS: boolean;
   disabled?: boolean;
@@ -26,6 +28,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onFilesSelected,
   onSendMessage,
   onSendVoice,
+  onStartScreenshot,
   onOpenEmojiPicker,
   isUploadingIPFS,
   disabled = false,
@@ -34,7 +37,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [showPlusMenu, setShowPlusMenu] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const plusMenuRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 點擊外部關閉 Plus 選單
   useEffect(() => {
@@ -48,6 +51,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
     return () => window.removeEventListener('mousedown', handleClickOutside);
   }, [showPlusMenu]);
+
+  // 監聽 inputText 變更自動調整 textarea 高度 (42px ~ 140px)
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${Math.max(42, Math.min(scrollHeight, 140))}px`;
+    }
+  }, [inputText]);
 
   const handleVoiceSend = (blob: Blob) => {
     setIsRecording(false);
@@ -75,6 +87,21 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     onOpenEmojiPicker(rect.left - 140, rect.top - 430);
   };
 
+  // 鍵盤按下事件處理：支援 Shift+Enter 換行與 Enter 發送 (防 IME 中文選字誤觸)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 若為中文輸入法 (IME) 組字選字中，不攔截 Enter
+    if (e.nativeEvent.isComposing || (e as any).keyCode === 229) {
+      return;
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (canSend) {
+        onSendMessage(e as any);
+      }
+    }
+  };
+
   const canSend = !disabled && !isUploadingIPFS && (inputText.trim().length > 0 || pendingFiles.length > 0);
 
   return (
@@ -98,6 +125,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               onClick={() => setShowPlusMenu(!showPlusMenu)}
               disabled={disabled || isUploadingIPFS}
               title="更多操作"
+              aria-label="更多操作"
             >
               <div className={`${styles.plusIconRotatable} ${showPlusMenu ? styles.plusIconRotated : ''}`}>
                 <Plus size={20} />
@@ -118,6 +146,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   <Paperclip size={16} color="var(--accent-color)" />
                   <span>附加檔案 / 照片</span>
                 </button>
+
+                {onStartScreenshot && (
+                  <button
+                    type="button"
+                    className={styles.plusMenuItem}
+                    onClick={() => {
+                      setShowPlusMenu(false);
+                      onStartScreenshot();
+                    }}
+                  >
+                    <Camera size={16} color="#38bdf8" />
+                    <span>連續對話截圖</span>
+                  </button>
+                )}
 
                 {onSendVoice && (
                   <button
@@ -145,13 +187,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             />
           </div>
 
-          <input
-            ref={inputRef}
-            type="text"
-            className={styles.chatInput}
-            placeholder={disabled ? '等待對方初始化對話...' : '輸入訊息...'}
+          {/* 多行自適應 Textarea 輸入框 */}
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            className={styles.chatTextarea}
+            placeholder={disabled ? '等待對方初始化對話...' : '輸入訊息... (Shift+Enter 換行，Enter 發送)'}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={disabled || isUploadingIPFS}
           />
 
@@ -162,6 +206,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             onClick={handleEmojiBtnClick}
             disabled={disabled || isUploadingIPFS}
             title="表情貼圖 (游標處插入)"
+            aria-label="表情貼圖"
           >
             <Smile size={20} />
           </button>
@@ -171,6 +216,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             className={styles.chatSendBtn}
             disabled={!canSend}
             title="傳送訊息"
+            aria-label="傳送訊息"
           >
             {isUploadingIPFS ? <Loader2 size={18} className={styles.spin} /> : <Send size={18} />}
           </button>

@@ -131,15 +131,18 @@
 .chatMessages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .msgRow {
   display: flex;
+  align-items: flex-end;
   width: 100%;
+  position: relative;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .msgRowSelf {
@@ -150,38 +153,92 @@
   justify-content: flex-start;
 }
 
+/* 截圖模式專屬行樣式：右側固定 Checkbox 空間與柔和漸層選取微光 */
+.msgRowScreenshotMode {
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.msgRowScreenshotMode:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.msgRowSelected {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%) !important;
+}
+
+.screenshotCheckboxRight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 12px;
+  padding-right: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.checkboxChecked {
+  color: var(--accent-color, #3b82f6) !important;
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.45));
+}
+
+.checkboxUnchecked {
+  color: var(--text-muted, #64748b) !important;
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+
+.msgRowScreenshotMode:hover .checkboxUnchecked {
+  opacity: 0.8;
+}
+
 .msgBubble {
   width: fit-content;
   min-width: auto;
   max-width: 100%;
-  padding: 9px 14px;
+  padding: 10px 15px;
   border-radius: 18px;
   font-size: 0.92rem;
   line-height: 1.45;
   position: relative;
   word-break: break-word;
-  box-shadow: var(--shadow-bubble);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
+  transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease;
 }
 
 .msgBubbleSelf {
-  background: var(--bg-bubble-self);
-  color: var(--text-bubble-self);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
 }
 
 .msgBubbleOther {
-  background: var(--bg-bubble-other);
-  color: var(--text-bubble-other);
-  border: 1px solid var(--border-color);
+  background: rgba(30, 41, 59, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-primary, #f8fafc);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   border-bottom-left-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+/* 截圖選取氣泡專屬外圍藍光光暈 */
+.msgBubbleSelected {
+  box-shadow: 0 0 0 2px var(--accent-color, #3b82f6), 0 4px 20px rgba(59, 130, 246, 0.38) !important;
 }
 
 .msgBubbleImage {
   padding: 6px;
   background: transparent;
   box-shadow: none;
+  border: none;
 }
 
 .msgBubbleError {
@@ -608,21 +665,35 @@
   transform: translateY(-1px);
 }
 
+.chatTextarea,
 .chatInput {
   flex: 1;
-  height: 42px;
-  padding: 0 16px;
+  min-height: 42px;
+  max-height: 140px;
+  padding: 10px 16px;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   color: var(--text-primary);
   font-size: 0.92rem;
-  transition: all 0.2s ease;
+  line-height: 1.45;
+  font-family: inherit;
+  resize: none;
+  overflow-y: auto;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.chatTextarea:focus,
 .chatInput:focus {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.chatTextarea::placeholder,
+.chatInput::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
 }
 
 .chatSendBtn {

@@ -76,7 +76,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
 
-        {/* 標頭右側動作按鈕群 (完全對稱標準) */}
+        {/* 標頭右側動作按鈕群 (完全對稱標準 4 大按鈕) */}
         <div className={styles.actionsGroup}>
           {/* 搜尋訊息 */}
           {onToggleSearch && (
@@ -87,18 +87,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               aria-label="搜尋對話記錄"
             >
               <Search size={18} />
-            </button>
-          )}
-
-          {/* 對話截圖 */}
-          {onStartScreenshot && (
-            <button
-              className={styles.actionBtn}
-              onClick={onStartScreenshot}
-              title="連續對話截圖"
-              aria-label="連續對話截圖"
-            >
-              <Camera size={18} />
             </button>
           )}
 
@@ -184,7 +172,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
 
-        {/* 標頭右側動作按鈕群 (完全對稱標準) */}
+        {/* 標頭右側動作按鈕群 (完全對稱標準 4 大按鈕) */}
         <div className={styles.actionsGroup}>
           {/* 搜尋訊息 */}
           {onToggleSearch && (
@@ -195,18 +183,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               aria-label="搜尋對話記錄"
             >
               <Search size={18} />
-            </button>
-          )}
-
-          {/* 對話截圖 */}
-          {onStartScreenshot && (
-            <button
-              className={styles.actionBtn}
-              onClick={onStartScreenshot}
-              title="連續對話截圖"
-              aria-label="連續對話截圖"
-            >
-              <Camera size={18} />
             </button>
           )}
 

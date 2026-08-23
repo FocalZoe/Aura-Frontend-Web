@@ -1014,6 +1014,7 @@ export const ChatWindow: React.FC = () => {
                 }
               }}
               onSendVoice={handleSendVoice}
+              onStartScreenshot={() => handleStartScreenshot()}
               onOpenEmojiPicker={(x, y) => setEmojiPickerState({ x, y, isInputTarget: true })}
               isUploadingIPFS={uploading}
               disabled={false}
