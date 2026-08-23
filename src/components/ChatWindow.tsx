@@ -993,7 +993,7 @@ export const ChatWindow: React.FC = () => {
               onSendVoice={handleSendVoice}
               onOpenEmojiPicker={(x, y) => setEmojiPickerState({ x, y, isInputTarget: true })}
               isUploadingIPFS={uploading}
-              disabled={activeChatUser ? !activeChatUser.public_key : false}
+              disabled={false}
             />
           )}
         </>

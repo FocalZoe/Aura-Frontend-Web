@@ -105,17 +105,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             {/* Plus 彈出選單 */}
             {showPlusMenu && (
               <div className={styles.plusMenuPopover}>
-                <button
-                  type="button"
+                <label
+                  htmlFor="chat-file-picker-hidden-input"
                   className={styles.plusMenuItem}
-                  onClick={() => {
-                    setShowPlusMenu(false);
-                    fileInputRef.current?.click();
-                  }}
+                  onClick={() => setShowPlusMenu(false)}
+                  style={{ cursor: 'pointer' }}
                 >
                   <Paperclip size={16} color="var(--accent-color)" />
                   <span>附加檔案 / 照片</span>
-                </button>
+                </label>
 
                 {onSendVoice && (
                   <button
@@ -135,11 +133,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
             {/* 隱藏的系統多選檔案輸入器 */}
             <input
+              id="chat-file-picker-hidden-input"
               ref={fileInputRef}
               type="file"
               multiple
               onChange={handleFileChange}
-              style={{ display: 'none' }}
+              style={{ position: 'fixed', top: '-10000px', left: '-10000px', opacity: 0, pointerEvents: 'none' }}
               disabled={disabled || isUploadingIPFS}
             />
           </div>
