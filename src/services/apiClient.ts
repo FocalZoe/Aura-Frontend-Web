@@ -1,5 +1,6 @@
-﻿// Context: 集中式前端 API Client，自動注入 Auth Header 與處理通用 Error
+// Context: 集中式前端 API Client，自動注入 Auth Header 與處理通用 Error
 import { User, Message } from '../types';
+import { useAuthStore } from '../stores/useAuthStore';
 
 // Context: 動態推導 API 端點，若跨網/區網存取自動將 localhost/127.0.0.1 替換為當前主機 IP
 export const getApiBase = (): string => {
@@ -34,6 +35,11 @@ class APIClient {
         headers: this.getHeaders(token),
       });
       if (!res.ok) {
+        if (res.status === 401 && endpoint !== '/auth/login') {
+          try {
+            useAuthStore.getState().logout();
+          } catch {}
+        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || `HTTP error! status: ${res.status}`);
       }

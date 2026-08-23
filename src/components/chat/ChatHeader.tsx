@@ -186,24 +186,24 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </button>
           )}
 
-          {/* 一對一語音通話 (綠色，非陌生人可見) */}
-          {!isStranger && onStartAudioCall && (
+          {/* 一對一語音通話 (綠色) */}
+          {onStartAudioCall && (
             <button
               className={`${styles.actionBtn} ${styles.actionBtnAudio}`}
               onClick={onStartAudioCall}
-              title="發起語音通話"
+              title={isStranger ? '發起語音通話 (需先加為好友)' : '發起語音通話'}
               aria-label="發起語音通話"
             >
               <Phone size={18} />
             </button>
           )}
 
-          {/* 一對一視訊通話 (紫色，非陌生人可見) */}
-          {!isStranger && onStartVideoCall && (
+          {/* 一對一視訊通話 (紫色) */}
+          {onStartVideoCall && (
             <button
               className={`${styles.actionBtn} ${styles.actionBtnVideo}`}
               onClick={onStartVideoCall}
-              title="發起視訊通話"
+              title={isStranger ? '發起視訊通話 (需先加為好友)' : '發起視訊通話'}
               aria-label="發起視訊通話"
             >
               <Video size={18} />

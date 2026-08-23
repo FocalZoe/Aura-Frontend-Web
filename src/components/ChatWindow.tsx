@@ -6,6 +6,7 @@ import { useNotification } from '../context/NotificationContext';
 import { useChatStore } from '../stores/useChatStore';
 import { useUIStore } from '../stores/useUIStore';
 import { useCallStore } from '../stores/useCallStore';
+import { useGroupCallStore } from '../stores/useGroupCallStore';
 import { websocketService } from '../services/websocketService';
 import { e2eeService } from '../services/e2eeService';
 import { apiClient } from '../services/apiClient';
@@ -56,11 +57,11 @@ export const ChatWindow: React.FC = () => {
   const { setShowGroupMembersModal, setActiveGroupForModal, setSelectedProfileUser, showConfirmModal } = useUIStore();
   const { notify } = useNotification();
 
-  // Context: 好友關係判定
+  // Context: 好友關係判定 (支援好友列表與公鑰快取字典)
   const isFriend = useMemo(() => {
     if (!activeChatUser) return true;
-    return friends.some((f) => Number(f.id) === Number(activeChatUser.id));
-  }, [activeChatUser, friends]);
+    return friends.some((f) => Number(f.id) === Number(activeChatUser.id)) || !!friendsMap[activeChatUser.id];
+  }, [activeChatUser, friends, friendsMap]);
 
   // Context: [訊息右鍵選單狀態]
   const [contextMenuState, setContextMenuState] = useState<{ x: number; y: number; message: Message } | null>(null);
@@ -438,10 +439,26 @@ export const ChatWindow: React.FC = () => {
         isStranger={!isFriend}
         onToggleSearch={() => setShowSearch(!showSearch)}
         onStartAudioCall={() => {
-          if (activeChatUser) startCall(activeChatUser, 'audio');
+          if (activeGroup) {
+            useGroupCallStore.getState().startGroupCall(activeGroup.id, activeGroup.name, 'audio');
+          } else if (activeChatUser) {
+            if (!isFriend) {
+              notify({ message: '需先新增為好友後方可發起語音通話', type: 'warning' });
+              return;
+            }
+            startCall(activeChatUser, 'audio');
+          }
         }}
         onStartVideoCall={() => {
-          if (activeChatUser) startCall(activeChatUser, 'video');
+          if (activeGroup) {
+            useGroupCallStore.getState().startGroupCall(activeGroup.id, activeGroup.name, 'video');
+          } else if (activeChatUser) {
+            if (!isFriend) {
+              notify({ message: '需先新增為好友後方可發起視訊通話', type: 'warning' });
+              return;
+            }
+            startCall(activeChatUser, 'video');
+          }
         }}
         onViewProfile={() => setSelectedProfileUser(activeChatUser)}
         onOpenGroupModal={() => {
