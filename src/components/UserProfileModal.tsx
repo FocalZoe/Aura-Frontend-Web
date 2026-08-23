@@ -294,10 +294,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   src={previewUrl || avatarCid || currentUser?.avatar}
                   name={editDisplayName || currentUser?.account_id || ''}
                   fallbackSeed={currentUser?.account_id}
-                  size={76}
+                  size={86}
                 />
+                {/* 懸停暗黑遮罩 */}
                 <div className={styles.avatarHoverOverlay}>
                   {uploadingAvatar ? <Loader2 size={24} className="spin" /> : <Camera size={24} />}
+                </div>
+                {/* 右下角相機按鈕徽章 */}
+                <div className={styles.cameraBadge}>
+                  <Camera size={14} />
                 </div>
                 <input
                   type="file"
@@ -308,13 +313,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 />
               </div>
             ) : (
-              <Avatar
-                src={userProfile.avatar}
-                name={effectiveDisplayName}
-                fallbackSeed={userProfile.display_name || userProfile.account_id}
-                size={76}
-                isOnline={isFriend ? online : undefined}
-              />
+              <div className={styles.avatarDisplayWrapper}>
+                <Avatar
+                  src={userProfile.avatar}
+                  name={effectiveDisplayName}
+                  fallbackSeed={userProfile.display_name || userProfile.account_id}
+                  size={86}
+                  isOnline={isFriend ? online : undefined}
+                />
+              </div>
             )}
 
             {/* 模式 A：自己的個人資料編輯 */}
@@ -381,7 +388,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <>
                 {/* 點擊名字就地編輯備註 */}
                 {isEditingAlias ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px', width: '100%' }}>
                     <input
                       type="text"
                       className="uiInput"
@@ -389,7 +396,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       onChange={(e) => setCustomAlias(e.target.value)}
                       placeholder="設定好友備註暱稱..."
                       autoFocus
-                      style={{ height: '36px' }}
+                      style={{ height: '36px', maxWidth: '240px' }}
                     />
                     <button
                       type="button"
@@ -411,11 +418,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </div>
                 ) : (
                   <div
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', marginTop: '10px' }}
+                    className={styles.nameRow}
                     onClick={() => setIsEditingAlias(true)}
                     title="點擊修改好友備註暱稱"
                   >
-                    <h4 className={styles.profileName} style={{ margin: 0 }}>{effectiveDisplayName}</h4>
+                    <h4 className={styles.profileName}>{effectiveDisplayName}</h4>
                     <Edit3 size={14} color="var(--text-muted)" />
                   </div>
                 )}
