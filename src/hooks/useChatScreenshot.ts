@@ -34,18 +34,28 @@ export function useChatScreenshot(currentMessages: Message[]) {
       return;
     }
 
+    if (screenshotRange.start === screenshotRange.end && screenshotRange.start === idx) {
+      // 再次點擊唯一選中的行 -> 取消選中
+      setScreenshotRange(null);
+      return;
+    }
+
     if (idx < screenshotRange.start) {
       setScreenshotRange({ start: idx, end: screenshotRange.end });
     } else if (idx > screenshotRange.end) {
       setScreenshotRange({ start: screenshotRange.start, end: idx });
+    } else if (idx === screenshotRange.start) {
+      setScreenshotRange({ start: idx + 1, end: screenshotRange.end });
+    } else if (idx === screenshotRange.end) {
+      setScreenshotRange({ start: screenshotRange.start, end: idx - 1 });
     } else {
-      // 點擊既有區間內：收縮範圍
+      // 點擊中間行：收縮至較近的端點
       const distStart = idx - screenshotRange.start;
       const distEnd = screenshotRange.end - idx;
       if (distStart <= distEnd) {
-        setScreenshotRange({ start: idx + 1 > screenshotRange.end ? idx : idx + 1, end: screenshotRange.end });
+        setScreenshotRange({ start: idx + 1, end: screenshotRange.end });
       } else {
-        setScreenshotRange({ start: screenshotRange.start, end: idx - 1 < screenshotRange.start ? idx : idx - 1 });
+        setScreenshotRange({ start: screenshotRange.start, end: idx - 1 });
       }
     }
   };
