@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Message, User } from '../../types';
 import { Avatar } from '../common/Avatar';
 import { useChatStore } from '../../stores/useChatStore';
-import { LinkEmbed, isSafeUrl, isRichMediaUrl } from './LinkEmbed';
+import { LinkEmbed, isSafeUrl } from './LinkEmbed';
 import { AlertCircle, Phone, PhoneOff, CheckCircle2, Circle } from 'lucide-react';
 import styles from './MessageBubble.module.css';
 
@@ -148,16 +148,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     });
   };
 
-  const isPureRichMedia = useMemo(() => {
+  const isPureEmbed = useMemo(() => {
     if (!msg.content || msg.filePayload || msg.is_recalled) return false;
     const urlRegex = /(https?:\/\/[^\s]+)/gi;
     const matches = msg.content.match(urlRegex) || [];
     if (matches.length === 0) return false;
-    const richUrls = matches.filter((u) => isRichMediaUrl(u));
-    if (richUrls.length === 0) return false;
+    const safeUrls = matches.filter((u) => isSafeUrl(u));
+    if (safeUrls.length === 0) return false;
 
     let textWithout = msg.content;
-    richUrls.forEach((u) => {
+    safeUrls.forEach((u) => {
       textWithout = textWithout.replace(u, '');
     });
     return textWithout.trim() === '';
@@ -216,11 +216,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
     const urlRegex = /(https?:\/\/[^\s]+)/gi;
     const allUrls = content.match(urlRegex) || [];
-    const richMediaUrls = Array.from(new Set(allUrls.filter((u) => isRichMediaUrl(u))));
+    const safeUrls = Array.from(new Set(allUrls.filter((u) => isSafeUrl(u))));
 
-    // 若包含 Rich Media Embed，隱藏該網址的生硬文字
+    // 若包含可 Embed 網址，隱藏重複的生硬網址文字
     let textToDisplay = content;
-    richMediaUrls.forEach((u) => {
+    safeUrls.forEach((u) => {
       textToDisplay = textToDisplay.replace(u, '');
     });
     textToDisplay = textToDisplay.trim();
@@ -230,9 +230,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {textToDisplay ? (
           <div className={styles.msgTextBody}>{renderTextWithLinks(textToDisplay)}</div>
         ) : null}
-        {richMediaUrls.length > 0 && !isRecalled && (
+        {safeUrls.length > 0 && !isRecalled && (
           <div className={styles.linkEmbedList}>
-            {richMediaUrls.map((url, i) => (
+            {safeUrls.map((url, i) => (
               <LinkEmbed key={i} url={url} />
             ))}
           </div>
@@ -244,7 +244,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const bubbleClasses = [
     styles.msgBubble,
     isSelf ? styles.msgBubbleSelf : styles.msgBubbleOther,
-    (isIPFSPayload || isPureRichMedia) ? styles.msgBubbleImage : '',
+    (isIPFSPayload || isPureEmbed) ? styles.msgBubbleImage : '',
     isError ? styles.msgBubbleError : '',
     isRecalled ? styles.recalledBubble : '',
   ]

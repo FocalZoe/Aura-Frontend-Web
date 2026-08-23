@@ -1,28 +1,30 @@
-/* Context: LinkEmbed 專屬樣式模組 (對齊 IPFS 卡片等級之深色玻璃擬態、微邊框與流暢動畫) */
+/* Context: LinkEmbed 專屬樣式模組 (對齊 IPFS 卡片等級之深色玻璃擬態、微邊框、YouTube 零縮小播放) */
 
 .youtubeEmbedCard {
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  max-width: 360px;
-  width: 100%;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 360px;
+  max-width: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .youtubeEmbedCard:hover {
-  border-color: rgba(59, 130, 246, 0.35);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 .youtubeIframeWrapper {
   width: 100%;
   aspect-ratio: 16 / 9;
   background: #000000;
+  display: block;
 }
 
 .youtubeIframe {
@@ -59,9 +61,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.35);
   color: #ffffff;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .youtubeThumbBox:hover .youtubePlayOverlay {
@@ -69,8 +71,8 @@
 }
 
 .playIcon {
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
-  transition: transform 0.2s ease;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7));
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .youtubeThumbBox:hover .playIcon {
@@ -84,8 +86,10 @@
   justify-content: space-between;
   gap: 10px;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  height: 38px;
+  box-sizing: border-box;
 }
 
 .youtubeBadge {
@@ -96,12 +100,16 @@
   padding: 2px 7px;
   border-radius: 4px;
   letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 .youtubeHintText {
   flex: 1;
   font-size: 0.75rem;
   color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .linkExternalBtn {
@@ -112,9 +120,99 @@
   padding: 4px;
   border-radius: 4px;
   transition: color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
 }
 
 .linkExternalBtn:hover {
   color: var(--text-primary, #ffffff);
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* 通用網站 Embed 卡片 (對齊 IPFS 檔案卡片等級之深色玻璃擬態) */
+.genericEmbedCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  width: 340px;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  user-select: none;
+}
+
+.genericEmbedCard:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.linkFaviconBox {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.linkFaviconImg {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.linkGlobeIcon {
+  color: var(--accent-color, #3b82f6);
+}
+
+.linkEmbedContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.linkDomainName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkFullUrl {
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkExternalIcon {
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.genericEmbedCard:hover .linkExternalIcon {
+  color: var(--accent-color, #3b82f6);
 }
