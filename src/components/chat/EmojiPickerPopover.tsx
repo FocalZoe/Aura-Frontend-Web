@@ -180,13 +180,31 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
     return () => window.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
-  // 自適應視窗邊界定位
-  const adjustedPosition = useMemo(() => {
+  // 自適應定位計算 (支援 input 模式底側固定與 reaction 模式游標跟隨)
+  const adjustedStyle = useMemo<React.CSSProperties>(() => {
     const width = 340;
-    const height = mode === 'reaction' ? 380 : 440;
     const winWidth = window.innerWidth;
     const winHeight = window.innerHeight;
 
+    if (mode === 'input') {
+      // 永遠底側固定在輸入框上方 (Bottom-anchored)
+      let posX = x - 280;
+      if (posX + width > winWidth - 12) {
+        posX = winWidth - width - 12;
+      }
+      posX = Math.max(12, posX);
+
+      const bottomOffset = Math.max(68, winHeight - y + 10);
+      return {
+        position: 'fixed',
+        left: `${posX}px`,
+        bottom: `${bottomOffset}px`,
+        top: 'auto',
+      };
+    }
+
+    // mode === 'reaction': 右鍵/氣泡旁展開
+    const height = 380;
     let posX = x;
     let posY = y;
 
@@ -197,7 +215,12 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
       posY = winHeight - height - 12;
     }
 
-    return { x: Math.max(12, posX), y: Math.max(12, posY) };
+    return {
+      position: 'fixed',
+      left: `${Math.max(12, posX)}px`,
+      top: `${Math.max(12, posY)}px`,
+      bottom: 'auto',
+    };
   }, [x, y, mode]);
 
   // 搜尋過濾
@@ -225,7 +248,7 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
     <div
       ref={popoverRef}
       className={styles.popoverContainer}
-      style={{ left: `${adjustedPosition.x}px`, top: `${adjustedPosition.y}px` }}
+      style={adjustedStyle}
       onClick={(e) => e.stopPropagation()}
     >
       {/* 模式判斷：僅在輸入模式 (mode="input") 下顯示 LINE 風格三大主系統 Tabs */}
