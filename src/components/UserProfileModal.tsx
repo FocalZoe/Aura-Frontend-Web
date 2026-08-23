@@ -26,6 +26,7 @@ import {
 import { BaseModal } from './common/BaseModal';
 import { uploadToIPFS, getIPFSGatewayUrl } from '../utils/ipfs';
 import { apiClient, getApiBase } from '../services/apiClient';
+import { MediaGalleryCard } from './chat/MediaGalleryCard';
 import styles from './UserProfileModal.module.css';
 
 interface UserProfileModalProps {
@@ -506,45 +507,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', padding: '4px' }}>
-                {conversationMediaFiles.map((item, i) => {
-                  const isImg = item.payload.mime?.startsWith('image/');
-                  const url = getIPFSGatewayUrl(item.payload.cid);
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        position: 'relative',
-                        height: '90px',
-                        borderRadius: '10px',
-                        overflow: 'hidden',
-                        background: 'rgba(0,0,0,0.3)',
-                        border: '1px solid var(--border-color)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {isImg ? (
-                        <a href={url} target="_blank" rel="noreferrer" style={{ width: '100%', height: '100%' }}>
-                          <img src={url} alt={item.payload.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </a>
-                      ) : (
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: 'inherit', padding: '6px' }}
-                        >
-                          <FileText size={22} color="var(--accent-color)" />
-                          <span style={{ fontSize: '0.7rem', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {item.payload.name}
-                          </span>
-                        </a>
-                      )}
-                    </div>
-                  );
-                })}
+                {conversationMediaFiles.map((item, i) => (
+                  <MediaGalleryCard
+                    key={i}
+                    payload={item.payload}
+                    partnerId={userProfile?.id}
+                    currentUserId={currentUser?.id || 0}
+                  />
+                ))}
               </div>
             )}
           </div>

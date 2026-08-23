@@ -9,6 +9,7 @@ import { Group, User } from '../types';
 import { BaseModal } from './common/BaseModal';
 import { Avatar } from './common/Avatar';
 import { AvatarCropModal } from './common/AvatarCropModal';
+import { MediaGalleryCard } from './chat/MediaGalleryCard';
 import styles from './GroupMembersModal.module.css';
 
 interface GroupMembersModalProps {
@@ -477,45 +478,14 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({ currentUse
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', padding: '4px' }}>
-                {groupMediaFiles.map((item, i) => {
-                  const isImg = item.payload.mime?.startsWith('image/');
-                  const url = getIPFSGatewayUrl(item.payload.cid);
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        position: 'relative',
-                        height: '90px',
-                        borderRadius: '10px',
-                        overflow: 'hidden',
-                        background: 'rgba(0,0,0,0.3)',
-                        border: '1px solid var(--border-color)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {isImg ? (
-                        <a href={url} target="_blank" rel="noreferrer" style={{ width: '100%', height: '100%' }}>
-                          <img src={url} alt={item.payload.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </a>
-                      ) : (
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: 'inherit', padding: '6px' }}
-                        >
-                          <FileText size={22} color="var(--accent-color)" />
-                          <span style={{ fontSize: '0.7rem', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {item.payload.name}
-                          </span>
-                        </a>
-                      )}
-                    </div>
-                  );
-                })}
+                {groupMediaFiles.map((item, i) => (
+                  <MediaGalleryCard
+                    key={i}
+                    payload={item.payload}
+                    groupId={activeGroupForModal.id}
+                    currentUserId={currentUserId}
+                  />
+                ))}
               </div>
             )}
           </div>

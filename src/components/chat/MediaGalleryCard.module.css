@@ -1,0 +1,214 @@
+/* Context: 媒體與檔案庫卡片樣式 (支援毛玻璃縮圖、懸停下載浮鈕與 Lightbox) */
+
+.galleryCard {
+  position: relative;
+  height: 92px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-card, rgba(30, 41, 59, 0.5));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.galleryCard:hover {
+  border-color: var(--accent-color, #3b82f6);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.galleryThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.loadingWrapper,
+.errorWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-muted, #94a3b8);
+}
+
+.loadingText,
+.errorText {
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.errorText {
+  color: #ef4444;
+}
+
+.fileCardBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  width: 100%;
+  height: 100%;
+  gap: 3px;
+}
+
+.fileIconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fileName {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileSize {
+  font-size: 0.62rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* 懸停右下角下載按鈕 */
+.downloadOverlayBtn {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.18s ease;
+  z-index: 3;
+}
+
+.galleryCard:hover .downloadOverlayBtn {
+  opacity: 1;
+}
+
+.downloadOverlayBtn:hover {
+  background: var(--accent-color, #3b82f6);
+  border-color: var(--accent-color, #3b82f6);
+  transform: scale(1.1);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Lightbox 全螢幕檢視 */
+.lightboxOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.lightboxContent {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.lightboxImg {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.lightboxToolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 16px;
+  border-radius: 24px;
+  color: #ffffff;
+}
+
+.lightboxTitle {
+  font-size: 0.84rem;
+  font-weight: 500;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightboxActionBtn,
+.lightboxCloseBtn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.lightboxActionBtn:hover {
+  color: var(--accent-color, #3b82f6);
+}
+
+.lightboxCloseBtn:hover {
+  color: #ef4444;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
