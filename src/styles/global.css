@@ -112,9 +112,11 @@ input, textarea, select {
 }
 
 /* 3. 全域統一極致質感 Scrollbar (支援 WebKit、Blink 與 Firefox) */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.16)) transparent;
+@supports (-moz-appearance: none) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.16)) transparent;
+  }
 }
 
 .glass {
@@ -125,34 +127,59 @@ input, textarea, select {
   box-shadow: var(--shadow-main);
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* 針對所有 Chromium、Edge、WebKit 瀏覽器 (強制覆蓋原生滾動條) */
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 8px;
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+  border-radius: 8px !important;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
-  transition: background 0.2s ease;
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.16)) !important;
+  border-radius: 8px !important;
+  transition: background 0.2s ease !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.32));
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.32)) !important;
 }
 
-::-webkit-scrollbar-button {
+/* 徹底抹除全站所有滾動條上下左右箭頭按鈕 (全偽類覆蓋) */
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:single-button,
+*::-webkit-scrollbar-button:single-button,
+::-webkit-scrollbar-button:vertical:decrement,
+*::-webkit-scrollbar-button:vertical:decrement,
+::-webkit-scrollbar-button:vertical:increment,
+*::-webkit-scrollbar-button:vertical:increment,
+::-webkit-scrollbar-button:horizontal:decrement,
+*::-webkit-scrollbar-button:horizontal:decrement,
+::-webkit-scrollbar-button:horizontal:increment,
+*::-webkit-scrollbar-button:horizontal:increment,
+::-webkit-scrollbar-button:start:decrement,
+*::-webkit-scrollbar-button:start:decrement,
+::-webkit-scrollbar-button:end:increment,
+*::-webkit-scrollbar-button:end:increment {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  opacity: 0 !important;
 }
 
-::-webkit-scrollbar-corner {
-  background: transparent;
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
 }
 
 /* 4. Core UI Primitives (Buttons & Form Inputs) */
