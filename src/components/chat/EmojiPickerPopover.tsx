@@ -146,30 +146,6 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
   },
 ];
 
-// 預設 Aura 主題貼圖包
-const DEFAULT_STICKERS = [
-  { id: 'aura_cat_1', emoji: '🐱', label: '嗨～' },
-  { id: 'aura_cat_2', emoji: '😻', label: '大愛！' },
-  { id: 'aura_cat_3', emoji: '😹', label: '笑哭' },
-  { id: 'aura_cat_4', emoji: '😿', label: '委屈' },
-  { id: 'aura_dog_1', emoji: '🐶', label: '期待' },
-  { id: 'aura_dog_2', emoji: '🐕', label: '衝啊' },
-  { id: 'aura_dog_3', emoji: '🐾', label: '讚啦' },
-  { id: 'aura_dog_4', emoji: '🦴', label: '開動' },
-  { id: 'aura_fox_1', emoji: '🦊', label: '機智' },
-  { id: 'aura_bear_1', emoji: '🐻', label: '抱抱' },
-  { id: 'aura_panda_1', emoji: '🐼', label: '發呆中' },
-  { id: 'aura_rabbit_1', emoji: '🐰', label: '蹦跳' },
-];
-
-// 預設自訂表情貼 (Custom Emoji) - 行內微型表情
-const DEFAULT_CUSTOM_EMOJIS = [
-  '💖', '🌟', '🔥', '🎉', '☕', '🐱',
-  '🌸', '🍀', '✨', '⚡', '🌙', '🍕',
-  '🚀', '🎯', '💡', '💎', '🌈', '🍦',
-  '🎈', '🎨', '🎵', '🧸', '🌺', '🍓'
-];
-
 export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
   x,
   y,
@@ -359,7 +335,7 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
 
         {/* Tab 2: 貼圖 Stickers (含創作者貼圖商店 Placeholder) */}
         {mainTab === 'stickers' && (
-          <div>
+          <div style={{ padding: '4px 0' }}>
             {/* 創作者市場宣傳卡片 Placeholder */}
             <div className={styles.creatorMarketCard}>
               <div className={styles.marketHeader}>
@@ -380,36 +356,19 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
               </div>
             </div>
 
-            <span className={styles.categoryTitle} style={{ display: 'block', margin: '8px 0 4px 2px' }}>
-              預設萌寵貼圖包
-            </span>
-            <div className={styles.stickerGrid}>
-              {DEFAULT_STICKERS.map((stk) => (
-                <button
-                  key={stk.id}
-                  type="button"
-                  className={styles.stickerItem}
-                  onClick={() => {
-                    if (onSelectSticker) {
-                      onSelectSticker(stk);
-                    } else {
-                      onSelectEmoji(stk.emoji);
-                    }
-                    onClose();
-                  }}
-                  title={stk.label}
-                >
-                  <span className={styles.stickerEmoji}>{stk.emoji}</span>
-                  <span className={styles.stickerLabel}>{stk.label}</span>
-                </button>
-              ))}
+            <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>🎨</div>
+              <div>尚未擁有貼圖包</div>
+              <div style={{ fontSize: '0.74rem', marginTop: '4px', opacity: 0.8 }}>
+                未來可於貼圖商店選購或在創作者中心上架專屬貼圖
+              </div>
             </div>
           </div>
         )}
 
         {/* Tab 3: 表情貼 Custom Emoji (含創作者表情貼市集 Placeholder) */}
         {mainTab === 'custom_emoji' && (
-          <div>
+          <div style={{ padding: '4px 0' }}>
             {/* 創作者表情貼宣傳卡片 Placeholder */}
             <div className={styles.creatorMarketCard}>
               <div className={styles.marketHeader}>
@@ -430,24 +389,12 @@ export const EmojiPickerPopover: React.FC<EmojiPickerPopoverProps> = ({
               </div>
             </div>
 
-            <span className={styles.categoryTitle} style={{ display: 'block', margin: '8px 0 4px 2px' }}>
-              精選自訂表情貼
-            </span>
-            <div className={styles.customEmojiGrid}>
-              {DEFAULT_CUSTOM_EMOJIS.map((cEmoji, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className={styles.customEmojiItem}
-                  onClick={() => {
-                    onSelectEmoji(cEmoji);
-                    onClose();
-                  }}
-                  title={`表情貼 ${cEmoji}`}
-                >
-                  {cEmoji}
-                </button>
-              ))}
+            <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>✨</div>
+              <div>尚未擁有自訂表情貼</div>
+              <div style={{ fontSize: '0.74rem', marginTop: '4px', opacity: 0.8 }}>
+                未來可在表情貼商店選購或在文字中穿插使用
+              </div>
             </div>
           </div>
         )}
