@@ -779,7 +779,7 @@ export const ChatWindow: React.FC = () => {
         isStranger={activeChatUser ? !isFriend : false}
         onToggleSearch={() => setShowSearch(!showSearch)}
         onViewProfile={() => {
-          if (activeChatUser) setSelectedProfileUser(activeChatUser);
+          if (activeChatUser) setSelectedProfileUser(activeChatUser, 'chat_header');
         }}
         onStartScreenshot={() => handleStartScreenshot()}
         onOpenGroupModal={() => {

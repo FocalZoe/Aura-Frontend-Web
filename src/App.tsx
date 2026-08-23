@@ -36,6 +36,7 @@ const ChatApp: React.FC = () => {
   const activeGroup = useChatStore((s: any) => s.activeGroup);
   const friends = useChatStore((s: any) => s.friends);
   const selectedProfileUser = useUIStore((s: any) => s.selectedProfileUser);
+  const profileModalSource = useUIStore((s: any) => s.profileModalSource);
   const setSelectedProfileUser = useUIStore((s: any) => s.setSelectedProfileUser);
   const { setFriends, setFriendsMap, setIncomingStrangerUsers, setSentStrangerUsers } = useChatStore();
   const hasActiveChat = Boolean(activeChatUser || activeGroup);
@@ -225,9 +226,10 @@ const ChatApp: React.FC = () => {
       {/* Context: 掛載即時語音與視訊通話 Modal */}
       <CallModal />
 
-      {/* Context: [全域名片] 掛載個人名片 Modal，確保全站所有頭像點擊均能在最頂層正常彈出 */}
+      {/* Context: [全域名片/對話詳情] 掛載個人名片/對話詳情 Modal */}
       <UserProfileModal
         userProfile={selectedProfileUser}
+        source={profileModalSource}
         onClose={() => setSelectedProfileUser(null)}
         isFriend={
           !!selectedProfileUser &&

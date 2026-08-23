@@ -30,6 +30,7 @@ import styles from './UserProfileModal.module.css';
 
 interface UserProfileModalProps {
   userProfile: User | null;
+  source?: 'chat_header' | 'default';
   onClose: () => void;
   isFriend: boolean;
   onFriendChange: () => void;
@@ -37,6 +38,7 @@ interface UserProfileModalProps {
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   userProfile,
+  source = 'default',
   onClose,
   isFriend,
   onFriendChange,
@@ -52,6 +54,16 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadingAvatar, setUploadingAvatar] = useState<boolean>(false);
   const [isPendingSent, setIsPendingSent] = useState<boolean>(false);
+
+  // 僅在聊天室頂部開啟時才呈現 Tab 分頁
+  const showTabs = !isSelf && source === 'chat_header';
+
+  // 標題判定：自己為編輯個人資料；頂部開啟為對話詳情；其餘為使用者名片
+  const modalTitle = isSelf
+    ? '編輯個人資料'
+    : source === 'chat_header'
+    ? '對話詳情'
+    : '使用者名片';
 
   // 自己編輯表單狀態
   const [editAccountID, setEditAccountID] = useState<string>('');
@@ -241,11 +253,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       <BaseModal
         isOpen={Boolean(userProfile)}
         onClose={onClose}
-        title={isSelf ? '編輯個人資料' : '使用者名片'}
+        title={modalTitle}
         maxWidth="460px"
       >
-        {/* TAB 分頁切換 (非自己時可切換名片與媒體庫) */}
-        {!isSelf && (
+        {/* TAB 分頁切換 (僅在聊天室頂部開啟時提供名片與媒體庫切換) */}
+        {showTabs && (
           <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
             <button
               type="button"
@@ -254,7 +266,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               style={{ flex: 1, height: '36px', fontSize: '0.86rem' }}
             >
               <UserIcon size={16} />
-              <span>使用者名片</span>
+              <span>個人資料</span>
             </button>
             <button
               type="button"
@@ -268,8 +280,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
         )}
 
-        {/* Tab 1: 使用者名片 / 編輯個人資料 */}
-        {activeTab === 'profile' && (
+        {/* Tab 1 (或一般模式): 使用者名片 / 編輯個人資料 */}
+        {(!showTabs || activeTab === 'profile') && (
           <div className={styles.profileContainer}>
             {/* 名片頂部頭像區塊 */}
             {isSelf ? (
@@ -478,8 +490,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
         )}
 
-        {/* Tab 2: 媒體與檔案庫 */}
-        {activeTab === 'media' && !isSelf && (
+        {/* Tab 2: 媒體與檔案庫 (僅在頂部開啟的對話詳情模式下可見) */}
+        {showTabs && activeTab === 'media' && (
           <div style={{ minHeight: '180px', maxHeight: '320px', overflowY: 'auto' }}>
             {conversationMediaFiles.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--text-muted)', fontSize: '0.86rem' }}>

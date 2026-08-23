@@ -20,6 +20,7 @@ interface UIState {
   showGroupMembersModal: boolean;
   activeGroupForModal: Group | null;
   selectedProfileUser: User | null;
+  profileModalSource: 'chat_header' | 'default';
   deleteTargetUser: { id: number; name: string } | null;
   contextMenu: { x: number; y: number; targetUser?: User; targetGroup?: Group } | null;
   confirmConfig: ConfirmConfig | null;
@@ -31,7 +32,7 @@ interface UIState {
   setShowCreateGroupModal: (show: boolean) => void;
   setShowGroupMembersModal: (show: boolean) => void;
   setActiveGroupForModal: (group: Group | null) => void;
-  setSelectedProfileUser: (user: User | null) => void;
+  setSelectedProfileUser: (user: User | null, source?: 'chat_header' | 'default') => void;
   setDeleteTargetUser: (user: { id: number; name: string } | null) => void;
   setContextMenu: (menu: { x: number; y: number; targetUser?: User; targetGroup?: Group } | null) => void;
   showConfirmModal: (config: Omit<ConfirmConfig, 'isOpen'>) => void;
@@ -47,6 +48,7 @@ export const useUIStore = create<UIState>((set) => ({
   showGroupMembersModal: false,
   activeGroupForModal: null,
   selectedProfileUser: null,
+  profileModalSource: 'default',
   deleteTargetUser: null,
   contextMenu: null,
   confirmConfig: null,
@@ -58,7 +60,7 @@ export const useUIStore = create<UIState>((set) => ({
   setShowCreateGroupModal: (show) => set({ showCreateGroupModal: show }),
   setShowGroupMembersModal: (show) => set({ showGroupMembersModal: show }),
   setActiveGroupForModal: (group) => set({ activeGroupForModal: group }),
-  setSelectedProfileUser: (user) => set({ selectedProfileUser: user }),
+  setSelectedProfileUser: (user, source = 'default') => set({ selectedProfileUser: user, profileModalSource: source }),
   setDeleteTargetUser: (user) => set({ deleteTargetUser: user }),
   setContextMenu: (menu) => set({ contextMenu: menu }),
 
