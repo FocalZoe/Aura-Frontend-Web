@@ -306,11 +306,16 @@ export const ChatScreenshotModal: React.FC<ChatScreenshotModalProps> = ({
             if (m.id && loadedImagesMap[m.id]) {
               isImage = true;
               imageElement = loadedImagesMap[m.id];
-              const maxW = 240;
-              const maxH = 180;
-              const aspect = (imageElement.height || 1) / (imageElement.width || 1);
-              imageRenderWidth = maxW;
-              imageRenderHeight = Math.min(Math.max(maxW * aspect, 100), maxH);
+              const naturalW = imageElement.naturalWidth || imageElement.width || 300;
+              const naturalH = imageElement.naturalHeight || imageElement.height || 200;
+
+              // 保持 100% 原始長寬比，不硬拉伸、不裁剪
+              const maxDisplayW = Math.min(bubbleMaxWidth, 420);
+              const maxDisplayH = 380;
+              const scaleRatio = Math.min(1, maxDisplayW / naturalW, maxDisplayH / naturalH);
+
+              imageRenderWidth = Math.round(naturalW * scaleRatio);
+              imageRenderHeight = Math.round(naturalH * scaleRatio);
             }
           }
 
