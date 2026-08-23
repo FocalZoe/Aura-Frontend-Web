@@ -66,6 +66,7 @@
   background: var(--accent-light, rgba(59, 130, 246, 0.12));
   border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   font-size: 0.84rem;
+  flex-shrink: 0;
   animation: slideDown 0.15s ease-out;
 }
 
@@ -98,7 +99,7 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* 封鎖與移出群組提示橫幅 */
+/* 封鎖與移出群組提示橫幅 (永遠釘在最底部) */
 .blockedBanner {
   display: flex;
   align-items: center;
@@ -110,6 +111,9 @@
   border-top: 1px solid rgba(239, 68, 68, 0.25);
   font-size: 0.88rem;
   font-weight: 600;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .groupRemovedBanner {
@@ -123,6 +127,23 @@
   border-top: 1px solid rgba(239, 68, 68, 0.3);
   font-size: 0.88rem;
   font-weight: 600;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pendingInviteBanner {
+  padding: 16px;
+  background: var(--bg-secondary, #0f172a);
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary, #ffffff);
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @keyframes slideDown {

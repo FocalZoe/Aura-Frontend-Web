@@ -1,18 +1,86 @@
-/* Context: MessageList 專屬樣式模組 (訊息滾動主區域、向上分頁載入按鈕、日期分隔線) */
+/* Context: MessageList 專屬樣式模組 (訊息滾動主區域、骨架屏流光動畫、向上分頁載入按鈕、日期分隔線) */
 
 .chatMessages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px;
+  padding: 14px 20px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+/* 現代深色玻璃擬態骨架屏 (Shimmer 流光動畫) */
+.chatSkeletonList {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 20px;
+  overflow-y: hidden;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.chatLoadingBadge {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: var(--accent-light, rgba(59, 130, 246, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: var(--accent-color, #3b82f6);
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.chatSkeletonRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+.chatSkeletonRowOther {
+  justify-content: flex-start;
+}
+
+.chatSkeletonRowSelf {
+  justify-content: flex-end;
+}
+
+.chatSkeletonAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.chatSkeletonBubble {
+  height: 38px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .loadMoreContainer {
   display: flex;
   justify-content: center;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .loadMoreBtn {
@@ -57,7 +125,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 12px 0 6px 0;
+  margin: 10px 0 4px 0;
   position: relative;
 }
 

@@ -84,19 +84,23 @@ export const MessageList: React.FC<MessageListProps> = ({
   if (loading && messages.length === 0) {
     return (
       <div className={styles.chatSkeletonList}>
-        <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowOther}`}>
-          <div className={styles.chatSkeletonAvatar} />
-          <div className={styles.chatSkeletonBubble} style={{ width: '180px' }} />
-        </div>
-        <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowSelf}`}>
-          <div className={styles.chatSkeletonBubble} style={{ width: '240px' }} />
+        <div className={styles.chatLoadingBadge}>
+          <span className={styles.spin}>✦</span>
+          <span>正在安全載入端到端加密訊息...</span>
         </div>
         <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowOther}`}>
           <div className={styles.chatSkeletonAvatar} />
-          <div className={styles.chatSkeletonBubble} style={{ width: '140px' }} />
+          <div className={styles.chatSkeletonBubble} style={{ width: '160px' }} />
         </div>
         <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowSelf}`}>
-          <div className={styles.chatSkeletonBubble} style={{ width: '200px' }} />
+          <div className={styles.chatSkeletonBubble} style={{ width: '220px' }} />
+        </div>
+        <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowOther}`}>
+          <div className={styles.chatSkeletonAvatar} />
+          <div className={styles.chatSkeletonBubble} style={{ width: '130px' }} />
+        </div>
+        <div className={`${styles.chatSkeletonRow} ${styles.chatSkeletonRowSelf}`}>
+          <div className={styles.chatSkeletonBubble} style={{ width: '190px' }} />
         </div>
       </div>
     );

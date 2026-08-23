@@ -519,16 +519,7 @@ export const ChatWindow: React.FC = () => {
           <span>您已封鎖此用戶，無法傳送訊息</span>
         </div>
       ) : isPendingGroupInvite ? (
-        <div style={{
-          padding: '16px',
-          background: 'var(--bg-secondary)',
-          borderTop: '1px solid var(--border-color)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-          color: 'var(--text-primary)',
-        }}>
+        <div className={styles.pendingInviteBanner}>
           <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>您已被邀請加入此群組，同意邀請後方可進行聊天</span>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button className="uiBtnPrimary" onClick={handleAcceptInvite} style={{ padding: '6px 20px' }}>

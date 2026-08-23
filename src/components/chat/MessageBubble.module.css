@@ -16,10 +16,10 @@
   justify-content: flex-start;
 }
 
-/* 截圖模式專屬行樣式：永遠以整行寬度對齊最右側勾選框 */
+/* 截圖模式專屬行樣式：極致緊湊行間距，永遠以整行寬度對齊最右側勾選框 */
 .msgRowScreenshotMode {
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 2px 8px;
   display: flex;
   align-items: center;
   width: 100%;
@@ -34,40 +34,40 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
-/* 連貫一體化高亮背景 */
+/* 連貫一體化高亮背景 (緊湊無縫銜接) */
 .msgRowSelected {
   background: rgba(59, 130, 246, 0.12) !important;
   z-index: 2;
 }
 
 .selectedSingle {
-  border-radius: 12px !important;
+  border-radius: 8px !important;
 }
 
 .selectedFirst {
-  border-top-left-radius: 12px !important;
-  border-top-right-radius: 12px !important;
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
-  margin-bottom: -4px !important;
-  padding-bottom: 8px !important;
+  margin-bottom: -1px !important;
+  padding-bottom: 3px !important;
 }
 
 .selectedMiddle {
   border-radius: 0 !important;
-  margin-top: -4px !important;
-  margin-bottom: -4px !important;
-  padding-top: 8px !important;
-  padding-bottom: 8px !important;
+  margin-top: -1px !important;
+  margin-bottom: -1px !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
 }
 
 .selectedLast {
-  border-bottom-left-radius: 12px !important;
-  border-bottom-right-radius: 12px !important;
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
   border-top-left-radius: 0 !important;
   border-top-right-radius: 0 !important;
-  margin-top: -4px !important;
-  padding-top: 8px !important;
+  margin-top: -1px !important;
+  padding-top: 3px !important;
 }
 
 /* 截圖模式 Checkbox：永遠釘死在聊天室最右側邊界 */
@@ -315,17 +315,24 @@
   width: 100%;
 }
 
-/* 置中系統廣播通知 */
+/* 置中系統廣播通知 (支援截圖選取與右側 Checkbox) */
 .systemMsgRow {
   display: flex;
+  align-items: center;
   justify-content: center;
   width: 100%;
-  margin: 6px 0;
+  margin: 4px 0;
+  position: relative;
 }
 
-.systemMsgPill {
+.systemMsgRow.msgRowScreenshotMode {
+  padding: 2px 8px;
+}
+
+.systemMsgRow .systemMsgPill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -334,4 +341,5 @@
   color: var(--text-muted, #94a3b8);
   font-size: 0.78rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin: 0 auto;
 }

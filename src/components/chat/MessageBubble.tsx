@@ -56,13 +56,46 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isRecalled = msg.is_recalled || msg.content === '[RECALLED]';
   const { getUserDisplayName } = useChatStore();
 
-  // 系統置中公告訊息 (無氣泡、小字、膠囊微光樣式)
+  const handleBubbleClick = (e: React.MouseEvent) => {
+    if (isScreenshotMode && onToggleSelectScreenshot) {
+      e.stopPropagation();
+      onToggleSelectScreenshot(msg);
+    }
+  };
+
+  // 系統置中公告訊息 (無氣泡、小字、膠囊微光樣式，截圖模式下支援高亮與右側勾選)
   if (msg.is_system) {
+    const selectedPositionClass =
+      selectedPosition === 'single'
+        ? styles.selectedSingle
+        : selectedPosition === 'first'
+        ? styles.selectedFirst
+        : selectedPosition === 'middle'
+        ? styles.selectedMiddle
+        : selectedPosition === 'last'
+        ? styles.selectedLast
+        : '';
+
     return (
-      <div id={`message-${msg.id}`} className={styles.systemMsgRow}>
+      <div
+        id={`message-${msg.id}`}
+        className={`${styles.systemMsgRow} ${
+          isScreenshotMode ? styles.msgRowScreenshotMode : ''
+        } ${isScreenshotMode && isSelectedForScreenshot ? styles.msgRowSelected : ''} ${selectedPositionClass}`}
+        onClick={handleBubbleClick}
+      >
         <div className={styles.systemMsgPill}>
           {msg.content}
         </div>
+        {isScreenshotMode && (
+          <div className={styles.screenshotCheckboxRight}>
+            {isSelectedForScreenshot ? (
+              <CheckCircle2 size={18} className={styles.checkboxChecked} />
+            ) : (
+              <Circle size={18} className={styles.checkboxUnchecked} />
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -253,13 +286,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const displayUser = senderUser || partnerUser || msg.sender;
   const finalDisplayName = groupNickname || (displayUser ? getUserDisplayName(displayUser) : `用戶 #${msg.sender_id}`);
-
-  const handleBubbleClick = (e: React.MouseEvent) => {
-    if (isScreenshotMode && onToggleSelectScreenshot) {
-      e.stopPropagation();
-      onToggleSelectScreenshot(msg);
-    }
-  };
 
   const handleBubbleContextMenu = (e: React.MouseEvent) => {
     if (isScreenshotMode) return;
